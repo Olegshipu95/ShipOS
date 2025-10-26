@@ -2,7 +2,7 @@ build
 isofiles/kernel.iso
 kernel/test
 .vscode
-/isofiles/boot/kernel.bin
+/isofiles/boot/*.bin
 .idea
 bx_enh_dbg.ini
 .gdbinit
