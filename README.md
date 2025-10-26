@@ -1,11 +1,16 @@
 # ShipOS
 Import substitution of foreign products. ShipOS power
 
-# How to use
+## How to use
 
 ```bash
  make install
  make qemu
+```
+## iPXE support
+```bash
+make ipxe-http-server # run in separate terminal
+make ipxe-qemu
 ```
 
 Implemented parts of the operating system
