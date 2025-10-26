@@ -17,7 +17,7 @@ ISO_BOOT_DIR := $(ISO_DIR)/boot
 
 BUILD_DIR=build
 
-x86_64_asm_source_files := $(shell find x86_64 -name *.asm)
+x86_64_asm_source_files := $(shell find x86_64 -name *.asm | grep -v _mb1\.asm)
 x86_64_asm_object_files := $(patsubst x86_64/%.asm, build/x86_64/%.o, $(x86_64_asm_source_files))
 
 # Multiboot1 specific files
