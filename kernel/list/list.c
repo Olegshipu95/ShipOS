@@ -1,3 +1,8 @@
+//
+// Created by ShipOS developers
+// Copyright (c) 2023 SHIPOS. All rights reserved.
+//
+
 #include "../tty/tty.h"
 #include "list.h"
 

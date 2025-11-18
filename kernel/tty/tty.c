@@ -2,17 +2,34 @@
 // Created by ShipOS developers on 28.10.23.
 // Copyright (c) 2023 SHIPOS. All rights reserved.
 //
-
+// Terminal (TTY) handling for ShipOS kernel.
+// Provides multiple virtual terminals, text output, and
+// formatted printing to VGA memory.
+//
 
 #include <stdarg.h>
 #include "tty.h"
-//#include "../lib/include/stdint.h"
 #include <inttypes.h>
 #include "../lib/include/memset.h"
 
+/**
+ * @brief Maximum number of virtual terminals
+ */
 #define TERMINALS_NUMBER 7
+
+/**
+ * @brief Array of virtual terminal structures
+ */
 static tty_structure tty_terminals[TERMINALS_NUMBER];
+
+/**
+ * @brief Pointer to the currently active terminal
+ */
 static tty_structure *active_tty;
+
+/**
+ * @brief Spinlocks to make printf and print functions thread-safe
+ */
 static struct spinlock printf_spinlock;
 static struct spinlock print_spinlock;
 
@@ -36,7 +53,7 @@ void init_tty() {
     set_tty(0);
     init_spinlock(&printf_spinlock, "printf spinlock");
     init_spinlock(&print_spinlock, "print spinlock");
-};
+}
 
 void set_tty(uint8_t terminal) {
     if (TERMINALS_NUMBER <= terminal) {
@@ -58,6 +75,11 @@ uint8_t get_current_tty() {
     return active_tty->tty_id;
 }
 
+/**
+ * @brief Reverse a string in-place
+ * @param str String to reverse
+ * @param n Length of the string
+ */
 void reverse(char *str, int n) {
     int i = 0;
     int j = n - 1;
@@ -68,6 +90,13 @@ void reverse(char *str, int n) {
     }
 }
 
+/**
+ * @brief Construct a VGA character with foreground and background colors
+ * @param value ASCII character
+ * @param fg Foreground color
+ * @param bg Background color
+ * @return char_with_color structure
+ */
 struct char_with_color make_char(char value, enum vga_colors fg, enum vga_colors bg) {
     struct char_with_color res = {
             .character = value,
@@ -76,6 +105,9 @@ struct char_with_color make_char(char value, enum vga_colors fg, enum vga_colors
     return res;
 }
 
+/**
+ * @brief Scroll the terminal buffer up by one line
+ */
 void scroll() {
     for (int i = 1; i < VGA_HEIGHT; i++) {
         for (int j = 0; j < VGA_WIDTH; j++) {
@@ -89,6 +121,10 @@ void scroll() {
     active_tty->pos = 0;
 }
 
+/**
+ * @brief Put a single character on the terminal, handling newlines and scrolling
+ * @param c Pointer to character
+ */
 void putchar(char *c) {
     if (active_tty->line >= VGA_HEIGHT) scroll();
 
@@ -96,8 +132,8 @@ void putchar(char *c) {
         active_tty->line++;
         active_tty->pos = 0;
     } else {
-        *(active_tty->tty_buffer + active_tty->line * VGA_WIDTH + active_tty->pos) = make_char(*c, active_tty->fg,
-                                                                                               active_tty->bg);
+        *(active_tty->tty_buffer + active_tty->line * VGA_WIDTH + active_tty->pos) =
+            make_char(*c, active_tty->fg, active_tty->bg);
         active_tty->pos += 1;
         active_tty->line += active_tty->pos / VGA_WIDTH;
         active_tty->pos %= VGA_WIDTH;
@@ -107,7 +143,7 @@ void putchar(char *c) {
 void print(const char *string) {
     acquire_spinlock(&print_spinlock);
     while (*string != 0) {
-        putchar(string++);
+        putchar((char *)string++);
     }
     write_buffer(active_tty->tty_buffer);
     release_spinlock(&print_spinlock);
@@ -132,6 +168,11 @@ void itoa(int num, char *str, int radix) {
     str[i] = 0;
 }
 
+/**
+ * @brief Convert 64-bit integer to hexadecimal string
+ * @param num 64-bit number
+ * @param str Output buffer
+ */
 void ptoa(uint64_t num, char *str) {
     int i = 0;
 
@@ -151,29 +192,26 @@ void printf(const char *format, ...) {
     va_start(varargs, format);
     char digits_buf[100];
     for (int i = 0; i < 100; i++) digits_buf[i] = 0;
+
     while (*format) {
         switch (*format) {
             case '%':
                 format++;
                 switch (*format) {
                     case 'd':
-                        itoa(va_arg(varargs,
-                        int), digits_buf, 10);
+                        itoa(va_arg(varargs, int), digits_buf, 10);
                         print(digits_buf);
                         break;
                     case 'o':
-                        itoa(va_arg(varargs,
-                        int), digits_buf, 8);
+                        itoa(va_arg(varargs, int), digits_buf, 8);
                         print(digits_buf);
                         break;
                     case 'x':
-                        itoa(va_arg(varargs,
-                        int), digits_buf, 16);
+                        itoa(va_arg(varargs, int), digits_buf, 16);
                         print(digits_buf);
                         break;
                     case 'b':
-                        itoa(va_arg(varargs,
-                        int), digits_buf, 2);
+                        itoa(va_arg(varargs, int), digits_buf, 2);
                         print(digits_buf);
                         break;
                     case 'p':
@@ -181,8 +219,7 @@ void printf(const char *format, ...) {
                         print(digits_buf);
                         break;
                     case 's':
-                        print(va_arg(varargs,
-                        char*));
+                        print(va_arg(varargs, char*));
                         break;
                     case '%':
                         putchar("%");
@@ -193,11 +230,12 @@ void printf(const char *format, ...) {
                 }
                 break;
             default:
-                putchar(format);
+                putchar((char *)format);
                 write_buffer(active_tty->tty_buffer);
         }
         format++;
     }
+
     release_spinlock(&printf_spinlock);
 }
 

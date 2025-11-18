@@ -2,6 +2,8 @@
 // Created by ShipOS developers on 28.10.23.
 // Copyright (c) 2023 SHIPOS. All rights reserved.
 //
+// Main kernel entry point and thread utilities
+//
 
 #include "vga/vga.h"
 #include "idt/idt.h"
@@ -15,20 +17,50 @@
 #include "sched/scheduler.h"
 
 
-
+/**
+ * @brief Example function to repeatedly print a number from a thread.
+ * 
+ * This is a simple demo of how threads can output information. 
+ * Currently, it loops infinitely printing "Hello from thread N".
+ * 
+ * @param num Thread identifier number
+ */
 void print_num(uint32_t num) {
     while (1) {
         printf("Hello from thread %d\n", num);
         // yield();
     }
 }
+
+/**
+ * @brief Entry point for a created thread.
+ * 
+ * Extracts the integer argument from the provided arguments array 
+ * and calls print_num with that value.
+ * Made for testing functionality
+ * 
+ * @param argc Number of arguments
+ * @param args Array of thread arguments
+ */
 void thread_function(int argc, struct argument *args) {
     uint32_t num = *((uint32_t*) args[0].value);
     print_num(num);
 }
 
 
-
+/**
+ * @brief Kernel entry point.
+ * 
+ * Performs basic initialization:
+ * 1. Sets up TTY terminals.
+ * 2. Prints debug information about CR3 register and kernel memory layout.
+ * 3. Initializes the physical memory allocator and page tables.
+ * 4. Initializes the first process and its main thread.
+ * 5. Sets up the Interrupt Descriptor Table (IDT).
+ * 6. Starts the scheduler (currently commented out for testing).
+ * 
+ * @return int Always returns 0 (never reached).
+ */
 int kernel_main(){
     init_tty();
     
@@ -59,7 +91,7 @@ int kernel_main(){
 
     setup_idt();
 
-    //scheduler();
+    // scheduler();
 
     while(1) {};
     return 0;
