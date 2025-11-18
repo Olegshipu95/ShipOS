@@ -1,5 +1,9 @@
 //
-// Created by oleg on 28.09.23.
+// Created by ShipOS developers
+// Copyright (c) 2023 SHIPOS. All rights reserved.
+//
+// This header declares all interrupt handlers for ShipOS kernel.
+// It includes keyboard, timer, default, and CPU exception handlers.
 //
 
 #ifndef UNTITLED_OS_INTERRUPT_HANDLERS_H
@@ -7,10 +11,50 @@
 //#include "../lib/include/stdint.h"
 #include <inttypes.h>
 #include "../lib/include/x86_64.h"
+
+/**
+ * @brief Keyboard interrupt wrapper
+ *
+ * Assembly wrapper for the keyboard handler, sets up stack and
+ * calls keyboard_handler().
+ */
 void keyboard_handler_wrapper();
+
+/**
+ * @brief Keyboard interrupt handler
+ *
+ * Handles key presses from the keyboard. Switches virtual terminals
+ * when function keys F1-F7 are pressed. Other key codes are printed.
+ */
 void keyboard_handler();
+
+/**
+ * @brief Timer interrupt handler
+ *
+ * Sends timing information to the scheduler, performs context switching
+ * between threads, and sends End-of-Interrupt (EOI) to the PIC.
+ */
 void timer_interrupt();
+
+/**
+ * @brief Default interrupt handler
+ *
+ * Handles unknown or unhandled interrupts.
+ * Prints a generic message when an unknown interrupt occurs.
+ */
 void default_handler();
+
+/**
+ * @brief General CPU exception handler
+ *
+ * @param error_code Error code from CPU (if any)
+ * @brief General interrupt handler for CPU exceptions
+ *
+ * Prints information about the interrupt number, human-readable
+ * description, and error code. Also prints the CR2 register for
+ * page fault exceptions. Halts the system after printing.
+ *
+ */
 void interrupt_handler(uint64_t, uint64_t);
 
 void interrupt_handler_0();

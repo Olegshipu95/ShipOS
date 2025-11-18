@@ -1,43 +1,76 @@
-extern interrupt_handler
+; -------------------------------------------------------------------
+; Created by ShipOS developers
+; Copyright (c) 2023 SHIPOS. All rights reserved.
+;
+; This file defines the assembly stubs for CPU interrupts and exceptions.
+; It provides a common entry point for all interrupts and handles
+; saving/restoring CPU registers before calling the C handler.
+; -------------------------------------------------------------------
+
+extern interrupt_handler   ; declare the common C interrupt handler
+
+; -------------------------------------------------------------------
+; Macros for defining interrupt handlers
+; -------------------------------------------------------------------
+
+; -------------------------------------------------------------------
+; no_error_code_interrupt_handler <INT_NUM>
+; -------------------------------------------------------------------
+; Generates a handler for interrupts/exceptions that do NOT push an error code
+; on the stack. It pushes 0 as the error code and the interrupt number
+; to be passed to the C handler.
 
 %macro no_error_code_interrupt_handler 1
 global interrupt_handler_%1
 interrupt_handler_%1:
-    mov   rdi, qword 0                     ; push 0 as error code
-    mov   rsi, qword %1                    ; push the interrupt number
-    jmp     common_interrupt_handler    ; jump to the common handler
+    mov   rdi, qword 0          ; push 0 as error code
+    mov   rsi, qword %1         ; push the interrupt number
+    jmp     common_interrupt_handler
 %endmacro
+
+; -------------------------------------------------------------------
+; error_code_interrupt_handler <INT_NUM>
+; -------------------------------------------------------------------
+; Generates a handler for interrupts/exceptions that automatically
+; push an error code on the stack. Pops the error code into rdi
+; and pushes the interrupt number into rsi for the C handler.
 
 %macro error_code_interrupt_handler 1
 global interrupt_handler_%1
 interrupt_handler_%1:
-    pop rdi
-    mov rsi, qword %1                    ; push the interrupt number
-    jmp     common_interrupt_handler     ; jump to the common handler
+    pop rdi                     ; retrieve error code
+    mov rsi, qword %1           ; push the interrupt number
+    jmp     common_interrupt_handler
 %endmacro
 
-common_interrupt_handler:               ; the common parts of the generic interrupt handler
-    ; save the registers
-    push rax      ;save current rax
-    push rbx      ;save current rbx
-    push rcx      ;save current rcx
-    push rdx      ;save current rdx
-    push rbp      ;save current rbp
-    push rdi       ;save current rdi
-    push rsi       ;save current rsi
-    push r8        ;save current r8
-    push r9        ;save current r9
-    push r10      ;save current r10
-    push r11      ;save current r11
-    push r12      ;save current r12
-    push r13      ;save current r13
-    push r14      ;save current r14
-    push r15      ;save current r15
+; -------------------------------------------------------------------
+; common_interrupt_handler
+; -------------------------------------------------------------------
+; Saves all general-purpose registers, calls the common C handler,
+; then restores registers and returns from the interrupt.
 
-    ; call the C function
-    call    interrupt_handler
+common_interrupt_handler:
+    ; Save general-purpose registers
+    push rax
+    push rbx
+    push rcx
+    push rdx
+    push rbp
+    push rdi
+    push rsi
+    push r8
+    push r9
+    push r10
+    push r11
+    push r12
+    push r13
+    push r14
+    push r15
 
-    ; restore the registers
+    ; Call C interrupt handler
+    call interrupt_handler
+
+    ; Restore general-purpose registers
     pop r15
     pop r14
     pop r13
@@ -54,8 +87,12 @@ common_interrupt_handler:               ; the common parts of the generic interr
     pop rbx
     pop rax
 
-    ; return to the code that got interrupted
+    ; Return to interrupted code
     iret
+
+; -------------------------------------------------------------------
+; Instantiate all interrupt handlers
+; -------------------------------------------------------------------
 
 no_error_code_interrupt_handler 0
 no_error_code_interrupt_handler 1

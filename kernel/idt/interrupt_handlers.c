@@ -1,17 +1,34 @@
 //
-// Created by oleg on 28.09.23.
+// Created by ShipOS developers
+// Copyright (c) 2023 SHIPOS. All rights reserved.
 //
+// This file contains interrupt handlers for the ShipOS kernel,
+// including keyboard, timer, and default/unhandled interrupts.
+// It also defines error messages for CPU exceptions.
+//
+
 #include "interrupt_handlers.h"
+
 #include "../lib/include/x86_64.h"
 #include "../pic/pic.h"
 #include "../vga/vga.h"
 #include "../tty/tty.h"
 #include "../sched/scheduler.h"
 #include "../pit/pit.h"
+
 #define F1 0x3B
 
 struct interrupt_frame;
 
+/**
+ * @brief Keyboard interrupt handler
+ *
+ * Handles key presses from the keyboard. Switches virtual terminals
+ * when function keys F1-F7 are pressed. Other key codes are printed
+ * to the current terminal.
+ *
+ * @param frame Pointer to interrupt frame (automatically passed by CPU)
+ */
 __attribute__((interrupt)) void keyboard_handler(struct interrupt_frame* frame) {
     // printf("Flags: %b\n", get_flags());
     while (inb(0x64) & 1) {
@@ -36,15 +53,23 @@ __attribute__((interrupt)) void default_handler(struct interrupt_frame* frame) {
 
 __attribute__((interrupt)) void timer_interrupt(struct interrupt_frame* frame) {
 //     print("clock\n");
+
     send_values_to_sched();
     outb(PIC1_COMMAND, PIC_EOI);
+
     struct thread *next_thread = get_next_thread();
     struct thread *prev_thread = current_cpu.current_thread;
     current_cpu.current_thread = next_thread;
-    sti();
+
+    sti();  // enable interrupts before context switch
     switch_context(&(prev_thread->context), next_thread->context);
 }
 
+/**
+ * @brief CPU exception messages
+ *
+ * Provides human-readable descriptions of the first 32 CPU exceptions.
+ */
 char* error_messages[] = {
     "division_error", // 0
     "debug", // 1
@@ -80,6 +105,16 @@ char* error_messages[] = {
     "reserved" // 31
 };
 
+/**
+ * @brief General interrupt handler for CPU exceptions
+ *
+ * Prints information about the interrupt number, human-readable
+ * description, and error code. Also prints the CR2 register for
+ * page fault exceptions. Halts the system after printing.
+ *
+ * @param error_code Error code provided by CPU (if any)
+ * @param interrupt_number Number of the interrupt/exception
+ */
 void interrupt_handler(uint64_t error_code, uint64_t interrupt_number) {
     printf("Interrupt number %d (%s), error_code: %b\n", interrupt_number, error_messages[interrupt_number], error_code);
     printf("CR2: %x\n", rcr2());
