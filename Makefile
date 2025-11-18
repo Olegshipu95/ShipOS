@@ -76,6 +76,8 @@ clean:
 	rm -f $(ISO_DIR)/**/kernel.*
 
 install:
+	apt install grub-pc-bin
+	apt install grub-common
 	apt install xorriso
 	apt install mtools
 	apt install qemu-system-x86 
