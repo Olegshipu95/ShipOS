@@ -1,83 +1,114 @@
-NASM=nasm
-NASM_FLAGS=-f elf64
+# ==============================
+# Toolchain
+# ==============================
+NASM := nasm
+NASM_FLAGS := -f elf64           # Output 64-bit ELF objects for assembly
 
-LD=ld
-LD_FLAGS=--nmagic --script=$(LINKER)
+CC := gcc
+CFLAGS := -Wall -c -ggdb -ffreestanding -mgeneral-regs-only  # Compile C for bare metal
 
-CC=gcc 
-CFLAGS=-Wall -c -ggdb -ffreestanding -mgeneral-regs-only
+LD := ld
+LINKER := x86_64/boot/linker.ld
+LD_FLAGS := --nmagic --script=$(LINKER)  # Use custom linker script
 
-GRUB=grub-mkrescue
-GRUB_FLAGS=-o
+GRUB := grub-mkrescue
+GRUB_FLAGS := -o
 
-LINKER=x86_64/boot/linker.ld
+QEMU := qemu-system-x86_64
+QEMU_FLAGS := -m 128M -cdrom
 
-ISO_DIR=isofiles
+# ==============================
+# Directories
+# ==============================
+ISO_DIR := isofiles
 ISO_BOOT_DIR := $(ISO_DIR)/boot
+BUILD_DIR := build
 
-BUILD_DIR=build
+# ==============================
+# Source files
+# ==============================
+# All 64-bit assembly in x86_64/
+x86_64_asm_sources := $(shell find x86_64 -name '*.asm')
+x86_64_asm_objects := $(patsubst x86_64/%.asm,$(BUILD_DIR)/x86_64/%.o,$(x86_64_asm_sources))
 
-x86_64_asm_source_files := $(shell find x86_64 -name *.asm)
-x86_64_asm_object_files := $(patsubst x86_64/%.asm, build/x86_64/%.o, $(x86_64_asm_source_files))
+# All C files in kernel/
+kernel_c_sources := $(shell find kernel -name '*.c')
+kernel_c_objects := $(patsubst kernel/%.c,$(BUILD_DIR)/kernel/%.o,$(kernel_c_sources))
 
-kernel_source_files := $(shell find kernel -name *.c)
-kernel_object_files := $(patsubst kernel/%.c, build/kernel/%.o, $(kernel_source_files))
+# All assembly files in kernel/
+kernel_asm_sources := $(shell find kernel -name '*.asm')
+kernel_asm_objects := $(patsubst kernel/%.asm,$(BUILD_DIR)/kernel/%.o,$(kernel_asm_sources))
 
-kernel_asm_source_files := $(shell find kernel -name *.asm)
-kernel_asm_object_files := $(patsubst kernel/%.asm, build/kernel/%.o, $(kernel_asm_source_files))
+# All object files
+objects := $(x86_64_asm_objects) $(kernel_c_objects) $(kernel_asm_objects)
 
-object_files := $(x86_64_asm_object_files) $(kernel_object_files) $(kernel_asm_object_files)
+# ==============================
+# Build rules
+# ==============================
 
-build/%.o: %.asm
-	mkdir -p $(dir $@) && \
+# Compile assembly files
+$(BUILD_DIR)/%.o: %.asm
+	@mkdir -p $(dir $@)
 	$(NASM) $(NASM_FLAGS) $< -o $@
 
-build/%.o: %.c
-	mkdir -p $(dir $@) && \
+# Compile C files
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $< -o $@
 
-$(ISO_BOOT_DIR)/kernel.bin: $(object_files)
+# Link all object files into kernel binary
+$(ISO_BOOT_DIR)/kernel.bin: $(objects)
+	@mkdir -p $(ISO_BOOT_DIR)
 	$(LD) $(LD_FLAGS) --output=$@ $^
 
+# Create bootable ISO using GRUB
 $(ISO_DIR)/kernel.iso: $(ISO_BOOT_DIR)/kernel.bin
 	$(GRUB) $(GRUB_FLAGS) $@ $(ISO_DIR)
 
+# ==============================
+# Phony targets
+# ==============================
+.PHONY: build_kernel build_iso qemu qemu-gdb clean install
+
+# Build kernel binary only
 build_kernel: $(ISO_BOOT_DIR)/kernel.bin
+
+# Build ISO
 build_iso: $(ISO_DIR)/kernel.iso
 
-QEMU=qemu-system-x86_64
-QEMU_FLAGS=-m 128M -cdrom
-
-# try to generate a unique GDB port
-GDBPORT = $(shell expr `id -u` % 5000 + 25000)
-# QEMU's gdb stub command line changed in 0.11
-QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
-	then echo "-gdb tcp::$(GDBPORT)"; \
-	else echo "-s -p $(GDBPORT)"; fi)
-
-# -s -S -kernel
-# tap adapter 
-
+# Run QEMU in BIOS mode
 qemu: $(ISO_DIR)/kernel.iso
-	$(QEMU)  \
-	$(QEMU_FLAGS) \
-	$(ISO_DIR)/kernel.iso
+	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
 
+# ==============================
+# GDB integration
+# ==============================
+# Generate unique GDB port per user
+GDBPORT := $(shell expr `id -u` % 5000 + 25000)
+
+# Determine QEMU GDB flag depending on version
+QEMUGDB := $(shell if $(QEMU) -help | grep -q '^-gdb'; then echo "-gdb tcp::$(GDBPORT)"; else echo "-s -p $(GDBPORT)"; fi)
+
+# Generate .gdbinit from template
 .gdbinit: .gdbinit.tmpl
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
+# Run QEMU paused and wait for GDB
 qemu-gdb: $(ISO_DIR)/kernel.iso .gdbinit
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso -S $(QEMUGDB)
 
-clean: 
+# ==============================
+# Cleanup
+# ==============================
+clean:
 	rm -rf $(BUILD_DIR)
 	rm -f $(ISO_DIR)/kernel.*
 	rm -f $(ISO_DIR)/**/kernel.*
 
+# ==============================
+# Install dependencies (Linux/Debian)
+# ==============================
 install:
-	apt install grub-pc-bin
-	apt install grub-common
-	apt install xorriso
-	apt install mtools
-	apt install qemu-system-x86 
+	sudo apt install -y grub-pc-bin grub-common xorriso mtools qemu-system-x86
+
