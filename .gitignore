@@ -1,6 +1,7 @@
 build
 isofiles/kernel.iso
 kernel/test
+*.log
 .vscode
 /isofiles/boot/kernel.bin
 .idea
