@@ -22,6 +22,8 @@ void kinit(uint64_t start, uint64_t stop) {
     p = (char *) PGROUNDUP(start);
     for (; p + PGSIZE < stop; p += PGSIZE)
         kfree(p);
+
+    init_slab_cache();
 }
 
 void kfree(void *pa) {
