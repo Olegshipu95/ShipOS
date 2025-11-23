@@ -24,6 +24,7 @@ void kinit(uint64_t start, uint64_t stop) {
         kfree(p);
 
     init_slab_cache();
+    slabs_init_all();
 }
 
 void kfree(void *pa) {

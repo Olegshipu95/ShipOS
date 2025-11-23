@@ -29,10 +29,6 @@ struct slab_cache {
 
 static struct slab_cache caches[SLAB_SIZES_COUNT];
 
-static inline struct slab *slab_from_list(struct list *l) {
-    return (struct slab *)((char*)l - offsetof(struct slab, list));
-}
-
 static void slab_obj_list_remove(struct slab_obj **head, struct slab_obj *obj) {
     if (!head || !*head || !obj) return;
     if (*head == obj) {
@@ -56,6 +52,7 @@ struct slab* alloc_slab(size_t obj_sz) {
 
     struct slab *slab = (struct slab*)page;
     lst_init(&slab->list);
+    slab->list.prev = NULL;
 
     slab->allocated_objects = NULL;
     slab->free_objects = NULL;
@@ -70,6 +67,7 @@ struct slab* alloc_slab(size_t obj_sz) {
     while (p + sizeof_obj <= end) {
         struct slab_obj *obj = (struct slab_obj*)p;
         lst_init(&obj->list);
+        obj->list.prev = NULL;
 
         if (!slab->free_objects)
             slab->free_objects = obj;
@@ -122,11 +120,11 @@ void *kmalloc_slab(size_t size) {
     for (;;) {
         if (!lst_empty(&cache->slabs_partial)) {
             node = (struct list*)lst_pop(&cache->slabs_partial);
-            slab = slab_from_list(node);
+            slab = (struct slab *)node;
         }
         else if (!lst_empty(&cache->slabs_empty)) {
             node = (struct list*)lst_pop(&cache->slabs_empty);
-            slab = slab_from_list(node);
+            slab = (struct slab *)node;
         }
         else {
             slab = alloc_slab(cache->object_size);
@@ -135,7 +133,7 @@ void *kmalloc_slab(size_t size) {
             lst_push(&cache->slabs_empty, &slab->list);
 
             node = (struct list*)lst_pop(&cache->slabs_empty);
-            slab = slab_from_list(node);
+            slab = (struct slab *)node;
         }
 
         if (slab->free_objects == NULL) {
@@ -168,13 +166,13 @@ static struct slab_cache* find_cache_for_slab(struct slab *slab) {
         struct list *lst;
 
         for (lst = cache->slabs_full.next; lst != &cache->slabs_full; lst = lst->next)
-            if (slab_from_list(lst) == slab) return cache;
+            if ((struct slab *)lst == slab) return cache;
 
         for (lst = cache->slabs_partial.next; lst != &cache->slabs_partial; lst = lst->next)
-            if (slab_from_list(lst) == slab) return cache;
+            if ((struct slab *)lst == slab) return cache;
 
         for (lst = cache->slabs_empty.next; lst != &cache->slabs_empty; lst = lst->next)
-            if (slab_from_list(lst) == slab) return cache;
+            if ((struct slab *)lst == slab) return cache;
     }
     return NULL;
 }
@@ -195,13 +193,10 @@ void kfree_slab(void *ptr) {
     obj->list.next = (struct list*)slab->free_objects;
     slab->free_objects = obj;
 
-
+    lst_remove(&slab->list);
     if (slab->allocated_objects == NULL) {
-        lst_remove(&slab->list);
         lst_push(&cache->slabs_empty, &slab->list);
     } else {
-        lst_remove(&slab->list);
-
         lst_push(&cache->slabs_partial, &slab->list);
     }
 }
