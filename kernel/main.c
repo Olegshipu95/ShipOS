@@ -16,7 +16,36 @@
 #include "sched/threads.h"
 #include "sched/scheduler.h"
 #include "kalloc/slab.h"
+#include "kalloc/slob.h"
 
+
+typedef void* (*alloc_func_t)(size_t size);
+
+typedef void (*free_func_t)(void* ptr);
+
+void test_allocator(alloc_func_t alloc, free_func_t free_mem, const char* name) {
+    printf("=== Testing allocator: %s ===\n", name);
+
+    void *b1 = alloc(8);
+    void *b2 = alloc(16);
+    void *b3 = alloc(32);
+    void *b4 = alloc(64);
+
+    printf("Allocating 8-byte, 16-byte, 32-byte and 64-byte objects\n");
+    printf("Allocated blocks: %p %p %p %p\n", b1, b2, b3, b4);
+
+    printf("Freeing 16-byte and 64-byte objects\n");
+    free_mem(b2);
+    free_mem(b4);
+
+    void *b5 = alloc(16);
+    printf("Allocated another 16-byte object: %p\n", b5);
+
+    void *b6 = alloc(13);
+    printf("Allocated 13-byte object: %p\n", b6);
+
+    printf("=== Finished testing %s ===\n\n", name);
+}
 
 /**
  * @brief Example function to repeatedly print a number from a thread.
@@ -89,21 +118,9 @@ int kernel_main(){
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
     printf("Got init thread\n");
 
-    printf("=== Testing slab allocator ===\n");
+    test_allocator(kmalloc_slab, kfree_slab, "Slab Allocator");
 
-    void *ptr1 = kmalloc_slab(8);
-    void *ptr2 = kmalloc_slab(16);
-    void *ptr3 = kmalloc_slab(32);
-    void *ptr4 = kmalloc_slab(64);
-
-    printf("Allocated slab objects at: %p %p %p %p\n", ptr1, ptr2, ptr3, ptr4);
-
-    kfree_slab(ptr2);
-    kfree_slab(ptr4);
-    printf("Freed some slab objects\n");
-
-    void *ptr5 = kmalloc_slab(16);
-    printf("Allocated another slab object at: %p\n", ptr5);
+    test_allocator(slob_alloc, slob_free, "SLOB Allocator");
 
     setup_idt();
 
