@@ -18,6 +18,7 @@
 #include "sched/proc.h"
 #include "sched/threads.h"
 #include "sched/scheduler.h"
+#include "kalloc/slab.h"
 
 
 /**
@@ -30,7 +31,6 @@
  */
 void print_num(uint32_t num) {
     while (1) {
-        printf("Hello from thread %d\r\n", num);
         // yield();
     }
 }
@@ -104,6 +104,24 @@ int kernel_main(){
     int pages = count_pages();
     struct proc_node *init_proc_node = procinit();
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
+    printf("Got init thread\n");
+
+    printf("=== Testing slab allocator ===\n");
+
+    void *ptr1 = kmalloc_slab(8);
+    void *ptr2 = kmalloc_slab(16);
+    void *ptr3 = kmalloc_slab(32);
+    void *ptr4 = kmalloc_slab(64);
+
+    printf("Allocated slab objects at: %p %p %p %p\n", ptr1, ptr2, ptr3, ptr4);
+
+    kfree_slab(ptr2);
+    kfree_slab(ptr4);
+    printf("Freed some slab objects\n");
+
+    void *ptr5 = kmalloc_slab(16);
+    printf("Allocated another slab object at: %p\n", ptr5);
+
     setup_idt();
     LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
 
