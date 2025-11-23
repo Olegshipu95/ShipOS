@@ -32,7 +32,6 @@ void *slob_alloc(size_t size) {
         slob_block_t *block = page->blocks;
         while (block) {
             if (block->free && block->size >= size) {
-                // Если блок слишком большой — разрезаем
                 if (block->size >= size + sizeof(slob_block_t) + 8) {
                     slob_block_t *new_block = (slob_block_t*)((char*)block + sizeof(slob_block_t) + size);
                     new_block->size = block->size - size - sizeof(slob_block_t);
@@ -51,20 +50,17 @@ void *slob_alloc(size_t size) {
         page = page->next;
     }
 
-    // Нет подходящего блока — создаем новую страницу
     page = slob_new_page();
     if (!page) return NULL;
     return slob_alloc(size);
 }
 
-// Освобождение памяти
 void slob_free(void *ptr) {
     if (!ptr) return;
 
     slob_block_t *block = (slob_block_t*)((char*)ptr - sizeof(slob_block_t));
     block->free = 1;
 
-    // Попробуем слить с соседними блоками
     slob_block_t *b = page_list->blocks;
     while (b) {
         if (b->free && b->next && b->next->free) {

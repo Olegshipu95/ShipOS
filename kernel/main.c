@@ -20,6 +20,7 @@
 #include "sched/scheduler.h"
 #include "kalloc/slab.h"
 #include "kalloc/slob.h"
+#include "kalloc/slub.h"
 
 
 typedef void* (*alloc_func_t)(size_t size);
@@ -137,7 +138,9 @@ int kernel_main(){
 
     test_allocator(kmalloc_slab, kfree_slab, "Slab Allocator");
 
-    test_allocator(slob_alloc, slob_free, "SLOB Allocator");
+    test_allocator(slob_alloc, slob_free, "Slob Allocator");
+
+    test_allocator(malloc_slub, free_slub, "Slub Allocator");
 
     setup_idt();
     LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
