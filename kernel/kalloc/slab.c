@@ -1,10 +1,7 @@
 #include "slab.h"
-#include "../kalloc/kalloc.h"
-#include "../sync/spinlock.h"
-#include "../lib/include/memset.h"
+#include "kalloc.h"
+#include "../memlayout.h"
 #include "../list/list.h"
-#include "../lib/include/types.h"
-#include <stddef.h>
 
 #define SLAB_SIZES_COUNT 4
 static size_t slab_sizes[SLAB_SIZES_COUNT] = {8, 16, 32, 64};
