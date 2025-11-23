@@ -69,7 +69,10 @@ int init_serial() {
     // Initialize spinlock for printf
     init_spinlock(&serial_printf_spinlock, "serial_printf spinlock");
     
+    // Mark serial as initialized
     serial_initialized = 1;
+    serial_printf("[SERIAL] Serial port COM1 initialized successfully\r\n");
+
     return 0;
 }
 
