@@ -1,4 +1,4 @@
-#include "../kalloc/kalloc.h"
+#include "kalloc.h"
 #include "../sync/spinlock.h"
 #include "../memlayout.h"
 #include <inttypes.h>

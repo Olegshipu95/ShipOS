@@ -8,13 +8,14 @@
 
 #include "mutex.h"
 #include "../sched/proc.h"
+#include "../sched/sched_states.h"
 #include "../lib/include/panic.h"
 #include "../kalloc/kalloc.h"
 #include "../sched/scheduler.h"
 
 int init_mutex(struct mutex *lk, char *name) {
     lk->spinlock = kalloc();
- 
+
     // Initialize waiting thread list to empty
     lk->thread_list = 0;
     init_spinlock(lk->spinlock, name);

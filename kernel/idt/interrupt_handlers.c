@@ -11,7 +11,6 @@
 
 #include "../lib/include/x86_64.h"
 #include "../pic/pic.h"
-#include "../vga/vga.h"
 #include "../tty/tty.h"
 #include "../sched/scheduler.h"
 #include "../sched/proc.h"

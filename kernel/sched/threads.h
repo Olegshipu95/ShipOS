@@ -6,12 +6,9 @@
 #ifndef UNTITLED_OS_THREADS_H
 #define UNTITLED_OS_THREADS_H
 
-#include "../memlayout.h"
-#include "../kalloc/kalloc.h"
 #include "../lib/include/x86_64.h"
 #include <stddef.h>
 #include <inttypes.h>
-#include "../lib/include/memset.h"
 #include "sched_states.h"
 
 struct argument {

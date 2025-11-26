@@ -10,7 +10,7 @@
 
 /**
  * @brief Scheduler states for threads/processes
- * 
+ *
  * Defines the lifecycle states a thread or process can be in.
  */
 enum sched_states {

@@ -5,7 +5,6 @@
 
 #ifndef UNTITLED_OS_SHEDULER_H
 #define UNTITLED_OS_SHEDULER_H
-#include "proc.h"
 #include "threads.h"
 #define ROUNDS_PER_PROC 5
 

@@ -6,6 +6,7 @@
 #include "scheduler.h"
 #include "proc.h"
 #include "threads.h"
+#include "sched_states.h"
 #include "../lib/include/x86_64.h"
 #include "../lib/include/panic.h"
 

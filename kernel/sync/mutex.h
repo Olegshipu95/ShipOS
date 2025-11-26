@@ -16,7 +16,7 @@
 
 /**
  * @brief Mutex structure
- * 
+ *
  * Combines a low-level spinlock with a waiting thread list.
  * Threads attempting to acquire a locked mutex will be blocked
  * and added to the thread_list.

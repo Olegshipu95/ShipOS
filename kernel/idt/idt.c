@@ -17,7 +17,7 @@
 
 /**
  * @brief Fill a single IDT entry with the handler information
- * 
+ *
  * @param idt Pointer to the IDT array
  * @param array_index Index of the interrupt vector to fill
  * @param handler Address of the interrupt handler
@@ -33,7 +33,7 @@ void make_interrupt(struct InterruptDescriptor64* idt, int array_index, uintptr_
 
 /**
  * @brief Set up the IDT, initialize entries, and load the IDTR
- * 
+ *
  * Initializes all 256 interrupt descriptors, assigns default and specific handlers
  * (timer, keyboard, CPU exceptions), and enables interrupts.
  */
@@ -56,7 +56,7 @@ void setup_idt(){
     // Setup specific hardware interrupt handlers
     make_interrupt(idt, PIC_MASTER_OFFSET, (uintptr_t)timer_interrupt);
     make_interrupt(idt, PIC_MASTER_OFFSET+1, (uintptr_t)keyboard_handler);
-    
+
     // Setup CPU exception handlers (vectors 0-31)
     make_interrupt(idt, 0, (uintptr_t)interrupt_handler_0);
     make_interrupt(idt, 1, (uintptr_t)interrupt_handler_1);

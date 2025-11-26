@@ -8,6 +8,7 @@
 #include "../lib/include/panic.h"
 #include "../tty/tty.h"
 #include "sched_states.h"
+#include "../kalloc/kalloc.h"
 
 struct cpu current_cpu;
 struct spinlock pid_lock;
@@ -31,7 +32,7 @@ struct proc *allocproc(void) {
     }
 
     pid_t pid = generate_pid();
-    
+
     proc->threads = 0;
     proc->killed = 0;
 
@@ -45,7 +46,7 @@ struct proc *allocproc(void) {
 struct proc_node *procinit(void) {
     init_spinlock(&pid_lock, "pid_lock");
     init_spinlock(&proc_lock, "proc_lock");
-    
+
     struct proc *init_proc = allocproc();
     printf("Init proc allocated\n");
 

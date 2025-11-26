@@ -5,7 +5,7 @@
 
 //#include "../lib/include/stdint.h"
 #include <inttypes.h>
-#include "../lib/include/x86_64.h"
+
 #ifndef PIC_H
 #define PIC_H
 
@@ -17,7 +17,7 @@
 #define PIC2_DATA	    (PIC2+1)
 #define PIC_EOI		    0x20		/* End-of-interrupt command code */
 
-/* 
+/*
     https://pdos.csail.mit.edu/6.828/2005/readings/hardware/8259A.pdf
     Page 11, Figure 7
  */

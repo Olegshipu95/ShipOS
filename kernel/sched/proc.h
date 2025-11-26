@@ -6,14 +6,13 @@
 
 #ifndef UNTITLED_OS_PROC_H
 #define UNTITLED_OS_PROC_H
+
 #define MAXPROCS 100
 //#include "../lib/include/stdint.h"
 #include <inttypes.h>
 #include <stddef.h>
 #include "../sync/spinlock.h"
-#include "../kalloc/kalloc.h"
 #include "threads.h"
-#include "sched_states.h"
 
 typedef size_t pid_t;
 

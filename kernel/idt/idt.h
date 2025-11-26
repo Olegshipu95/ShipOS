@@ -15,7 +15,7 @@
 
 /**
  * @brief IDTR structure used by lidt instruction
- * 
+ *
  * The IDTR points to the IDT and defines its size.
  */
 struct IDTR {
@@ -25,7 +25,7 @@ struct IDTR {
 
 /**
  * @brief 64-bit Interrupt Descriptor Table (IDT) entry
- * 
+ *
  * Represents a single gate descriptor in the IDT.
  * Each interrupt vector has one entry.
  */
@@ -41,7 +41,7 @@ struct InterruptDescriptor64 {
 
 /**
  * @brief Set up the IDT, initialize entries, and load the IDTR
- * 
+ *
  * Initializes all 256 interrupt descriptors, assigns default and specific handlers
  * (timer, keyboard, CPU exceptions), and enables interrupts.
  */

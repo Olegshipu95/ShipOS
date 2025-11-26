@@ -24,7 +24,7 @@ void init_thread(struct thread *thread, void (*start_function)(void *), int argc
     thread->argc = argc;
     thread->args = args;
     char *sp = thread->stack;
-    sp -= sizeof(uint64_t);     
+    sp -= sizeof(uint64_t);
     *(uint64_t * )(sp) = start_function;
     sp -= sizeof(struct context) - sizeof(uint64_t);
     memset(sp, 0, sizeof(struct context) - sizeof(uint64_t));

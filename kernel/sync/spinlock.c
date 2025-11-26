@@ -5,8 +5,28 @@
 
 #include "spinlock.h"
 #include "../sched/proc.h"
+#include "../lib/include/panic.h"
 // Eflags register
 #define FL_INT           0x00000200      // Interrupt Enable
+
+void pushcli(void) {
+    int eflags;
+
+    eflags = readeflags();
+    cli();
+    if (current_cpu.ncli == 0)
+        current_cpu.intena = eflags & FL_INT;
+    current_cpu.ncli += 1;
+}
+
+void popcli(void) {
+    if (readeflags() & FL_INT)
+        panic("popcli - interruptible");
+    if (--current_cpu.ncli < 0)
+        panic("popcli");
+    if (current_cpu.ncli == 0 && current_cpu.intena)
+        sti();
+}
 
 void init_spinlock(struct spinlock *lock, char *name) {
     lock->is_locked = 0;
@@ -58,21 +78,4 @@ int holding_spinlock(struct spinlock *lock) {
     return r;
 }
 
-void pushcli(void) {
-    int eflags;
 
-    eflags = readeflags();
-    cli();
-    if (current_cpu.ncli == 0)
-        current_cpu.intena = eflags & FL_INT;
-    current_cpu.ncli += 1;
-}
-
-void popcli(void) {
-    if (readeflags() & FL_INT)
-        panic("popcli - interruptible");
-    if (--current_cpu.ncli < 0)
-        panic("popcli");
-    if (current_cpu.ncli == 0 && current_cpu.intena)
-        sti();
-}
