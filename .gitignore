@@ -6,3 +6,5 @@ kernel/test
 .idea
 bx_enh_dbg.ini
 .gdbinit
+compile_commands.json
+.cache
