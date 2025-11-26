@@ -10,11 +10,11 @@ jobs:
   build-and-test:
     name: 🔧 Build & Test ShipOS
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
-    
+
     - name: 📦 Install dependencies
       run: |
         echo "🔍 Updating system packages..."

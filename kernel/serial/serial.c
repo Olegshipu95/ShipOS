@@ -29,46 +29,46 @@ static struct spinlock serial_printf_spinlock;
  */
 static int serial_initialized = 0;
 
-int init_serial() {
+int init_serial(int32_t port) {
     // Disable all interrupts
     outb(SERIAL_COM1_PORT + 1, 0x00);
-    
+
     // Enable DLAB (set baud rate divisor)
     outb(SERIAL_LINE_COMMAND_PORT(SERIAL_COM1_PORT), 0x80);
-    
+
     // Set divisor to 3 (lo byte) 38400 baud
     outb(SERIAL_DATA_PORT(SERIAL_COM1_PORT), 0x03);
-    
+
     // Set divisor to 3 (hi byte)
     outb(SERIAL_COM1_PORT + 1, 0x00);
-    
+
     // 8 bits, no parity, one stop bit
     outb(SERIAL_LINE_COMMAND_PORT(SERIAL_COM1_PORT), 0x03);
-    
+
     // Enable FIFO, clear them, with 14-byte threshold
     outb(SERIAL_FIFO_COMMAND_PORT(SERIAL_COM1_PORT), 0xC7);
-    
+
     // IRQs enabled, RTS/DSR set
     outb(SERIAL_MODEM_COMMAND_PORT(SERIAL_COM1_PORT), 0x0B);
-    
+
     // Set in loopback mode, test the serial chip
     outb(SERIAL_MODEM_COMMAND_PORT(SERIAL_COM1_PORT), 0x1E);
-    
+
     // Test serial chip (send byte 0xAE and check if serial returns same byte)
     outb(SERIAL_DATA_PORT(SERIAL_COM1_PORT), 0xAE);
-    
+
     // Check if serial is faulty (i.e: not same byte as sent)
     if(inb(SERIAL_DATA_PORT(SERIAL_COM1_PORT)) != 0xAE) {
         return -1;
     }
-    
+
     // If serial is not faulty set it in normal operation mode
     // (not-loopback with IRQs enabled and OUT#1 and OUT#2 bits enabled)
     outb(SERIAL_MODEM_COMMAND_PORT(SERIAL_COM1_PORT), 0x0F);
-    
+
     // Initialize spinlock for printf
     init_spinlock(&serial_printf_spinlock, "serial_printf spinlock");
-    
+
     // Mark serial as initialized
     serial_initialized = 1;
     serial_printf("[SERIAL] Serial port COM1 initialized successfully\r\n");
@@ -82,16 +82,16 @@ int serial_is_transmit_empty() {
 
 void serial_putchar(char c) {
     if (!serial_initialized) return;
-    
+
     // Wait for transmit buffer to be empty
     while (serial_is_transmit_empty() == 0);
-    
+
     outb(SERIAL_DATA_PORT(SERIAL_COM1_PORT), c);
 }
 
 void serial_write(const char *str) {
     if (!serial_initialized) return;
-    
+
     while (*str != 0) {
         serial_putchar(*str++);
     }
@@ -157,12 +157,14 @@ static void serial_ptoa(uint64_t num, char *str) {
 
 void serial_printf(const char *format, ...) {
     if (!serial_initialized) return;
-    
+
     acquire_spinlock(&serial_printf_spinlock);
     va_list varargs;
     va_start(varargs, format);
-    char digits_buf[100];
-    for (int i = 0; i < 100; i++) digits_buf[i] = 0;
+
+    const uint8_t BUFFER_SIZE = 255;
+    char digits_buf[BUFFER_SIZE];
+    memset(digits_buf, 0, BUFFER_SIZE);
 
     while (*format) {
         switch (*format) {
