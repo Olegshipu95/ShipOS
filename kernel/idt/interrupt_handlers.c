@@ -14,6 +14,7 @@
 #include "../vga/vga.h"
 #include "../tty/tty.h"
 #include "../sched/scheduler.h"
+#include "../sched/proc.h"
 #include "../pit/pit.h"
 
 #define F1 0x3B

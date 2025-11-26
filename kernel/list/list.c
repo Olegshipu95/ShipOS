@@ -3,8 +3,9 @@
 // Copyright (c) 2023 SHIPOS. All rights reserved.
 //
 
-#include "../tty/tty.h"
 #include "list.h"
+#include "../tty/tty.h"
+#include "../lib/include/panic.h"
 
 // double-linked, circular list. double-linked makes remove
 // fast. circular simplifies code, because don't have to check for

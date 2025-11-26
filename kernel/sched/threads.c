@@ -6,6 +6,9 @@
 #include "threads.h"
 #include "sched_states.h"
 #include "../lib/include/panic.h"
+#include "../kalloc/kalloc.h"
+#include "../lib/include/memset.h"
+#include "../memlayout.h"
 #include "scheduler.h"
 
 struct thread *current_thread = 0;

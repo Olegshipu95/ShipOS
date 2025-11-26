@@ -1,10 +1,11 @@
 #include "../kalloc/kalloc.h"
 #include "../sync/spinlock.h"
 #include "../memlayout.h"
-//#include "../lib/include/stdint.h"
 #include <inttypes.h>
 #include <stddef.h>
 #include "../tty/tty.h"
+#include "../lib/include/panic.h"
+#include "../lib/include/memset.h"
 
 struct run {
     struct run *next;

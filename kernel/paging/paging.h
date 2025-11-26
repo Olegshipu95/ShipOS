@@ -7,8 +7,7 @@
 #ifndef PAGING_H
 #define PAGING_H
 
-#include "stdbool.h"
-//#include "../lib/include/stdint.h"
+#include <stdbool.h>
 #include <inttypes.h>
 
 #define ENTRIES_COUNT 512

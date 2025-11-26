@@ -6,6 +6,7 @@
 
 #include "proc.h"
 #include "../lib/include/panic.h"
+#include "../tty/tty.h"
 #include "sched_states.h"
 
 struct cpu current_cpu;

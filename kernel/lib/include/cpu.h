@@ -2,6 +2,9 @@
 // Created by ShipOS developers on 23.12.23.
 // Copyright (c) 2023 SHIPOS. All rights reserved.
 //
+// NOTE: This header is currently UNUSED.
+// It is kept for future functionality and should not be deleted.
+//
 
 #ifndef UNTITLED_OS_CPU_H
 #define UNTITLED_OS_CPU_H

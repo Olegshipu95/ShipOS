@@ -4,6 +4,10 @@
 //
 // Generic typed linked list for ShipOS kernel.
 //
+// NOTE: This header is currently UNUSED.
+// The kernel uses list.h instead for its linked list implementation.
+// This header is kept for future functionality and should not be deleted.
+//
 
 #ifndef LINKEDLIST_H
 #define LINKEDLIST_H

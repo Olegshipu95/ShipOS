@@ -10,9 +10,8 @@
 //#include "../lib/include/stdint.h"
 #include <inttypes.h>
 #include <stddef.h>
-#include "../tty/tty.h"
 #include "../sync/spinlock.h"
-#include "../../kernel/kalloc/kalloc.h"
+#include "../kalloc/kalloc.h"
 #include "threads.h"
 #include "sched_states.h"
 
