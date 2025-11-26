@@ -9,4 +9,4 @@
 #include <stddef.h>
 
 #define NULL 0
-#endif //UNTITLED_OS_MY_TYPES_H
+#endif // UNTITLED_OS_MY_TYPES_H

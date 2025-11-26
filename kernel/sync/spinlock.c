@@ -7,9 +7,10 @@
 #include "../sched/proc.h"
 #include "../lib/include/panic.h"
 // Eflags register
-#define FL_INT           0x00000200      // Interrupt Enable
+#define FL_INT 0x00000200 // Interrupt Enable
 
-void pushcli(void) {
+void pushcli(void)
+{
     int eflags;
 
     eflags = readeflags();
@@ -19,7 +20,8 @@ void pushcli(void) {
     current_cpu.ncli += 1;
 }
 
-void popcli(void) {
+void popcli(void)
+{
     if (readeflags() & FL_INT)
         panic("popcli - interruptible");
     if (--current_cpu.ncli < 0)
@@ -28,21 +30,24 @@ void popcli(void) {
         sti();
 }
 
-void init_spinlock(struct spinlock *lock, char *name) {
+void init_spinlock(struct spinlock *lock, char *name)
+{
     lock->is_locked = 0;
     lock->name = name;
 }
 
-//bool function
-void acquire_spinlock(struct spinlock *lk) {
+// bool function
+void acquire_spinlock(struct spinlock *lk)
+{
     pushcli(); // disable interrupts to avoid deadlock.
-//    if (holding_spinlock(lk)) {
-//        popcli();
-//        return 1;
-//    }
+               //    if (holding_spinlock(lk)) {
+               //        popcli();
+               //        return 1;
+               //    }
 
     // The xchg is atomic.
-    while (xchg(&lk->is_locked, 1) != 0);
+    while (xchg(&lk->is_locked, 1) != 0)
+        ;
 
     // Tell the C compiler and the processor to not move loads or stores
     // past this point, to ensure that the critical section's memory
@@ -51,7 +56,8 @@ void acquire_spinlock(struct spinlock *lk) {
     return;
 }
 
-void release_spinlock(struct spinlock *lk) {
+void release_spinlock(struct spinlock *lk)
+{
     if (!holding_spinlock(lk))
         panic("release_spinlock");
 
@@ -65,17 +71,16 @@ void release_spinlock(struct spinlock *lk) {
     // release_spinlock the lock, equivalent to lk->locked = 0.
     // This code can't use a C assignment, since it might
     // not be atomic. A real OS would use C atomics here.
-    asm volatile("movl $0, %0" : "+m" (lk->is_locked) : );
+    asm volatile("movl $0, %0" : "+m"(lk->is_locked) :);
 
     popcli();
 }
 
-int holding_spinlock(struct spinlock *lock) {
+int holding_spinlock(struct spinlock *lock)
+{
     int r;
     pushcli();
     r = lock->is_locked;
     popcli();
     return r;
 }
-
-

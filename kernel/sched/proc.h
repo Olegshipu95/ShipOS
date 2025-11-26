@@ -3,12 +3,11 @@
 // Copyright (c) 2023 SHIPOS. All rights reserved.
 //
 
-
 #ifndef UNTITLED_OS_PROC_H
 #define UNTITLED_OS_PROC_H
 
 #define MAXPROCS 100
-//#include "../lib/include/stdint.h"
+// #include "../lib/include/stdint.h"
 #include <inttypes.h>
 #include <stddef.h>
 #include "../sync/spinlock.h"
@@ -16,19 +15,22 @@
 
 typedef size_t pid_t;
 
-struct proc {
+struct proc
+{
     pid_t pid;
     int killed;
     struct thread_node *threads;
 };
 
-struct cpu {
-    int ncli;                        // Depth of pushcli nesting.
-    int intena;                      // Were interrupts enabled before pushcli?
-    struct thread *current_thread;   // The thread running on this cpu or null
+struct cpu
+{
+    int ncli;                      // Depth of pushcli nesting.
+    int intena;                    // Were interrupts enabled before pushcli?
+    struct thread *current_thread; // The thread running on this cpu or null
 };
 
-struct proc_node {
+struct proc_node
+{
     struct proc *data;
     struct proc_node *next;
     struct proc_node *prev;
@@ -51,4 +53,4 @@ int exec(char *file, char *argv[]);
 
 char *sbrk(int n);
 
-#endif //UNTITLED_OS_PROC_H
+#endif // UNTITLED_OS_PROC_H

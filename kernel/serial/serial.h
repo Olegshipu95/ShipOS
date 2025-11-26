@@ -23,7 +23,7 @@
  * - Stop bits: 1
  * - Parity: None
  * - FIFO enabled
- * 
+ *
  * @return 0 on success, -1 on failure (faulty serial port)
  */
 int init_serial();
@@ -53,6 +53,6 @@ void serial_write(const char *str);
  * @param format Format string
  * @param ... Variadic arguments
  */
-void serial_printf(const char* format, ...);
+void serial_printf(const char *format, ...);
 
-#endif //SHIPOS_SERIAL_H
+#endif // SHIPOS_SERIAL_H

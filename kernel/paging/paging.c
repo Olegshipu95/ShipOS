@@ -3,7 +3,6 @@
 // Copyright (c) 2023 SHIPOS. All rights reserved.
 //
 
-
 #include "paging.h"
 #include "../tty/tty.h"
 #include "../kalloc/kalloc.h"
@@ -11,8 +10,9 @@
 #include "../memlayout.h"
 #include "../lib/include/x86_64.h"
 
-page_entry_raw encode_page_entry(struct page_entry entry) {
-
+page_entry_raw
+encode_page_entry(struct page_entry entry)
+{
     page_entry_raw raw = 0;
 
     raw |= (entry.p & 0x1);
@@ -29,10 +29,11 @@ page_entry_raw encode_page_entry(struct page_entry entry) {
     raw |= (entry.xd & 0x1) << 63;
 
     return raw;
-
 }
 
-struct page_entry decode_page_entry(page_entry_raw raw) {
+struct page_entry
+decode_page_entry(page_entry_raw raw)
+{
     struct page_entry entry;
 
     entry.p = raw & 0x1;
@@ -51,35 +52,42 @@ struct page_entry decode_page_entry(page_entry_raw raw) {
     return entry;
 }
 
-void print_entry(struct page_entry *entry) {
+void print_entry(struct page_entry *entry)
+{
     printf("P: %d RW: %d US: %d PWT: %d A: %d D: %d ADDR: %p\n", entry->p, entry->rw, entry->us, entry->pwt, entry->a, entry->d, entry->address << 12);
 }
 
-void do_print_vm(pagetable_t tbl, int level) {
+void do_print_vm(pagetable_t tbl, int level)
+{
     int spaces = 4 - level + 1;
-    for (size_t i = 0; i < 512; i++) {
+    for (size_t i = 0; i < 512; i++)
+    {
         struct page_entry entry = decode_page_entry(tbl[i]);
-        if (entry.p) {
-            for (int j = 0; j < spaces; j++) {
+        if (entry.p)
+        {
+            for (int j = 0; j < spaces; j++)
+            {
                 print(".. ");
             }
             print_entry(&entry);
-            if (level > 1) do_print_vm(entry.address << 12, level-1);
+            if (level > 1)
+                do_print_vm(entry.address << 12, level - 1);
         }
     }
 }
 
-void print_vm(pagetable_t tbl) {
+void print_vm(pagetable_t tbl)
+{
     do_print_vm(tbl, 4);
 }
 
-
 // Pass in address to raw entry to initialize
 // and the full address (will be cut to 36 bits inside the function)
-void init_entry(page_entry_raw *raw_entry, uint64_t addr) {
+void init_entry(page_entry_raw *raw_entry, uint64_t addr)
+{
     struct page_entry entry;
 
-    entry.p = 1;    
+    entry.p = 1;
     entry.rw = 1;
     entry.us = 0;
     entry.pwt = 0;
@@ -95,25 +103,32 @@ void init_entry(page_entry_raw *raw_entry, uint64_t addr) {
     *raw_entry = encode_page_entry(entry);
 }
 
-struct page_entry_raw *walk(pagetable_t tbl, uint64_t va, bool alloc) {
-    for (int level = 3; level > 0; level--) {
+struct page_entry_raw *
+walk(pagetable_t tbl, uint64_t va, bool alloc)
+{
+    for (int level = 3; level > 0; level--)
+    {
         int level_index = (va >> (12 + level * 9)) & 0x1FF;
         // printf("VA: %p TBL: %p LEVEL: %d INDEX: %d\n", va, tbl, level, level_index);
         page_entry_raw *entry_raw = &tbl[level_index];
         struct page_entry entry = decode_page_entry(*entry_raw);
         // print_entry(&entry);
 
-        if (entry.p) {
+        if (entry.p)
+        {
             // printf("PRESENT, CONTINUE\n");
             tbl = entry.address << 12;
-        } else {
+        }
+        else
+        {
             // printf("NOT PRESENT, ALLOC NEW TABLE\n");
-            if (alloc == 0 || (tbl = kalloc()) == 0) {
+            if (alloc == 0 || (tbl = kalloc()) == 0)
+            {
                 return 0;
             }
             // printf("Allocated page at %p\n", tbl);
             memset(tbl, 0, PGSIZE);
-            init_entry(entry_raw, (uint64_t)tbl);
+            init_entry(entry_raw, (uint64_t) tbl);
         }
     }
 
@@ -121,16 +136,21 @@ struct page_entry_raw *walk(pagetable_t tbl, uint64_t va, bool alloc) {
     return tbl + ((va >> 12) & 0x1FF);
 }
 
-pagetable_t kvminit(uint64_t start, uint64_t end) {
+pagetable_t
+kvminit(uint64_t start, uint64_t end)
+{
     pagetable_t tbl4 = rcr3();
-    
+
     char *addr;
-    addr = (char*)PGROUNDUP(start);
-    for(;addr + PGSIZE < end; addr += PGSIZE) {
-        //printf("Walking address %p\n", addr);
+    addr = (char *) PGROUNDUP(start);
+    for (; addr + PGSIZE < end; addr += PGSIZE)
+    {
+        // printf("Walking address %p\n", addr);
         page_entry_raw *entry_raw = walk(tbl4, addr, 1);
         // printf("FOUND ENTRY AT ADDRESS: %p\n", entry_raw);
-        while (entry_raw == 0) {}
+        while (entry_raw == 0)
+        {
+        }
         init_entry(entry_raw, addr);
         // printf("INITIALIZED ENTRY: %p\n", addr);
     }
@@ -152,7 +172,6 @@ pagetable_t kvminit(uint64_t start, uint64_t end) {
 //     pagetable_t tbl4 = rcr3();
 //     pagetable_t tbl3 = decode_page_entry(tbl4[0]).address << 12;
 //     pagetable_t tbl2 = decode_page_entry(tbl3[0]).address << 12;
-    
 
 //     for (int j = 1; j < 512; ++j)
 //     {
@@ -163,7 +182,6 @@ pagetable_t kvminit(uint64_t start, uint64_t end) {
 //             init_entry(tbl1 + i, start + (i << 12) + ((j - 1) << 9 << 12) );
 //         }
 //     }
-    
 
 //     return tbl4;
 // }

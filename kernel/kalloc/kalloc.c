@@ -7,17 +7,19 @@
 #include "../lib/include/panic.h"
 #include "../lib/include/memset.h"
 
-struct run {
+struct run
+{
     struct run *next;
 };
 
-struct {
+struct
+{
     struct spinlock lock;
     struct run *freelist;
 } kmem;
 
-
-void kinit(uint64_t start, uint64_t stop) {
+void kinit(uint64_t start, uint64_t stop)
+{
     //  init_spinlock(&kmem.lock, "kmem");
     char *p;
     p = (char *) PGROUNDUP(start);
@@ -25,10 +27,12 @@ void kinit(uint64_t start, uint64_t stop) {
         kfree(p);
 }
 
-void kfree(void *pa) {
+void kfree(void *pa)
+{
     struct run *r;
 
-    if (((uint64_t) pa % PGSIZE) != 0 || (char *) pa < end || (uint64_t) pa >= PHYSTOP) {
+    if (((uint64_t) pa % PGSIZE) != 0 || (char *) pa < end || (uint64_t) pa >= PHYSTOP)
+    {
         printf("Panic while trying to free memory\nPA: %p END: %p PHYSTOP: %p", pa, end, PHYSTOP);
         panic("kfree");
     }
@@ -39,31 +43,34 @@ void kfree(void *pa) {
 
     r = (struct run *) pa;
 
-//    acquire_spinlock(&kmem.lock);
+    //    acquire_spinlock(&kmem.lock);
     r->next = kmem.freelist;
     kmem.freelist = r;
-//    release_spinlock(&kmem.lock);
+    //    release_spinlock(&kmem.lock);
 }
 
-void *kalloc() {
+void *kalloc()
+{
     struct run *r;
 
-//    acquire_spinlock(&kmem.lock);
+    //    acquire_spinlock(&kmem.lock);
     r = kmem.freelist;
     if (r)
         kmem.freelist = r->next;
-//    release_spinlock(&kmem.lock);
+    //    release_spinlock(&kmem.lock);
 
     if (r)
         memset((char *) r, 5, PGSIZE); // fill with junk
     return (void *) r;
 }
 
-uint64_t count_pages() {
+uint64_t count_pages()
+{
     struct run *r = kmem.freelist;
     uint64_t res = 0;
 
-    while (r != 0) {
+    while (r != 0)
+    {
         res++;
         r = r->next;
     }

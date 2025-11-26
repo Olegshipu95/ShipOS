@@ -3,7 +3,6 @@
 // Copyright (c) 2023 SHIPOS. All rights reserved.
 //
 
-
 #ifndef PAGING_H
 #define PAGING_H
 
@@ -14,9 +13,10 @@
 
 typedef uint64_t page_entry_raw;
 
-typedef page_entry_raw* pagetable_t;
+typedef page_entry_raw *pagetable_t;
 
-struct page_entry {
+struct page_entry
+{
     // Present; must be 1 to map a page
     bool p;
 
@@ -52,7 +52,8 @@ struct page_entry {
     bool xd; // 😆😆😆
 };
 
-struct page_entry_t {
+struct page_entry_t
+{
     page_entry_raw table[ENTRIES_COUNT];
 };
 

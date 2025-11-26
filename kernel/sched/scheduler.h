@@ -12,4 +12,4 @@ struct thread *get_next_thread(void);
 void scheduler(void);
 void yield(void);
 
-#endif //UNTITLED_OS_SHEDULER_H
+#endif // UNTITLED_OS_SHEDULER_H

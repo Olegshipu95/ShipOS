@@ -11,16 +11,17 @@
 
 #include <inttypes.h>
 
-#define NUM_IDT_ENTRIES 256  // Total number of entries in the IDT
+#define NUM_IDT_ENTRIES 256 // Total number of entries in the IDT
 
 /**
  * @brief IDTR structure used by lidt instruction
  *
  * The IDTR points to the IDT and defines its size.
  */
-struct IDTR {
-    uint16_t limit;   // IDT size in bytes minus 1
-    uint64_t base;    // Base address of the IDT
+struct IDTR
+{
+    uint16_t limit; // IDT size in bytes minus 1
+    uint64_t base;  // Base address of the IDT
 } __attribute__((packed));
 
 /**
@@ -29,7 +30,8 @@ struct IDTR {
  * Represents a single gate descriptor in the IDT.
  * Each interrupt vector has one entry.
  */
-struct InterruptDescriptor64 {
+struct InterruptDescriptor64
+{
     uint16_t offset_1;       // Offset bits 0..15 of handler function
     uint16_t selector;       // Code segment selector in GDT or LDT
     uint8_t ist;             // Bits 0..2: Interrupt Stack Table index, rest must be zero
@@ -47,5 +49,4 @@ struct InterruptDescriptor64 {
  */
 void setup_idt();
 
-#endif //UNTITLED_OS_IDT_H
-
+#endif // UNTITLED_OS_IDT_H

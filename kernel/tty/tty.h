@@ -22,13 +22,14 @@
 /**
  * @brief Structure representing a single virtual terminal
  */
-typedef struct {
+typedef struct
+{
     struct char_with_color tty_buffer[VGA_HEIGHT * VGA_WIDTH]; //< Terminal screen buffer
-    uint8_t tty_id;    //< Terminal index
-    uint8_t line;      //< Current cursor line
-    uint8_t pos;       //< Current cursor position within line
-    enum vga_colors bg; //< Current background color
-    enum vga_colors fg; //< Current foreground color
+    uint8_t tty_id;                                            //< Terminal index
+    uint8_t line;                                              //< Current cursor line
+    uint8_t pos;                                               //< Current cursor position within line
+    enum vga_colors bg;                                        //< Current background color
+    enum vga_colors fg;                                        //< Current foreground color
 } tty_structure;
 
 /**
@@ -61,7 +62,7 @@ void set_bg(enum vga_colors bg);
  * @param str Output buffer
  * @param radix Base (e.g., 10, 16, 2)
  */
-void itoa(int num, char* str, int radix);
+void itoa(int num, char *str, int radix);
 
 /**
  * @brief Print a null-terminated string to the currently active terminal
@@ -75,7 +76,7 @@ void print(const char *string);
  * @param format Format string
  * @param ... Variadic arguments
  */
-void printf(const char* format, ...);
+void printf(const char *format, ...);
 
 /**
  * @brief Clear the buffer of the currently active terminal
@@ -88,5 +89,4 @@ void clear_current_tty();
  */
 uint8_t get_current_tty();
 
-#endif //UNTITLED_OS_TTY_H
-
+#endif // UNTITLED_OS_TTY_H

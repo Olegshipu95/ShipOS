@@ -9,5 +9,4 @@
 #ifndef UNTITLED_OS_READ_H
 #define UNTITLED_OS_READ_H
 
-
-#endif //UNTITLED_OS_READ_H
+#endif // UNTITLED_OS_READ_H

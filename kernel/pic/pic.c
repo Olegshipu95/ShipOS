@@ -7,12 +7,15 @@
 #include "pic.h"
 #include "../lib/include/x86_64.h"
 
-void pic_send_eoi(uint8_t irq) {
-    if (irq >= PIC_SLAVE_OFFSET) outb(PIC2_COMMAND, PIC_EOI);
+void pic_send_eoi(uint8_t irq)
+{
+    if (irq >= PIC_SLAVE_OFFSET)
+        outb(PIC2_COMMAND, PIC_EOI);
     outb(PIC1_COMMAND, PIC_EOI);
 }
 
-void pic_init() {
+void pic_init()
+{
     outb(PIC1_COMMAND, ICW1);
     outb(PIC2_COMMAND, ICW1);
 

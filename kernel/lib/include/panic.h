@@ -3,6 +3,6 @@
 
 #include "../../tty/tty.h"
 
-void panic(char*);
+void panic(char *);
 
-#endif 
+#endif

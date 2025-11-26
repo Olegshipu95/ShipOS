@@ -12,7 +12,8 @@
 // Forward declaration to avoid circular dependency with proc.h
 struct cpu;
 
-struct spinlock {
+struct spinlock
+{
     uint8_t is_locked;
     char *name;
 };
@@ -25,4 +26,4 @@ void release_spinlock(struct spinlock *lk);
 
 int holding_spinlock(struct spinlock *lock);
 
-#endif //UNTITLED_OS_SPINLOCK_H
+#endif // UNTITLED_OS_SPINLOCK_H

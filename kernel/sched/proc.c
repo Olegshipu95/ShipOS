@@ -3,7 +3,6 @@
 // Copyright (c) 2023 SHIPOS. All rights reserved.
 //
 
-
 #include "proc.h"
 #include "../lib/include/panic.h"
 #include "../tty/tty.h"
@@ -15,7 +14,8 @@ struct spinlock pid_lock;
 struct spinlock proc_lock;
 struct proc_node *proc_list;
 
-pid_t generate_pid() {
+pid_t generate_pid()
+{
     acquire_spinlock(&pid_lock);
     static pid_t current_pid = 0;
     int local_pid = current_pid;
@@ -24,10 +24,12 @@ pid_t generate_pid() {
     return local_pid;
 }
 
-struct proc *allocproc(void) {
+struct proc *allocproc(void)
+{
     struct proc *proc = kalloc();
 
-    if (proc == 0) {
+    if (proc == 0)
+    {
         panic("Failed to alloc proc\n");
     }
 
@@ -43,7 +45,8 @@ struct proc *allocproc(void) {
     return proc;
 }
 
-struct proc_node *procinit(void) {
+struct proc_node *procinit(void)
+{
     init_spinlock(&pid_lock, "pid_lock");
     init_spinlock(&proc_lock, "proc_lock");
 
@@ -72,30 +75,41 @@ struct proc_node *procinit(void) {
     return proc_list;
 }
 
-void push_proc_list(struct proc_node **list, struct proc *proc) {
+void push_proc_list(struct proc_node **list, struct proc *proc)
+{
     struct proc_node *new_node = kalloc();
     new_node->data = proc;
-    if ((*list) != 0) {
+    if ((*list) != 0)
+    {
         new_node->next = (*list);
         new_node->prev = (*list)->prev;
         (*list)->prev->next = new_node;
         (*list)->prev = new_node;
-    } else {
+    }
+    else
+    {
         new_node->prev = new_node;
         new_node->next = new_node;
         *list = new_node;
     }
 }
 
-struct proc *pop_proc_list(struct proc_node **list) {
-    if (*list == 0) {
+struct proc *pop_proc_list(struct proc_node **list)
+{
+    if (*list == 0)
+    {
         panic("Empty proc list while popping\n");
-    } else {
-        struct proc* p = (*list)->data;
-        if ((*list)->next = (*list)) {
+    }
+    else
+    {
+        struct proc *p = (*list)->data;
+        if ((*list)->next = (*list))
+        {
             kfree(*list);
             *list = 0;
-        } else {
+        }
+        else
+        {
             (*list)->prev->next = (*list)->next;
             (*list)->next->prev = (*list)->prev;
             kfree(*list);
@@ -104,19 +118,26 @@ struct proc *pop_proc_list(struct proc_node **list) {
     }
 }
 
-void shift_proc_list(struct proc_node **list) {
-    if (*list == 0) {
+void shift_proc_list(struct proc_node **list)
+{
+    if (*list == 0)
+    {
         panic("Empty proc list while shifting\n");
-    } else {
+    }
+    else
+    {
         *list = (*list)->next;
     }
 }
 
-struct proc *peek_proc_list(struct proc_node *list) {
-    if (list == 0) {
+struct proc *peek_proc_list(struct proc_node *list)
+{
+    if (list == 0)
+    {
         panic("Empty proc list while peeking\n");
-    } else {
+    }
+    else
+    {
         return list->data;
     }
 }
-

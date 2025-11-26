@@ -10,7 +10,8 @@
 #define LIST_H
 
 // Basic node for a circular doubly-linked list
-struct list {
+struct list
+{
     struct list *prev;
     struct list *next;
 };
@@ -39,7 +40,7 @@ void lst_remove(struct list *e);
  * @param lst Pointer to the list head
  * @return Pointer to the popped node
  */
-void* lst_pop(struct list *lst);
+void *lst_pop(struct list *lst);
 
 /**
  * @brief Push a node to the front of the list

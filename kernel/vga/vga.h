@@ -13,8 +13,8 @@
 /**
  * @brief VGA screen dimensions
  */
-#define VGA_WIDTH 80    // Number of columns
-#define VGA_HEIGHT 25   // Number of rows
+#define VGA_WIDTH 80  // Number of columns
+#define VGA_HEIGHT 25 // Number of rows
 
 /**
  * @brief Default VGA color used for initialization
@@ -33,7 +33,8 @@
  * @brief VGA color palette.
  * Each color corresponds to a 4-bit code used in VGA text mode.
  */
-enum vga_colors {
+enum vga_colors
+{
     VGA_COLOR_BLACK = 0,
     VGA_COLOR_BLUE = 1,
     VGA_COLOR_GREEN = 2,
@@ -54,32 +55,32 @@ enum vga_colors {
 
 /**
  * @brief Structure representing a character with a color attribute.
- * 
+ *
  * Packed to ensure exactly 2 bytes per character cell in VGA memory:
  * - character: ASCII code of the character
  * - color: foreground/background color code
  */
-struct __attribute__((packed)) char_with_color {
+struct __attribute__((packed)) char_with_color
+{
     uint8_t character;
     uint8_t color;
 };
 
 /**
  * @brief Clears the VGA screen.
- * 
+ *
  * Resets all characters on the screen to zero and moves the cursor to the top-left.
  */
 void clear_vga();
 
 /**
  * @brief Writes a full buffer to the VGA screen.
- * 
+ *
  * Copies the content of tty_buffer into VGA memory. The buffer
  * should be VGA_HEIGHT * VGA_WIDTH in size.
- * 
+ *
  * @param tty_buffer Pointer to the buffer to write to VGA memory
  */
 void write_buffer(struct char_with_color *tty_buffer);
 
 #endif // UNTITLED_OS_PRINT_H
-

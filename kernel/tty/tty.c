@@ -33,17 +33,21 @@ static tty_structure *active_tty;
 static struct spinlock printf_spinlock;
 static struct spinlock print_spinlock;
 
-void set_fg(enum vga_colors _fg) {
+void set_fg(enum vga_colors _fg)
+{
     active_tty->fg = _fg;
 }
 
-void set_bg(enum vga_colors _bg) {
+void set_bg(enum vga_colors _bg)
+{
     active_tty->bg = _bg;
 }
 
-void init_tty() {
+void init_tty()
+{
     memset(&tty_terminals, 0, sizeof(tty_structure) * TERMINALS_NUMBER);
-    for (int i = 0; i < TERMINALS_NUMBER; ++i) {
+    for (int i = 0; i < TERMINALS_NUMBER; ++i)
+    {
         (tty_terminals + i)->tty_id = i;
         (tty_terminals + i)->bg = DEFAULT_BG_COLOR;
         (tty_terminals + i)->fg = DEFAULT_FG_COLOR;
@@ -55,8 +59,10 @@ void init_tty() {
     init_spinlock(&print_spinlock, "print spinlock");
 }
 
-void set_tty(uint8_t terminal) {
-    if (TERMINALS_NUMBER <= terminal) {
+void set_tty(uint8_t terminal)
+{
+    if (TERMINALS_NUMBER <= terminal)
+    {
         return;
     }
     clear_vga();
@@ -64,14 +70,17 @@ void set_tty(uint8_t terminal) {
     write_buffer(active_tty->tty_buffer);
 }
 
-void clear_current_tty() {
+void clear_current_tty()
+{
     memset(active_tty->tty_buffer, 0, VGA_WIDTH * VGA_HEIGHT);
     active_tty->pos = 0;
     active_tty->line = 0;
     clear_vga();
 }
 
-uint8_t get_current_tty() {
+uint8_t
+get_current_tty()
+{
     return active_tty->tty_id;
 }
 
@@ -80,10 +89,12 @@ uint8_t get_current_tty() {
  * @param str String to reverse
  * @param n Length of the string
  */
-void reverse(char *str, int n) {
+void reverse(char *str, int n)
+{
     int i = 0;
     int j = n - 1;
-    while (i < j) {
+    while (i < j)
+    {
         char tmp = str[i];
         str[i++] = str[j];
         str[j--] = tmp;
@@ -97,24 +108,29 @@ void reverse(char *str, int n) {
  * @param bg Background color
  * @return char_with_color structure
  */
-struct char_with_color make_char(char value, enum vga_colors fg, enum vga_colors bg) {
+struct char_with_color
+make_char(char value, enum vga_colors fg, enum vga_colors bg)
+{
     struct char_with_color res = {
-            .character = value,
-            .color = fg + (bg << 4)
-    };
+        .character = value,
+        .color = fg + (bg << 4)};
     return res;
 }
 
 /**
  * @brief Scroll the terminal buffer up by one line
  */
-void scroll() {
-    for (int i = 1; i < VGA_HEIGHT; i++) {
-        for (int j = 0; j < VGA_WIDTH; j++) {
+void scroll()
+{
+    for (int i = 1; i < VGA_HEIGHT; i++)
+    {
+        for (int j = 0; j < VGA_WIDTH; j++)
+        {
             active_tty->tty_buffer[(i - 1) * VGA_WIDTH + j] = active_tty->tty_buffer[i * VGA_WIDTH + j];
         }
     }
-    for (int i = 0; i < VGA_WIDTH; i++) {
+    for (int i = 0; i < VGA_WIDTH; i++)
+    {
         active_tty->tty_buffer[VGA_WIDTH * (VGA_HEIGHT - 1) + i] = make_char(0, 0, 0);
     }
     active_tty->line = VGA_HEIGHT - 1;
@@ -125,45 +141,55 @@ void scroll() {
  * @brief Put a single character on the terminal, handling newlines and scrolling
  * @param c Pointer to character
  */
-void putchar(char *c) {
-    if (active_tty->line >= VGA_HEIGHT) scroll();
+void putchar(char *c)
+{
+    if (active_tty->line >= VGA_HEIGHT)
+        scroll();
 
-    if (*c == '\n') {
+    if (*c == '\n')
+    {
         active_tty->line++;
         active_tty->pos = 0;
-    } else {
-        *(active_tty->tty_buffer + active_tty->line * VGA_WIDTH + active_tty->pos) =
-            make_char(*c, active_tty->fg, active_tty->bg);
+    }
+    else
+    {
+        *(active_tty->tty_buffer + active_tty->line * VGA_WIDTH + active_tty->pos) = make_char(*c, active_tty->fg, active_tty->bg);
         active_tty->pos += 1;
         active_tty->line += active_tty->pos / VGA_WIDTH;
         active_tty->pos %= VGA_WIDTH;
     }
 }
 
-void print(const char *string) {
+void print(const char *string)
+{
     acquire_spinlock(&print_spinlock);
-    while (*string != 0) {
-        putchar((char *)string++);
+    while (*string != 0)
+    {
+        putchar((char *) string++);
     }
     write_buffer(active_tty->tty_buffer);
     release_spinlock(&print_spinlock);
 }
 
-void itoa(int num, char *str, int radix) {
+void itoa(int num, char *str, int radix)
+{
     int i = 0;
     int is_negative = 0;
-    if (num < 0 && radix != 16) {
+    if (num < 0 && radix != 16)
+    {
         is_negative = 1;
         num *= -1;
     }
 
-    do {
+    do
+    {
         int rem = (num % radix);
         str[i++] = (rem > 9 ? 'a' - 10 : '0') + rem;
         num /= radix;
     } while (num);
 
-    if (is_negative) str[i++] = '-';
+    if (is_negative)
+        str[i++] = '-';
     reverse(str, i);
     str[i] = 0;
 }
@@ -173,10 +199,12 @@ void itoa(int num, char *str, int radix) {
  * @param num 64-bit number
  * @param str Output buffer
  */
-void ptoa(uint64_t num, char *str) {
+void ptoa(uint64_t num, char *str)
+{
     int i = 0;
 
-    do {
+    do
+    {
         int rem = (num % 16);
         str[i++] = (rem > 9 ? 'a' - 10 : '0') + rem;
         num /= 16;
@@ -186,56 +214,60 @@ void ptoa(uint64_t num, char *str) {
     str[i] = 0;
 }
 
-void printf(const char *format, ...) {
+void printf(const char *format, ...)
+{
     acquire_spinlock(&printf_spinlock);
     va_list varargs;
     va_start(varargs, format);
     char digits_buf[100];
-    for (int i = 0; i < 100; i++) digits_buf[i] = 0;
+    for (int i = 0; i < 100; i++)
+        digits_buf[i] = 0;
 
-    while (*format) {
-        switch (*format) {
+    while (*format)
+    {
+        switch (*format)
+        {
+        case '%':
+            format++;
+            switch (*format)
+            {
+            case 'd':
+                itoa(va_arg(varargs, int), digits_buf, 10);
+                print(digits_buf);
+                break;
+            case 'o':
+                itoa(va_arg(varargs, int), digits_buf, 8);
+                print(digits_buf);
+                break;
+            case 'x':
+                itoa(va_arg(varargs, int), digits_buf, 16);
+                print(digits_buf);
+                break;
+            case 'b':
+                itoa(va_arg(varargs, int), digits_buf, 2);
+                print(digits_buf);
+                break;
+            case 'p':
+                ptoa(va_arg(varargs, uint64_t), digits_buf);
+                print(digits_buf);
+                break;
+            case 's':
+                print(va_arg(varargs, char *));
+                break;
             case '%':
-                format++;
-                switch (*format) {
-                    case 'd':
-                        itoa(va_arg(varargs, int), digits_buf, 10);
-                        print(digits_buf);
-                        break;
-                    case 'o':
-                        itoa(va_arg(varargs, int), digits_buf, 8);
-                        print(digits_buf);
-                        break;
-                    case 'x':
-                        itoa(va_arg(varargs, int), digits_buf, 16);
-                        print(digits_buf);
-                        break;
-                    case 'b':
-                        itoa(va_arg(varargs, int), digits_buf, 2);
-                        print(digits_buf);
-                        break;
-                    case 'p':
-                        ptoa(va_arg(varargs, uint64_t), digits_buf);
-                        print(digits_buf);
-                        break;
-                    case 's':
-                        print(va_arg(varargs, char*));
-                        break;
-                    case '%':
-                        putchar("%");
-                        break;
-                    default:
-                        putchar("#");
-                        write_buffer(active_tty->tty_buffer);
-                }
+                putchar("%");
                 break;
             default:
-                putchar((char *)format);
+                putchar("#");
                 write_buffer(active_tty->tty_buffer);
+            }
+            break;
+        default:
+            putchar((char *) format);
+            write_buffer(active_tty->tty_buffer);
         }
         format++;
     }
 
     release_spinlock(&printf_spinlock);
 }
-

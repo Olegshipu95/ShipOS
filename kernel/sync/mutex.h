@@ -21,8 +21,9 @@
  * Threads attempting to acquire a locked mutex will be blocked
  * and added to the thread_list.
  */
-struct mutex {
-    struct spinlock *spinlock;   ///< underlying spinlock protecting the mutex
+struct mutex
+{
+    struct spinlock *spinlock;       ///< underlying spinlock protecting the mutex
     struct thread_node *thread_list; ///< linked list of threads waiting for this mutex
 };
 
@@ -48,5 +49,4 @@ void acquire_mutex(struct mutex *lk);
  */
 void release_mutex(struct mutex *lk);
 
-#endif //UNTITLED_OS_MUTEX_H
-
+#endif // UNTITLED_OS_MUTEX_H

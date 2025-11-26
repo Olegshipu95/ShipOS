@@ -8,4 +8,4 @@
 #include <stdint.h>
 #include <stddef.h>
 void *memset(void *ptr, int value, size_t num);
-#endif //UNTITLED_OS_MEMSET_H
+#endif // UNTITLED_OS_MEMSET_H

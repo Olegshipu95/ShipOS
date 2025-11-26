@@ -18,4 +18,4 @@ typedef struct ucontext_t
     struct _libc_fpstate __fpregs_mem;
     unsigned long int __ssp[4];
 } ucontext_t;
-#endif //UNTITLED_OS_CPU_H
+#endif // UNTITLED_OS_CPU_H

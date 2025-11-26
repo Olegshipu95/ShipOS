@@ -11,12 +11,14 @@
 #include <inttypes.h>
 #include "sched_states.h"
 
-struct argument {
+struct argument
+{
     char *value;
     size_t arg_size;
 };
 
-struct thread {
+struct thread
+{
     struct context *context;
     void (*start_function)(void *);
     uint64_t stack;
@@ -26,7 +28,8 @@ struct thread {
     enum sched_states state;
 };
 
-struct thread_node {
+struct thread_node
+{
     struct thread *data;
     struct thread_node *next;
     struct thread_node *prev;
@@ -46,4 +49,4 @@ void change_thread_state(struct thread *thread, enum sched_states new_state);
 
 void thread_function(int argc, struct argument *args);
 
-#endif //UNTITLED_OS_THREADS_H
+#endif // UNTITLED_OS_THREADS_H
