@@ -29,3 +29,26 @@ This script:
 
 This file enables LSP servers (like clangd, ccls, etc.) to understand your build configuration and provide accurate code completion, error checking, and navigation.
 
+---
+
+### `verify_cla.sh`
+
+Helper script for maintainers to verify CLA signatures manually.
+
+**Usage:**
+```bash
+# Check if a user has signed the CLA
+./scripts/verify_cla.sh --check username
+
+# List all signed contributors
+./scripts/verify_cla.sh --list
+
+# Manually add a signature (use with caution)
+./scripts/verify_cla.sh --add username
+
+# Use custom signatures directory
+./scripts/verify_cla.sh --dir /path/to/signatures --check username
+```
+
+**Note:** This is a helper tool. For full automation, use the CLA Assistant GitHub App (see [CLA_SETUP.md](../.github/CLA_SETUP.md)).
+

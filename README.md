@@ -1,7 +1,15 @@
 # ShipOS
 Import substitution of foreign products. ShipOS power
 
-# How to use
+## Contributing
+
+We welcome contributions to ShipOS! However, **all contributors must sign our [Contributor License Agreement (CLA)](CLA.md)** before their contributions can be accepted.
+
+**Important:** By contributing to ShipOS, you agree that all your contributions (past, present, and future) become the exclusive property of ShipOS. This means ShipOS retains full rights to use, modify, distribute, and commercialize your contributions.
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.
+
+## How to use
 
 ```bash
  make install

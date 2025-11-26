@@ -1,0 +1,122 @@
+name: 🔏 CLA Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  cla-check:
+    name: Check CLA Signature
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && github.event.issue.pull_request)
+    
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: 🔍 Check if PR author has signed CLA
+      id: cla_check
+      run: |
+        PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+        PR_NUMBER="${{ github.event.pull_request.number }}"
+        
+        echo "Checking CLA for contributor: $PR_AUTHOR"
+        
+        # Check if this is the first contribution
+        # In a real setup, you would check against a database or file
+        # For now, we'll use a simple check that can be enhanced
+        
+        # This is a placeholder - in production, you would:
+        # 1. Check against CLA Assistant API
+        # 2. Or check a signatures file/database
+        # 3. Or use the CLA Assistant GitHub App (recommended)
+        
+        echo "⚠️ Note: This is a basic check. For full CLA verification,"
+        echo "please install the CLA Assistant GitHub App:"
+        echo "https://github.com/apps/cla-assistant"
+        echo ""
+        echo "The CLA Assistant App will automatically:"
+        echo "- Prompt contributors to sign the CLA"
+        echo "- Verify signatures automatically"
+        echo "- Update PR status based on CLA status"
+        
+        # For now, we'll set a status that requires manual verification
+        # In production with CLA Assistant, this would be automated
+        echo "cla_signed=false" >> $GITHUB_OUTPUT
+    
+    - name: 📝 Comment on PR
+      if: steps.cla_check.outputs.cla_signed == 'false' && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const prNumber = context.payload.pull_request.number;
+          const author = context.payload.pull_request.user.login;
+          
+          const comment = `## 🔏 Contributor License Agreement Required
+          
+          Thank you for your contribution, @${author}!
+          
+          Before we can review and merge your pull request, you need to sign our [Contributor License Agreement (CLA)](CLA.md).
+          
+          ### 📋 What is the CLA?
+          
+          The CLA ensures that all contributions to ShipOS become the exclusive property of the project owner. This allows ShipOS to:
+          - Maintain exclusive ownership of all code
+          - Control distribution and licensing
+          - Commercialize the project if desired
+          
+          ### ✍️ How to Sign
+          
+          1. **Read the CLA:** Please carefully read the [CLA.md](CLA.md) document
+          2. **Sign via CLA Assistant:** If you have the CLA Assistant app installed, it will prompt you automatically
+          3. **Manual Signing:** If CLA Assistant is not available, please comment on this PR with:
+             \`\`\`
+             I have read the CLA.md and agree to its terms. I hereby sign the CLA.
+             \`\`\`
+          
+          ### ⚠️ Important
+          
+          By signing the CLA, you agree that:
+          - All your contributions (past, present, and future) become the exclusive property of ShipOS
+          - ShipOS has full rights to use, modify, distribute, and commercialize your contributions
+          - You grant ShipOS all necessary rights and licenses
+          
+          Once you've signed, this check will be updated automatically.
+          
+          ---
+          
+          **Note:** This is an automated check. For the best experience, install the [CLA Assistant GitHub App](https://github.com/apps/cla-assistant).`;
+          
+          github.rest.issues.createComment({
+            issue_number: prNumber,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+    
+    - name: ✅ Set PR status
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const prNumber = context.payload.pull_request.number;
+          const sha = context.payload.pull_request.head.sha;
+          const claSigned = '${{ steps.cla_check.outputs.cla_signed }}' === 'true';
+          
+          github.rest.repos.createCommitStatus({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            sha: sha,
+            state: claSigned ? 'success' : 'pending',
+            target_url: `${context.payload.repository.html_url}/blob/main/CLA.md`,
+            description: claSigned 
+              ? 'CLA has been signed ✓' 
+              : 'CLA signature required - please sign the Contributor License Agreement',
+            context: 'cla/signature'
+          });
+
