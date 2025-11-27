@@ -56,14 +56,6 @@ void set_fg(enum vga_colors fg);
 void set_bg(enum vga_colors bg);
 
 /**
- * @brief Convert integer to string with specified radix
- * @param num Integer value
- * @param str Output buffer
- * @param radix Base (e.g., 10, 16, 2)
- */
-void itoa(int num, char* str, int radix);
-
-/**
  * @brief Print a null-terminated string to the currently active terminal
  * @param string String to print
  */
