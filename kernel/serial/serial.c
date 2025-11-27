@@ -150,6 +150,6 @@ void serial_printf(const char *format, ...) {
         }
         format++;
     }
-
+    va_end(varargs);
     release_spinlock(&serial_printf_spinlock);
 }
