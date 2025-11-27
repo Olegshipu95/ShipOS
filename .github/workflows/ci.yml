@@ -80,7 +80,7 @@ jobs:
           fi
         }
 
-        check "Serial port initialized" "\[SERIAL\] Serial port COM1 initialized successfully"
+        check "Serial port initialized" "\[SERIAL\] Serial port at 0x3f8 initialized successfully"
         check "TTY subsystem initialized" "\[BOOT\] TTY subsystem initialized"
         check "Memory subsystem initialized" "\[MEMORY\] Physical memory initialized"
         check "Kernel boot completed" "\[KERNEL\] Boot sequence completed successfully"
