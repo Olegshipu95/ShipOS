@@ -29,18 +29,22 @@ void ptoa(uint64_t num, char *str) {
 }
 
 void itoa(int num, char *str, int radix) {
+    unsigned int n;
     int i = 0;
     int is_negative = 0;
+    
     if (num < 0 && radix != 16) {
         is_negative = 1;
-        num *= -1;
+        n = (unsigned int)(-(long long)num);
+    } else {
+        n = (unsigned int)num;
     }
 
     do {
-        int rem = (num % radix);
+        int rem = n % radix;
         str[i++] = (rem > 9 ? 'a' - 10 : '0') + rem;
-        num /= radix;
-    } while (num);
+        n /= radix;
+    } while (n);
 
     if (is_negative) str[i++] = '-';
     reverse_str(str, i);
