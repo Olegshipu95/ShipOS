@@ -66,60 +66,61 @@ void thread_function(int argc, struct argument *args) {
 int kernel_main(){
     // Initialize serial port FIRST for early boot logging
     init_serial();
-    serial_write("[BOOT] Kernel started\r\n");
+    LOG_BOOT_SERIAL("Kernel started");
 
     init_tty();
-    serial_printf("[BOOT] TTY subsystem initialized\r\n");
+    LOG_BOOT_SERIAL("TTY subsystem initialized");
 
     for (uint8_t i=0; i < TERMINALS_NUMBER; i++) {
         set_tty(i);
         printf("TTY %d\n", i);
-        serial_printf("[BOOT] TTY %d initialized\r\n", i);
+        LOG_BOOT_SERIAL("TTY %d initialized", i);
     }
     set_tty(0);
 
-    serial_printf("[BOOT] CR3 register: %x\r\n", rcr3());
+    LOG_BOOT_SERIAL("CR3 register: %x", rcr3());
     printf(" CR3: %x\n", rcr3());
 
     print("$ \r\n");
 
-    serial_printf("[BOOT] Kernel start: %p, end: %p\r\n", KSTART, KEND);
-    serial_printf("[BOOT] Kernel size: %d bytes\r\n", KEND - KSTART);
+    LOG_BOOT_SERIAL("Kernel start: %p, end: %p", KSTART, KEND);
+    LOG_BOOT_SERIAL("Kernel size: %d bytes", KEND - KSTART);
+
     printf("Kernel end at address: %d\n", KEND);
     printf("Kernel size: %d\n", KEND - KSTART);
 
-    serial_printf("[MEMORY] Initializing physical memory allocator (phase 1)...\r\n");
+    LOG_MEM_SERIAL("Initializing physical memory allocator (phase 1)...");
     kinit(KEND, INIT_PHYSTOP);
 
-    serial_printf("[MEMORY] Setting up kernel page table...\r\n");
+    LOG_MEM_SERIAL("Setting up kernel page table...");
     pagetable_t kernel_table = kvminit(INIT_PHYSTOP, PHYSTOP);
     printf("kernel table: %p\n", kernel_table);
-    serial_printf("[MEMORY] Kernel page table at: %p\r\n", kernel_table);
+    LOG_MEM_SERIAL("Kernel page table at: %p", kernel_table);
 
-    serial_printf("[MEMORY] Initializing physical memory allocator (phase 2)...\r\n");
+    LOG_MEM_SERIAL("nitializing physical memory allocator (phase 2)...");
     kinit(INIT_PHYSTOP, PHYSTOP);
     printf("Successfully allocated physical memory up to %p\n", PHYSTOP);
-    serial_printf("[MEMORY] Physical memory initialized up to: %p\r\n", PHYSTOP);
+    LOG_MEM_SERIAL("Physical memory initialized up to: %p", PHYSTOP);
 
     int pages = count_pages();
     printf("%d pages available in allocator\n", pages);
-    serial_printf("[MEMORY] Available pages: %d\r\n", pages);
+    LOG_MEM_SERIAL("Available pages: %d", pages);
 
-    serial_printf("[PROCESS] Initializing first process...\r\n");
+    LOG_PROC_SERIAL("Initializing first process...");
     struct proc_node *init_proc_node = procinit();
     printf("Init proc node %p\n", init_proc_node);
-    serial_printf("[PROCESS] Init process node created at: %p\r\n", init_proc_node);
+    LOG_PROC_SERIAL("Init process node created at: %p", init_proc_node);
 
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
     printf("Got init thread\n");
-    serial_printf("[PROCESS] Init thread retrieved successfully\r\n");
+    LOG_PROC_SERIAL("Init thread retrieved successfully");
 
-    serial_printf("[INTERRUPT] Setting up IDT...\r\n");
+    LOG_INT_SERIAL("Setting up IDT...");
     setup_idt();
-    serial_printf("[INTERRUPT] IDT initialized\r\n");
+    LOG_INT_SERIAL("IDT initialized");
 
-    serial_printf("[KERNEL] Boot sequence completed successfully\r\n");
-    serial_printf("[KERNEL] Entering idle loop...\r\n");
+    LOG_KER_SERIAL("Boot sequence completed successfully");
+    LOG_KER_SERIAL("Entering idle loop...");
 
     // scheduler();
 
