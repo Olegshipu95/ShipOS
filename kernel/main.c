@@ -54,18 +54,21 @@ void thread_function(int argc, struct argument *args) {
  * @brief Kernel entry point.
  * 
  * Performs basic initialization:
- * 1. Sets up TTY terminals.
- * 2. Prints debug information about CR3 register and kernel memory layout.
- * 3. Initializes the physical memory allocator and page tables.
- * 4. Initializes the first process and its main thread.
- * 5. Sets up the Interrupt Descriptor Table (IDT).
- * 6. Starts the scheduler (currently commented out for testing).
+ * 1. Initializes and sets up serial port
+ * 2. Sets up TTY terminals.
+ * 3. Prints debug information about CR3 register and kernel memory layout.
+ * 4. Initializes the physical memory allocator and page tables.
+ * 5. Initializes the first process and its main thread.
+ * 6. Sets up the Interrupt Descriptor Table (IDT).
+ * 7. Starts the scheduler (currently commented out for testing).
  * 
  * @return int Always returns 0 (never reached).
  */
 int kernel_main(){
     // Initialize serial port FIRST for early boot logging
-    init_serial();
+    if (init_serial() == -1) {
+        printf("Warning! Faulty serial port, output to it won't work!\n");
+    }
     LOG_BOOT_SERIAL("Kernel started");
 
     init_tty();
