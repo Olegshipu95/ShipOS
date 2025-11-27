@@ -8,6 +8,7 @@
 #include "serial.h"
 #include <stdarg.h>
 #include "../lib/include/x86_64.h"
+#include "../lib/include/str_utils.h"
 #include "../sync/spinlock.h"
 
 /**
@@ -97,63 +98,6 @@ void serial_write(const char *str) {
     }
 }
 
-/**
- * @brief Reverse a string in-place
- * @param str String to reverse
- * @param n Length of the string
- */
-static void reverse_str(char *str, int n) {
-    int i = 0;
-    int j = n - 1;
-    while (i < j) {
-        char tmp = str[i];
-        str[i++] = str[j];
-        str[j--] = tmp;
-    }
-}
-
-/**
- * @brief Convert integer to string with specified radix
- * @param num Integer value
- * @param str Output buffer
- * @param radix Base (e.g., 10, 16, 2)
- */
-static void serial_itoa(int num, char *str, int radix) {
-    int i = 0;
-    int is_negative = 0;
-    if (num < 0 && radix != 16) {
-        is_negative = 1;
-        num *= -1;
-    }
-
-    do {
-        int rem = (num % radix);
-        str[i++] = (rem > 9 ? 'a' - 10 : '0') + rem;
-        num /= radix;
-    } while (num);
-
-    if (is_negative) str[i++] = '-';
-    reverse_str(str, i);
-    str[i] = 0;
-}
-
-/**
- * @brief Convert 64-bit integer to hexadecimal string
- * @param num 64-bit number
- * @param str Output buffer
- */
-static void serial_ptoa(uint64_t num, char *str) {
-    int i = 0;
-
-    do {
-        int rem = (num % 16);
-        str[i++] = (rem > 9 ? 'a' - 10 : '0') + rem;
-        num /= 16;
-    } while (num);
-
-    reverse_str(str, i);
-    str[i] = 0;
-}
 
 void serial_printf(const char *format, ...) {
     if (!serial_initialized) return;
@@ -172,23 +116,23 @@ void serial_printf(const char *format, ...) {
                 format++;
                 switch (*format) {
                     case 'd':
-                        serial_itoa(va_arg(varargs, int), digits_buf, 10);
+                        itoa(va_arg(varargs, int), digits_buf, 10);
                         serial_write(digits_buf);
                         break;
                     case 'o':
-                        serial_itoa(va_arg(varargs, int), digits_buf, 8);
+                        itoa(va_arg(varargs, int), digits_buf, 8);
                         serial_write(digits_buf);
                         break;
                     case 'x':
-                        serial_itoa(va_arg(varargs, int), digits_buf, 16);
+                        itoa(va_arg(varargs, int), digits_buf, 16);
                         serial_write(digits_buf);
                         break;
                     case 'b':
-                        serial_itoa(va_arg(varargs, int), digits_buf, 2);
+                        itoa(va_arg(varargs, int), digits_buf, 2);
                         serial_write(digits_buf);
                         break;
                     case 'p':
-                        serial_ptoa(va_arg(varargs, uint64_t), digits_buf);
+                        ptoa(va_arg(varargs, uint64_t), digits_buf);
                         serial_write(digits_buf);
                         break;
                     case 's':

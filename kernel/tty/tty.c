@@ -11,6 +11,7 @@
 #include "tty.h"
 #include <inttypes.h>
 #include "../lib/include/memset.h"
+#include "../lib/include/str_utils.h"
 
 /**
  * @brief Maximum number of virtual terminals
@@ -76,21 +77,6 @@ uint8_t get_current_tty() {
 }
 
 /**
- * @brief Reverse a string in-place
- * @param str String to reverse
- * @param n Length of the string
- */
-void reverse(char *str, int n) {
-    int i = 0;
-    int j = n - 1;
-    while (i < j) {
-        char tmp = str[i];
-        str[i++] = str[j];
-        str[j--] = tmp;
-    }
-}
-
-/**
  * @brief Construct a VGA character with foreground and background colors
  * @param value ASCII character
  * @param fg Foreground color
@@ -147,43 +133,6 @@ void print(const char *string) {
     }
     write_buffer(active_tty->tty_buffer);
     release_spinlock(&print_spinlock);
-}
-
-void itoa(int num, char *str, int radix) {
-    int i = 0;
-    int is_negative = 0;
-    if (num < 0 && radix != 16) {
-        is_negative = 1;
-        num *= -1;
-    }
-
-    do {
-        int rem = (num % radix);
-        str[i++] = (rem > 9 ? 'a' - 10 : '0') + rem;
-        num /= radix;
-    } while (num);
-
-    if (is_negative) str[i++] = '-';
-    reverse(str, i);
-    str[i] = 0;
-}
-
-/**
- * @brief Convert 64-bit integer to hexadecimal string
- * @param num 64-bit number
- * @param str Output buffer
- */
-void ptoa(uint64_t num, char *str) {
-    int i = 0;
-
-    do {
-        int rem = (num % 16);
-        str[i++] = (rem > 9 ? 'a' - 10 : '0') + rem;
-        num /= 16;
-    } while (num);
-
-    reverse(str, i);
-    str[i] = 0;
 }
 
 void printf(const char *format, ...) {
