@@ -15,10 +15,13 @@ void reverse_str(char *str, int n) {
     }
 }
 
-void ptoa(uint64_t num, char *str) {
+int ptoa(uint64_t num, char *str) {
     int i = 0;
 
     do {
+        if (i > MAX_DIGIT_BUFFER_SIZE) {
+            return -1;
+        }
         int rem = (num % 16);
         str[i++] = (rem > 9 ? 'a' - 10 : '0') + rem;
         num /= 16;
@@ -26,9 +29,11 @@ void ptoa(uint64_t num, char *str) {
 
     reverse_str(str, i);
     str[i] = 0;
+
+    return 0;
 }
 
-void itoa(int num, char *str, int radix) {
+int itoa(int num, char *str, int radix) {
     unsigned int n;
     int i = 0;
     int is_negative = 0;
@@ -41,6 +46,9 @@ void itoa(int num, char *str, int radix) {
     }
 
     do {
+        if (i > MAX_DIGIT_BUFFER_SIZE) {
+            return -1;
+        }
         int rem = n % radix;
         str[i++] = (rem > 9 ? 'a' - 10 : '0') + rem;
         n /= radix;
@@ -49,4 +57,6 @@ void itoa(int num, char *str, int radix) {
     if (is_negative) str[i++] = '-';
     reverse_str(str, i);
     str[i] = 0;
+
+    return 0;
 }

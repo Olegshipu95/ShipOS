@@ -139,8 +139,9 @@ void printf(const char *format, ...) {
     acquire_spinlock(&printf_spinlock);
     va_list varargs;
     va_start(varargs, format);
-    char digits_buf[100];
-    for (int i = 0; i < 100; i++) digits_buf[i] = 0;
+
+    char digits_buf[MAX_DIGIT_BUFFER_SIZE];
+    memset(digits_buf, 0, MAX_DIGIT_BUFFER_SIZE);
 
     while (*format) {
         switch (*format) {
@@ -148,24 +149,39 @@ void printf(const char *format, ...) {
                 format++;
                 switch (*format) {
                     case 'd':
-                        itoa(va_arg(varargs, int), digits_buf, 10);
-                        print(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 10) == 0) {
+                            print(digits_buf);
+                        } else {
+                            putchar("#");
+                        }
                         break;
                     case 'o':
-                        itoa(va_arg(varargs, int), digits_buf, 8);
-                        print(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 8) == 0) {
+                            print(digits_buf);
+                        } else {
+                            putchar("#");
+                        }
                         break;
                     case 'x':
-                        itoa(va_arg(varargs, int), digits_buf, 16);
-                        print(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 16) == 0) {
+                            print(digits_buf);
+                        } else {
+                            putchar("#");
+                        }
                         break;
                     case 'b':
-                        itoa(va_arg(varargs, int), digits_buf, 2);
-                        print(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 2) == 0) {
+                            print(digits_buf);
+                        } else {
+                            putchar("#");
+                        }
                         break;
                     case 'p':
-                        ptoa(va_arg(varargs, uint64_t), digits_buf);
-                        print(digits_buf);
+                        if (ptoa(va_arg(varargs, uint64_t), digits_buf) == 0) {
+                            print(digits_buf);
+                        } else {
+                            putchar("#");
+                        }
                         break;
                     case 's':
                         print(va_arg(varargs, char*));

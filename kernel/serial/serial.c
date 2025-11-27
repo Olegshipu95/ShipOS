@@ -106,9 +106,8 @@ void serial_printf(const char *format, ...) {
     va_list varargs;
     va_start(varargs, format);
 
-    const uint8_t BUFFER_SIZE = 255;
-    char digits_buf[BUFFER_SIZE];
-    memset(digits_buf, 0, BUFFER_SIZE);
+    char digits_buf[MAX_DIGIT_BUFFER_SIZE];
+    memset(digits_buf, 0, MAX_DIGIT_BUFFER_SIZE);
 
     while (*format) {
         switch (*format) {
@@ -116,23 +115,39 @@ void serial_printf(const char *format, ...) {
                 format++;
                 switch (*format) {
                     case 'd':
-                        itoa(va_arg(varargs, int), digits_buf, 10);
-                        serial_write(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 10) == 0) {
+                            serial_write(digits_buf);
+                        } else {
+                            serial_putchar('#');
+                        }
                         break;
                     case 'o':
-                        itoa(va_arg(varargs, int), digits_buf, 8);
-                        serial_write(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 8) == 0) {
+                            serial_write(digits_buf);
+                        } else {
+                            serial_putchar('#');
+                        }
                         break;
                     case 'x':
-                        itoa(va_arg(varargs, int), digits_buf, 16);
-                        serial_write(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 16) == 0) {
+                            serial_write(digits_buf);
+                        } else {
+                            serial_putchar('#');
+                        }
                         break;
                     case 'b':
-                        itoa(va_arg(varargs, int), digits_buf, 2);
-                        serial_write(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 2) == 0) {
+                            serial_write(digits_buf);
+                        } else {
+                            serial_putchar('#');
+                        }
                         break;
                     case 'p':
-                        ptoa(va_arg(varargs, uint64_t), digits_buf);
+                        if (ptoa(va_arg(varargs, uint64_t), digits_buf) == 0) {
+                            serial_write(digits_buf);
+                        } else {
+                            serial_putchar('#');
+                        }
                         serial_write(digits_buf);
                         break;
                     case 's':
