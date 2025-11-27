@@ -69,7 +69,7 @@ $(ISO_DIR)/kernel.iso: $(ISO_BOOT_DIR)/kernel.bin
 # ==============================
 # Phony targets
 # ==============================
-.PHONY: build_kernel build_iso qemu qemu-headless clean install
+.PHONY: build_kernel build_iso qemu qemu-gdb qemu-headless clean install
 
 # Build kernel binary only
 build_kernel: $(ISO_BOOT_DIR)/kernel.bin
