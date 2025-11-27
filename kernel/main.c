@@ -65,10 +65,17 @@ void thread_function(int argc, struct argument *args) {
  * @return int Always returns 0 (never reached).
  */
 int kernel_main(){
-    // Initialize serial port FIRST for early boot logging
-    if (init_serial() == -1) {
-        printf("Warning! Faulty serial port, output to it won't work!\n");
+    // Initialize serial ports
+    uint16_t serial_ports[MAX_SERIAL_PORTS];
+    int serial_ports_count = detect_serial_ports(serial_ports);
+    if (serial_ports_count == 0) {
+        printf("No serial ports detected\n");
+    } else {
+        set_default_serial_port(serial_ports[0]);
+        LOG_BOOT_SERIAL("Found %d serial port(s)", serial_ports_count);
+        LOG_BOOT_SERIAL("Using port 0x%p as default", serial_ports[0]);
     }
+    
     LOG_BOOT_SERIAL("Kernel started");
 
     init_tty();

@@ -15,7 +15,7 @@ GRUB := grub-mkrescue
 GRUB_FLAGS := -o
 
 QEMU := qemu-system-x86_64
-QEMU_FLAGS := -m 128M -cdrom
+QEMU_FLAGS := -m 128M -serial vc -serial vc -cdrom
 QEMU_HEADLESS_FLAGS := -nographic -serial file:serial.log
 
 # ==============================
