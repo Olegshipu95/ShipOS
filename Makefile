@@ -16,7 +16,7 @@ GRUB_FLAGS := -o
 
 QEMU := qemu-system-x86_64
 QEMU_FLAGS := -m 128M -cdrom
-QEMU_HEADLESS_FLAGS := -nographic -serial null -serial mon:stdio -device isa-debug-exit,iobase=0xf4,iosize=0x04
+QEMU_HEADLESS_FLAGS := -nographic -serial null -serial file:report.log -device isa-debug-exit,iobase=0xf4,iosize=0x04
 
 # ==============================
 # Directories
@@ -81,12 +81,12 @@ build_iso: $(ISO_DIR)/kernel.iso
 qemu: $(ISO_DIR)/kernel.iso
 	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
 
-# Run QEMU in Headless mode with debug and tests (no GUI, logs to reports.log)
+# Run QEMU in Headless mode with debug and tests (no GUI, logs to report.log)
 test: clean
 	@$(MAKE) EXTRA_CFLAGS="-DDEBUG -DTEST" $(ISO_DIR)/kernel.iso
 	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
 
-# Run QEMU in Headless mode with debug and tests (no GUI, logs to reports.log)
+# Run QEMU in Headless mode with debug and tests (no GUI, logs to report.log)
 ci: clean
 	@$(MAKE) EXTRA_CFLAGS="-DDEBUG -DTEST" $(ISO_DIR)/kernel.iso
 	$(QEMU) $(QEMU_HEADLESS_FLAGS) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
