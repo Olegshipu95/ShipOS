@@ -29,10 +29,10 @@
  * @param num Thread identifier number
  */
 void print_num(uint32_t num) {
-    // while (1) {
-    //     printf("Hello from thread %d\r\n", num);
-    //     // yield();
-    // }
+    while (1) {
+        printf("Hello from thread %d\r\n", num);
+        // yield();
+    }
 }
 
 /**
@@ -114,7 +114,7 @@ int kernel_main(){
 
     LOG("Entering idle loop...");
 
-    // scheduler();
+    scheduler();
 
     while(1) {};
     return 0;
