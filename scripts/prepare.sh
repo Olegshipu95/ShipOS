@@ -7,4 +7,4 @@
 
 rm *.log
 make ci
-# cat report.log | grep TEST > tests.log
+cat report.log | grep TEST > tests.log

@@ -102,7 +102,9 @@ int kernel_main(){
     int pages = count_pages();
     struct proc_node *init_proc_node = procinit();
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
+#ifndef TEST
     setup_idt();
+#endif
     LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
 
 #ifdef TEST
