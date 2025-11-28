@@ -171,7 +171,7 @@ void serial_putchar(uint16_t port, char c) {
     if (get_port_index(port) == -1) return;
 
     // Wait for transmit buffer to be empty
-    while (serial_is_transmit_empty(port) == 0);
+    // while (serial_is_transmit_empty(port) == 0);
 
     outb(SERIAL_DATA_PORT(port), c);
 }
