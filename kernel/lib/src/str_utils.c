@@ -37,7 +37,7 @@ int itoa(int num, char *str, int radix) {
     unsigned int n;
     int i = 0;
     int is_negative = 0;
-    
+
     if (num < 0 && radix != 16) {
         is_negative = 1;
         n = (unsigned int)(-(long long)num);

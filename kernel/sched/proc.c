@@ -31,7 +31,7 @@ struct proc *allocproc(void) {
     }
 
     pid_t pid = generate_pid();
-    
+
     proc->threads = 0;
     proc->killed = 0;
 
@@ -45,7 +45,7 @@ struct proc *allocproc(void) {
 struct proc_node *procinit(void) {
     init_spinlock(&pid_lock, "pid_lock");
     init_spinlock(&proc_lock, "proc_lock");
-    
+
     struct proc *init_proc = allocproc();
     LOG("Init proc allocated");
 

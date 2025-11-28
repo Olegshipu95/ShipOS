@@ -75,7 +75,7 @@ int kernel_main(){
         LOG("Found %d serial port(s)", serial_ports_count);
         LOG("Using port 0x%p as default", serial_ports[0]);
     }
-    
+
     LOG("Kernel started");
 
     init_tty();

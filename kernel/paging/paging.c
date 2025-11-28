@@ -125,7 +125,7 @@ struct page_entry_raw *walk(pagetable_t tbl, uint64_t va, bool alloc) {
 pagetable_t kvminit(uint64_t start, uint64_t end) {
     LOG("Setting up kernel page table...");
     pagetable_t tbl4 = rcr3();
-    
+
     char *addr;
     addr = (char*)PGROUNDUP(start);
     for(;addr + PGSIZE < end; addr += PGSIZE) {
@@ -154,7 +154,7 @@ pagetable_t kvminit(uint64_t start, uint64_t end) {
 //     pagetable_t tbl4 = rcr3();
 //     pagetable_t tbl3 = decode_page_entry(tbl4[0]).address << 12;
 //     pagetable_t tbl2 = decode_page_entry(tbl3[0]).address << 12;
-    
+
 
 //     for (int j = 1; j < 512; ++j)
 //     {
@@ -165,7 +165,7 @@ pagetable_t kvminit(uint64_t start, uint64_t end) {
 //             init_entry(tbl1 + i, start + (i << 12) + ((j - 1) << 9 << 12) );
 //         }
 //     }
-    
+
 
 //     return tbl4;
 // }
