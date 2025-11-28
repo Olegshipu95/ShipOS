@@ -1,0 +1,138 @@
+rm -rf build
+rm -f isofiles/kernel.*
+rm -f isofiles/**/kernel.*
+rm -f serial.log
+make[1]: Entering directory '/mnt/c/Users/rusgy/Documents/Work/ShipOsCi'
+nasm -f elf64            x86_64/boot/boot.asm -o build/x86_64/boot/boot.o
+nasm -f elf64            x86_64/boot/check_functions.asm -o build/x86_64/boot/check_functions.o
+nasm -f elf64            x86_64/boot/header.asm -o build/x86_64/boot/header.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/idt/idt.c -o build/kernel/idt/idt.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/idt/interrupt_handlers.c -o build/kernel/idt/interrupt_handlers.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/kalloc/kalloc.c -o build/kernel/kalloc/kalloc.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/memset.c -o build/kernel/lib/src/memset.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/panic.c -o build/kernel/lib/src/panic.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/read.c -o build/kernel/lib/src/read.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/shutdown.c -o build/kernel/lib/src/shutdown.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/str_utils.c -o build/kernel/lib/src/str_utils.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/test.c -o build/kernel/lib/src/test.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/list/list.c -o build/kernel/list/list.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/main.c -o build/kernel/main.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/paging/paging.c -o build/kernel/paging/paging.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/pic/pic.c -o build/kernel/pic/pic.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/sched/proc.c -o build/kernel/sched/proc.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/sched/scheduler.c -o build/kernel/sched/scheduler.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/sched/threads.c -o build/kernel/sched/threads.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/serial/serial.c -o build/kernel/serial/serial.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/sync/mutex.c -o build/kernel/sync/mutex.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/sync/spinlock.c -o build/kernel/sync/spinlock.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/tty/tty.c -o build/kernel/tty/tty.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/vga/vga.c -o build/kernel/vga/vga.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/vm/vm.c -o build/kernel/vm/vm.o
+nasm -f elf64            kernel/idt/interrupt_stub.asm -o build/kernel/idt/interrupt_stub.o
+nasm -f elf64            kernel/lib/src/swtch.asm -o build/kernel/lib/src/swtch.o
+nasm -f elf64            kernel/pit/pit.asm -o build/kernel/pit/pit.o
+ld --nmagic --script=x86_64/boot/linker.ld   --output=isofiles/boot/kernel.bin build/x86_64/boot/boot.o build/x86_64/boot/check_functions.o build/x86_64/boot/header.o build/kernel/idt/idt.o build/kernel/idt/interrupt_handlers.o build/kernel/kalloc/kalloc.o build/kernel/lib/src/memset.o build/kernel/lib/src/panic.o build/kernel/lib/src/read.o build/kernel/lib/src/shutdown.o build/kernel/lib/src/str_utils.o build/kernel/lib/src/test.o build/kernel/list/list.o build/kernel/main.o build/kernel/paging/paging.o build/kernel/pic/pic.o build/kernel/sched/proc.o build/kernel/sched/scheduler.o build/kernel/sched/threads.o build/kernel/serial/serial.o build/kernel/sync/mutex.o build/kernel/sync/spinlock.o build/kernel/tty/tty.o build/kernel/vga/vga.o build/kernel/vm/vm.o build/kernel/idt/interrupt_stub.o build/kernel/lib/src/swtch.o build/kernel/pit/pit.o
+grub-mkrescue -o isofiles/kernel.iso isofiles
+make[1]: Leaving directory '/mnt/c/Users/rusgy/Documents/Work/ShipOsCi'
+qemu-system-x86_64 -nographic -serial null -serial mon:stdio -device isa-debug-exit,iobase=0xf4,iosize=0x04 -m 128M -cdrom isofiles/kernel.iso
+[SERIAL] Serial port at 0x2f8 initialized successfully
+[STDOUT] Found 2 serial port(s)
+[STDOUT] Using port 0x2f8 as default
+[SERIAL] Serial ports initialized successfully
+[STDOUT] Kernel started
+[STDOUT] TTY 0
+[STDOUT] TTY subsystem initialized
+[STDOUT] TTY 0
+[STDOUT] TTY 1
+[STDOUT] TTY 2
+[STDOUT] TTY 3
+[STDOUT] TTY 4
+[STDOUT] TTY 5
+[STDOUT] TTY 6
+[STDOUT] TTY 0
+[BOOT] TTY subsystem initialized
+[STDOUT]  CR3: 106000
+[STDOUT] Kernel end at address: 1150828
+[STDOUT] Kernel size: 102252
+[STDOUT] Setting up kernel page table...
+[STDOUT] kernel table: 106000
+[STDOUT] Successfully allocated physical memory up to 8000000
+[MEMORY] Physical memory initialized
+[STDOUT] 32422 pages available in allocator
+[STDOUT] Init proc allocated
+[STDOUT] arg initialized
+[STDOUT] thread initialized
+[STDOUT] thread state initialized
+[STDOUT] thread pushed into list
+[STDOUT] Init proc node 7ffd000
+[KERNEL] Boot sequence completed successfully
+rm -rf build
+rm -f isofiles/kernel.*
+rm -f isofiles/**/kernel.*
+rm -f serial.log
+make[1]: Entering directory '/mnt/c/Users/rusgy/Documents/Work/ShipOsCi'
+nasm -f elf64            x86_64/boot/boot.asm -o build/x86_64/boot/boot.o
+nasm -f elf64            x86_64/boot/check_functions.asm -o build/x86_64/boot/check_functions.o
+nasm -f elf64            x86_64/boot/header.asm -o build/x86_64/boot/header.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/idt/idt.c -o build/kernel/idt/idt.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/idt/interrupt_handlers.c -o build/kernel/idt/interrupt_handlers.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/kalloc/kalloc.c -o build/kernel/kalloc/kalloc.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/memset.c -o build/kernel/lib/src/memset.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/panic.c -o build/kernel/lib/src/panic.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/read.c -o build/kernel/lib/src/read.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/shutdown.c -o build/kernel/lib/src/shutdown.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/str_utils.c -o build/kernel/lib/src/str_utils.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/lib/src/test.c -o build/kernel/lib/src/test.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/list/list.c -o build/kernel/list/list.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/main.c -o build/kernel/main.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/paging/paging.c -o build/kernel/paging/paging.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/pic/pic.c -o build/kernel/pic/pic.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/sched/proc.c -o build/kernel/sched/proc.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/sched/scheduler.c -o build/kernel/sched/scheduler.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/sched/threads.c -o build/kernel/sched/threads.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/serial/serial.c -o build/kernel/serial/serial.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/sync/mutex.c -o build/kernel/sync/mutex.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/sync/spinlock.c -o build/kernel/sync/spinlock.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/tty/tty.c -o build/kernel/tty/tty.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/vga/vga.c -o build/kernel/vga/vga.o
+gcc -Wall -c -ggdb -ffreestanding -mgeneral-regs-only   -DDEBUG -DTEST kernel/vm/vm.c -o build/kernel/vm/vm.o
+nasm -f elf64            kernel/idt/interrupt_stub.asm -o build/kernel/idt/interrupt_stub.o
+nasm -f elf64            kernel/lib/src/swtch.asm -o build/kernel/lib/src/swtch.o
+nasm -f elf64            kernel/pit/pit.asm -o build/kernel/pit/pit.o
+ld --nmagic --script=x86_64/boot/linker.ld   --output=isofiles/boot/kernel.bin build/x86_64/boot/boot.o build/x86_64/boot/check_functions.o build/x86_64/boot/header.o build/kernel/idt/idt.o build/kernel/idt/interrupt_handlers.o build/kernel/kalloc/kalloc.o build/kernel/lib/src/memset.o build/kernel/lib/src/panic.o build/kernel/lib/src/read.o build/kernel/lib/src/shutdown.o build/kernel/lib/src/str_utils.o build/kernel/lib/src/test.o build/kernel/list/list.o build/kernel/main.o build/kernel/paging/paging.o build/kernel/pic/pic.o build/kernel/sched/proc.o build/kernel/sched/scheduler.o build/kernel/sched/threads.o build/kernel/serial/serial.o build/kernel/sync/mutex.o build/kernel/sync/spinlock.o build/kernel/tty/tty.o build/kernel/vga/vga.o build/kernel/vm/vm.o build/kernel/idt/interrupt_stub.o build/kernel/lib/src/swtch.o build/kernel/pit/pit.o
+grub-mkrescue -o isofiles/kernel.iso isofiles
+make[1]: Leaving directory '/mnt/c/Users/rusgy/Documents/Work/ShipOsCi'
+qemu-system-x86_64 -nographic -serial null -serial mon:stdio -device isa-debug-exit,iobase=0xf4,iosize=0x04 -m 128M -cdrom isofiles/kernel.iso
+[SERIAL] Serial port at 0x2f8 initialized successfully
+[STDOUT] Found 2 serial port(s)
+[STDOUT] Using port 0x2f8 as default
+[SERIAL] Serial ports initialized successfully
+[STDOUT] Kernel started
+[STDOUT] TTY 0
+[STDOUT] TTY subsystem initialized
+[STDOUT] TTY 0
+[STDOUT] TTY 1
+[STDOUT] TTY 2
+[STDOUT] TTY 3
+[STDOUT] TTY 4
+[STDOUT] TTY 5
+[STDOUT] TTY 6
+[STDOUT] TTY 0
+[BOOT] TTY subsystem initialized
+[STDOUT]  CR3: 106000
+[STDOUT] Kernel end at address: 1150828
+[STDOUT] Kernel size: 102252
+[STDOUT] Setting up kernel page table...
+[STDOUT] kernel table: 106000
+[STDOUT] Successfully allocated physical memory up to 8000000
+[MEMORY] Physical memory initialized
+[STDOUT] 32422 pages available in allocator
+[STDOUT] Init proc allocated
+[STDOUT] arg initialized
+[STDOUT] thread initialized
+[STDOUT] thread state initialized
+[STDOUT] thread pushed into list
+[STDOUT] Init proc node 7ffd000
+[KERNEL] Boot sequence completed successfully
+[STDOUT] Test mode enabled, running tests
+

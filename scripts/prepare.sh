@@ -6,5 +6,7 @@
 #
 
 rm *.log
-make ci
+make ci | while IFS= read -r line; do
+    echo $line | grep -E "^\[.+\].+$" | tr -d '\r' >> report.log
+done
 cat report.log | grep TEST > tests.log
