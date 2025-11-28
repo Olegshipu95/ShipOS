@@ -1,0 +1,35 @@
+# CLA Assistant Configuration
+# This file configures the CLA Assistant GitHub App
+# Install the app from: https://github.com/apps/cla-assistant
+
+# Path to the CLA document
+claDocumentPath: "CLA.md"
+
+# Path where signed CLAs are stored (in a separate repository or branch)
+# You can use a separate repository for storing signatures
+# signaturesPath: "cla-signatures"
+
+# Whether to allow contributors to sign on behalf of their organization
+allowListPattern: ".*"
+
+# Whether to require re-signing when CLA is updated
+requireReSigningOnUpdate: false
+
+# Custom message to show when CLA is not signed
+customPrSignComment: |
+  Thank you for your pull request! 
+  
+  Before we can review your contribution, you need to sign our Contributor License Agreement (CLA).
+  
+  Please read the [CLA.md](CLA.md) document and sign it using the link below.
+  
+  Once you've signed the CLA, this check will automatically pass and your PR will be ready for review.
+
+# Message to show after CLA is signed
+signedComment: |
+  ✅ Thank you for signing the CLA! Your contribution is now ready for review.
+
+# Message to show when CLA check fails
+unsignedComment: |
+  ❌ The CLA has not been signed yet. Please sign the CLA to proceed.
+
