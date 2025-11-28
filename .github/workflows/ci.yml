@@ -57,10 +57,10 @@ jobs:
         echo "✅ ISO found!"
         echo "📏 Size: $(stat -c%s isofiles/kernel.iso) bytes"
 
-    - name: 🧪 Boot test with QEMU (60 seconds)
+    - name: 🧪 Boot test with QEM
       run: |
-        echo "🖥️ Starting QEMU boot test (headless, 10s)..."
-        timeout 60s make ci 2>&1 || true
+        echo "🖥️ Starting QEMU boot test"
+        bash ./scripts/prepare.sh
         echo "📜 === Boot log ==="
         cat report.log
         echo "📜 === End of boot log ==="
@@ -68,40 +68,14 @@ jobs:
         echo "📝 Boot log saved"
 
     - name: 🧐 Validate boot success
-      run: |
-        echo "🔍 Checking for expected boot messages..."
-
-        check() {
-          if grep -q "$2" kernel_boot.log; then
-            echo "✅ $1"
-          else
-            echo "❌ $1 missing!"
-            exit 1
-          fi
-        }
-
-        check "Serial port initialized" "\[SERIAL\] Serial ports initialized successfully"
-        check "TTY subsystem initialized" "\[BOOT\] TTY subsystem initialized"
-        check "Memory subsystem initialized" "\[MEMORY\] Physical memory initialized"
-        check "Kernel boot completed" "\[KERNEL\] Boot sequence completed successfully"
-
-        echo "🎉 All boot checks passed!"
+      run: bash ./scripts/checks/boot.sh
 
     - name: 🚨 Check for panic or errors
-      run: |
-        echo "🔎 Scanning for critical issues..."
-
-        if grep -F "[PANIC]" kernel_boot.log; then
-          echo "🔥 PANIC detected in kernel log!"
-          exit 1
-        fi
-
-        if grep -i "error" kernel_boot.log; then
-          echo "⚠️ Errors found in boot log:"
-          grep -i "error" kernel_boot.log
-        else
-          echo "✨ No errors found"
-        fi
+      run: bash ./scripts/checks/panic.sh
+        
+    
+    - name: 🧪 Tests
+      run: bash ./scripts/check_tests.sh
 
     - name: 📤 Upload boot log
       if: always()

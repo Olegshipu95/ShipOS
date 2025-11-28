@@ -6,6 +6,13 @@
 #include "../include/test.h"
 #include "../include/logging.h"
 
+int test_addition() {
+    int a = 1;
+    int b = 2;
+
+    return a + b == 2;
+}
+
 void run_tests() {
     LOG("Test mode enabled, running tests");
 
@@ -14,6 +21,8 @@ void run_tests() {
     // TEST_REPORT("Success", 1);
     // TEST_REPORT_TIMED("TIMEOUT OK", 1, 5000, 10000);
     // TEST_REPORT_TIMED("TIMEOUT FAIL", 1, 5000, 1000);
+
+    TEST_REPORT("Addition", CHECK(test_addition));
 
     LOG("No tests yet :(");
 }
