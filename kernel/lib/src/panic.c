@@ -1,5 +1,4 @@
-#include "../include/panic.h"
-#include "../../serial/serial.h"
+#include "../../lib/include/logging.h"
 
 void panic(char *message) {
     // Output to both VGA and serial for maximum visibility

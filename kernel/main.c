@@ -7,12 +7,12 @@
 
 #include "vga/vga.h"
 #include "idt/idt.h"
-#include "tty/tty.h"
-#include "serial/serial.h"
 #include "kalloc/kalloc.h"
 #include "lib/include/panic.h"
 #include "memlayout.h"
 #include "lib/include/x86_64.h"
+#include "lib/include/logging.h"
+#include "lib/include/test.h"
 #include "paging/paging.h"
 #include "sched/proc.h"
 #include "sched/threads.h"
@@ -69,68 +69,43 @@ int kernel_main(){
     uint16_t serial_ports[MAX_SERIAL_PORTS];
     int serial_ports_count = detect_serial_ports(serial_ports);
     if (serial_ports_count == 0) {
-        printf("No serial ports detected\n");
+        LOG("No serial ports detected");
     } else {
         set_default_serial_port(serial_ports[0]);
-        LOG_BOOT_SERIAL("Found %d serial port(s)", serial_ports_count);
-        LOG_BOOT_SERIAL("Using port 0x%p as default", serial_ports[0]);
+        LOG("Found %d serial port(s)", serial_ports_count);
+        LOG("Using port 0x%p as default", serial_ports[0]);
     }
     
-    LOG_BOOT_SERIAL("Kernel started");
+    LOG("Kernel started");
 
     init_tty();
-    LOG_BOOT_SERIAL("TTY subsystem initialized");
-
     for (uint8_t i=0; i < TERMINALS_NUMBER; i++) {
         set_tty(i);
-        printf("TTY %d\n", i);
-        LOG_BOOT_SERIAL("TTY %d initialized", i);
     }
     set_tty(0);
 
-    LOG_BOOT_SERIAL("CR3 register: %x", rcr3());
-    printf(" CR3: %x\n", rcr3());
-
-    print("$ \r\n");
-
-    LOG_BOOT_SERIAL("Kernel start: %p, end: %p", KSTART, KEND);
-    LOG_BOOT_SERIAL("Kernel size: %d bytes", KEND - KSTART);
-
-    printf("Kernel end at address: %d\n", KEND);
-    printf("Kernel size: %d\n", KEND - KSTART);
-
-    LOG_MEM_SERIAL("Initializing physical memory allocator (phase 1)...");
+    LOG(" CR3: %x", rcr3());
+    LOG("Kernel end at address: %d", KEND);
+    LOG("Kernel size: %d", KEND - KSTART);
     kinit(KEND, INIT_PHYSTOP);
 
-    LOG_MEM_SERIAL("Setting up kernel page table...");
     pagetable_t kernel_table = kvminit(INIT_PHYSTOP, PHYSTOP);
-    printf("kernel table: %p\n", kernel_table);
-    LOG_MEM_SERIAL("Kernel page table at: %p", kernel_table);
-
-    LOG_MEM_SERIAL("nitializing physical memory allocator (phase 2)...");
+    LOG("kernel table: %p", kernel_table);
     kinit(INIT_PHYSTOP, PHYSTOP);
-    printf("Successfully allocated physical memory up to %p\n", PHYSTOP);
-    LOG_MEM_SERIAL("Physical memory initialized up to: %p", PHYSTOP);
+    LOG("Successfully allocated physical memory up to %p", PHYSTOP);
 
     int pages = count_pages();
-    printf("%d pages available in allocator\n", pages);
-    LOG_MEM_SERIAL("Available pages: %d", pages);
-
-    LOG_PROC_SERIAL("Initializing first process...");
     struct proc_node *init_proc_node = procinit();
-    printf("Init proc node %p\n", init_proc_node);
-    LOG_PROC_SERIAL("Init process node created at: %p", init_proc_node);
-
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
-    printf("Got init thread\n");
-    LOG_PROC_SERIAL("Init thread retrieved successfully");
-
-    LOG_INT_SERIAL("Setting up IDT...");
     setup_idt();
-    LOG_INT_SERIAL("IDT initialized");
 
-    LOG_KER_SERIAL("Boot sequence completed successfully");
-    LOG_KER_SERIAL("Entering idle loop...");
+    LOG("Boot sequence completed successfully");
+
+#ifdef TEST
+    run_tests();
+#endif
+
+    LOG("Entering idle loop...");
 
     // scheduler();
 

@@ -10,6 +10,7 @@
 #include "../lib/include/memset.h"
 #include "../memlayout.h"
 #include "../lib/include/x86_64.h"
+#include "../lib/include/logging.h"
 
 page_entry_raw encode_page_entry(struct page_entry entry) {
 
@@ -122,6 +123,7 @@ struct page_entry_raw *walk(pagetable_t tbl, uint64_t va, bool alloc) {
 }
 
 pagetable_t kvminit(uint64_t start, uint64_t end) {
+    LOG("Setting up kernel page table...");
     pagetable_t tbl4 = rcr3();
     
     char *addr;

@@ -12,25 +12,6 @@
 #include <inttypes.h>
 
 /**
- * @brief Utility macro for logging into serial port
- * 
- * @param logger Name to be displayed in square brackets
- * @param format Format string
- * @param ... Variadic arguments
- */
-#define LOG_SERIAL(logger, format, ...) serial_printf(get_default_serial_port(), "[" logger "] " format "\n\r", ##__VA_ARGS__)
-
-// Several presets for serial logging
-#define DEBUG_SERIAL(format, ...) LOG_SERIAL("DEBUG", format, ##__VA_ARGS__)
-#define PANIC_SERIAL(format, ...) LOG_SERIAL("PANIC", format, ##__VA_ARGS__)
-#define LOG_BOOT_SERIAL(format, ...) LOG_SERIAL("BOOT", format, ##__VA_ARGS__)
-#define LOG_TTY_SERIAL(format, ...) LOG_SERIAL("TTY", format, ##__VA_ARGS__)
-#define LOG_MEM_SERIAL(format, ...) LOG_SERIAL("MEMORY", format, ##__VA_ARGS__)
-#define LOG_PROC_SERIAL(format, ...) LOG_SERIAL("PROCESS", format, ##__VA_ARGS__)
-#define LOG_INT_SERIAL(format, ...) LOG_SERIAL("INTERRUPT", format, ##__VA_ARGS__)
-#define LOG_KER_SERIAL(format, ...) LOG_SERIAL("KERNEL", format, ##__VA_ARGS__)
-
-/**
  * @brief Standard base port addresses for COM ports
  */
 #define SERIAL_COM1_PORT 0x3F8

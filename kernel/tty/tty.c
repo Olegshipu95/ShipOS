@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include "tty.h"
 #include <inttypes.h>
+#include "../lib/include/logging.h"
 #include "../lib/include/memset.h"
 #include "../lib/include/str_utils.h"
 
@@ -54,6 +55,7 @@ void init_tty() {
     set_tty(0);
     init_spinlock(&printf_spinlock, "printf spinlock");
     init_spinlock(&print_spinlock, "print spinlock");
+    LOG("TTY subsystem initialized");
 }
 
 void set_tty(uint8_t terminal) {
@@ -62,6 +64,7 @@ void set_tty(uint8_t terminal) {
     }
     clear_vga();
     active_tty = tty_terminals + terminal;
+    LOG("TTY %d", active_tty->tty_id);
     write_buffer(active_tty->tty_buffer);
 }
 
