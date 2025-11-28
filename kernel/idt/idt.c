@@ -38,7 +38,7 @@ void make_interrupt(struct InterruptDescriptor64* idt, int array_index, uintptr_
  * (timer, keyboard, CPU exceptions), and enables interrupts.
  */
 void setup_idt(){
-    struct InterruptDescriptor64 idt[MAX_INTERRUPTS]; // Array for 256 IDT entries
+    static struct InterruptDescriptor64 idt[MAX_INTERRUPTS]; // Array for 256 IDT entries (must be static!)
 
     // Configure IDTR (IDT register)
     struct IDTR idtr;

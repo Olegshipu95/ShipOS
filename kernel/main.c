@@ -66,6 +66,11 @@ void thread_function(int argc, struct argument *args) {
  * @return int Always returns 0 (never reached).
  */
 int kernel_main(){
+    // Initialize CPU state before anything else
+    current_cpu.ncli = 0;
+    current_cpu.intena = 0;
+    current_cpu.current_thread = 0;
+    
     // Initialize serial ports
     uint16_t serial_ports[MAX_SERIAL_PORTS];
     int serial_ports_count = detect_serial_ports(serial_ports);
@@ -102,9 +107,7 @@ int kernel_main(){
     int pages = count_pages();
     struct proc_node *init_proc_node = procinit();
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
-#ifndef TEST
     setup_idt();
-#endif
     LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
 
 #ifdef TEST
