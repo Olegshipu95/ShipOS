@@ -57,14 +57,14 @@ jobs:
         echo "✅ ISO found!"
         echo "📏 Size: $(stat -c%s isofiles/kernel.iso) bytes"
 
-    - name: 🧪 Boot test with QEMU (10 seconds)
+    - name: 🧪 Boot test with QEMU (60 seconds)
       run: |
         echo "🖥️ Starting QEMU boot test (headless, 10s)..."
-        timeout 10s make qemu-headless 2>&1 || true
+        timeout 60s make ci 2>&1 || true
         echo "📜 === Boot log ==="
-        cat serial.log
+        cat report.log
         echo "📜 === End of boot log ==="
-        cp serial.log kernel_boot.log
+        cp report.log kernel_boot.log
         echo "📝 Boot log saved"
 
     - name: 🧐 Validate boot success
@@ -80,7 +80,7 @@ jobs:
           fi
         }
 
-        check "Serial port initialized" "\[SERIAL\] Serial port at 0x3f8 initialized successfully"
+        check "Serial port initialized" "\[SERIAL\] Serial ports initialized successfully"
         check "TTY subsystem initialized" "\[BOOT\] TTY subsystem initialized"
         check "Memory subsystem initialized" "\[MEMORY\] Physical memory initialized"
         check "Kernel boot completed" "\[KERNEL\] Boot sequence completed successfully"

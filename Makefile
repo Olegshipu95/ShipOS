@@ -16,7 +16,7 @@ GRUB_FLAGS := -o
 
 QEMU := qemu-system-x86_64
 QEMU_FLAGS := -m 128M -cdrom
-QEMU_HEADLESS_FLAGS := -nographic -serial file:reports.log -device isa-debug-exit,iobase=0xf4,iosize=0x04
+QEMU_HEADLESS_FLAGS := -nographic -serial null -serial file:report.log -device isa-debug-exit,iobase=0xf4,iosize=0x04
 
 # ==============================
 # Directories

@@ -10,7 +10,6 @@
 #include "idt.h"
 #include "interrupt_handlers.h"
 #include "../lib/include/memset.h"
-#include "../lib/include/logging.h"
 #include "../pic/pic.h"
 #include "../pit/pit.h"
 
@@ -39,7 +38,6 @@ void make_interrupt(struct InterruptDescriptor64* idt, int array_index, uintptr_
  * (timer, keyboard, CPU exceptions), and enables interrupts.
  */
 void setup_idt(){
-    LOG("Setting up IDT...");
     struct InterruptDescriptor64 idt[MAX_INTERRUPTS]; // Array for 256 IDT entries
 
     // Configure IDTR (IDT register)
@@ -108,6 +106,4 @@ void setup_idt(){
 
     // Enable interrupts
     asm("sti");
-
-    LOG("IDT initialized");
 }

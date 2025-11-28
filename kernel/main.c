@@ -13,6 +13,7 @@
 #include "lib/include/x86_64.h"
 #include "lib/include/logging.h"
 #include "lib/include/test.h"
+#include "lib/include/shutdown.h"
 #include "paging/paging.h"
 #include "sched/proc.h"
 #include "sched/threads.h"
@@ -71,11 +72,13 @@ int kernel_main(){
     if (serial_ports_count == 0) {
         LOG("No serial ports detected");
     } else {
-        set_default_serial_port(serial_ports[0]);
+        int used_port = serial_ports_count - 1;
+        set_default_serial_port(serial_ports[used_port]);
         LOG("Found %d serial port(s)", serial_ports_count);
-        LOG("Using port 0x%p as default", serial_ports[0]);
+        LOG("Using port 0x%p as default", serial_ports[used_port]);
     }
 
+    LOG_SERIAL("SERIAL", "Serial ports initialized successfully");
     LOG("Kernel started");
 
     init_tty();
@@ -83,6 +86,7 @@ int kernel_main(){
         set_tty(i);
     }
     set_tty(0);
+    LOG_SERIAL("BOOT", "TTY subsystem initialized");
 
     LOG(" CR3: %x", rcr3());
     LOG("Kernel end at address: %d", KEND);
@@ -93,16 +97,17 @@ int kernel_main(){
     LOG("kernel table: %p", kernel_table);
     kinit(INIT_PHYSTOP, PHYSTOP);
     LOG("Successfully allocated physical memory up to %p", PHYSTOP);
+    LOG_SERIAL("MEMORY", "Physical memory initialized");
 
     int pages = count_pages();
     struct proc_node *init_proc_node = procinit();
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
     setup_idt();
-
-    LOG("Boot sequence completed successfully");
+    LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
 
 #ifdef TEST
     run_tests();
+    shutdown();
 #endif
 
     LOG("Entering idle loop...");
