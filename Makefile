@@ -55,7 +55,7 @@ $(BUILD_DIR)/%.o: %.asm
 # Compile C files
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $< -o $@
 
 # Link all object files into kernel binary
 $(ISO_BOOT_DIR)/kernel.bin: $(objects)
@@ -69,7 +69,7 @@ $(ISO_DIR)/kernel.iso: $(ISO_BOOT_DIR)/kernel.bin
 # ==============================
 # Phony targets
 # ==============================
-.PHONY: build_kernel build_iso qemu qemu-gdb qemu-headless clean install
+.PHONY: build_kernel build_iso qemu qemu-gdb qemu-headless qemu-debug qemu-test clean install
 
 # Build kernel binary only
 build_kernel: $(ISO_BOOT_DIR)/kernel.bin
@@ -81,11 +81,22 @@ build_iso: $(ISO_DIR)/kernel.iso
 qemu: $(ISO_DIR)/kernel.iso
 	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
 
-# Run QEMU in Headless mode (no GUI, logs to serial.log)
-qemu-headless: $(ISO_DIR)/kernel.iso
+# Run QEMU in Headless mode with debug and tests (no GUI, logs to serial.log)
+qemu-ci: EXTRA_CFLAGS := -DDEBUG -DTEST
+qemu-ci: $(ISO_DIR)/kernel.iso
 	@echo "Running in headless mode. Logs will be saved to serial.log"
 	@echo "Press Ctrl+C to stop QEMU"
 	$(QEMU) $(QEMU_HEADLESS_FLAGS) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
+
+# Run QEMU with DEBUG macro defined
+qemu-debug: EXTRA_CFLAGS := -DDEBUG
+qemu-debug: clean $(ISO_DIR)/kernel.iso
+	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
+
+# Run QEMU with DEBUG and TEST macros defined
+qemu-test: EXTRA_CFLAGS := -DDEBUG -DTEST
+qemu-test: clean $(ISO_DIR)/kernel.iso
+	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
 
 # ==============================
 # GDB integration
@@ -101,7 +112,8 @@ QEMUGDB := $(shell if $(QEMU) -help | grep -q '^-gdb'; then echo "-gdb tcp::$(GD
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
 # Run QEMU paused and wait for GDB
-qemu-gdb: $(ISO_DIR)/kernel.iso .gdbinit
+qemu-test: -DDEBUG
+qemu-gdb: clean $(ISO_DIR)/kernel.iso .gdbinit
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso -S $(QEMUGDB)
 
