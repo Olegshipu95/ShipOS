@@ -2,34 +2,34 @@
 # This file configures the CLA Assistant GitHub App
 # Install the app from: https://github.com/apps/cla-assistant
 
-# Path to the CLA document
-claDocumentPath: "CLA.md"
+# Path to the Contributor Assignment Agreement document
+claDocumentPath: "CONTRIBUTOR_ASSIGNMENT.md"
 
-# Path where signed CLAs are stored (in a separate repository or branch)
+# Path where signed Contributor Assignment Agreements are stored (in a separate repository or branch)
 # You can use a separate repository for storing signatures
 # signaturesPath: "cla-signatures"
 
 # Whether to allow contributors to sign on behalf of their organization
 allowListPattern: ".*"
 
-# Whether to require re-signing when CLA is updated
+# Whether to require re-signing when Contributor Assignment Agreement is updated
 requireReSigningOnUpdate: false
 
-# Custom message to show when CLA is not signed
+# Custom message to show when Contributor Assignment Agreement is not signed
 customPrSignComment: |
   Thank you for your pull request! 
   
-  Before we can review your contribution, you need to sign our Contributor License Agreement (CLA).
+  Before we can review your contribution, you need to sign our Contributor Assignment Agreement.
   
-  Please read the [CLA.md](CLA.md) document and sign it using the link below.
+  Please read the [CONTRIBUTOR_ASSIGNMENT.md](CONTRIBUTOR_ASSIGNMENT.md) document and sign it using the link below.
   
-  Once you've signed the CLA, this check will automatically pass and your PR will be ready for review.
+  Once you've signed the Contributor Assignment Agreement, this check will automatically pass and your PR will be ready for review.
 
-# Message to show after CLA is signed
+# Message to show after Contributor Assignment Agreement is signed
 signedComment: |
-  ✅ Thank you for signing the CLA! Your contribution is now ready for review.
+  ✅ Thank you for signing the Contributor Assignment Agreement! Your contribution is now ready for review.
 
-# Message to show when CLA check fails
+# Message to show when Contributor Assignment Agreement check fails
 unsignedComment: |
-  ❌ The CLA has not been signed yet. Please sign the CLA to proceed.
+  ❌ The Contributor Assignment Agreement has not been signed yet. Please sign the Contributor Assignment Agreement to proceed.
 

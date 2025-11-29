@@ -8,24 +8,24 @@ By participating in this project, you agree to maintain a respectful and profess
 
 ## Before You Begin
 
-### Contributor License Agreement (CLA)
+### Contributor Assignment Agreement
 
-**IMPORTANT:** Before your first contribution, you must sign the [Contributor License Agreement (CLA)](CLA.md).
+**IMPORTANT:** Before your first contribution, you must sign the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md).
 
-The CLA ensures that:
+The Contributor Assignment Agreement ensures that:
 - All contributions become the exclusive property of ShipOS
 - ShipOS retains full rights to use, modify, distribute, and commercialize your contributions
 - You grant ShipOS the necessary rights to incorporate your work
 
-**How to sign the CLA:**
+**How to sign the Contributor Assignment Agreement:**
 
-1. Read the [CLA.md](CLA.md) document carefully
+1. Read the [CONTRIBUTOR_ASSIGNMENT.md](CONTRIBUTOR_ASSIGNMENT.md) document carefully
 2. Open a pull request to the ShipOS repository
-3. The CLA Assistant bot will automatically prompt you to sign the CLA
+3. The CLA Assistant bot will automatically prompt you to sign the Contributor Assignment Agreement
 4. Follow the instructions provided by the bot to complete the signing process
 5. Once signed, your pull request will be eligible for review
 
-**Note:** You only need to sign the CLA once. After signing, all your future contributions will be covered by the agreement.
+**Note:** You only need to sign the Contributor Assignment Agreement once. After signing, all your future contributions will be covered by the agreement.
 
 ## Development Workflow
 
@@ -158,7 +158,7 @@ Before submitting a pull request:
 - [ ] Code follows the project's style guidelines
 - [ ] Code is formatted using `./scripts/format_code.sh`
 - [ ] All tests pass and kernel builds successfully
-- [ ] CLA has been signed (checked automatically by CLA Assistant)
+- [ ] Contributor Assignment Agreement has been signed (checked automatically by CLA Assistant)
 - [ ] Changes are documented (if applicable)
 - [ ] Commit messages are clear and descriptive
 
@@ -183,7 +183,7 @@ Closes #(issue number) if applicable
 
 ### Review Process
 
-1. **CLA Check:** The CLA Assistant bot will verify you've signed the CLA
+1. **Contributor Assignment Agreement Check:** The CLA Assistant bot will verify you've signed the Contributor Assignment Agreement
 2. **Automated Checks:** CI will run build and test checks
 3. **Code Review:** Maintainers will review your code
 4. **Feedback:** Address any requested changes
@@ -207,7 +207,7 @@ We welcome contributions in the following areas:
 
 ## License
 
-By contributing to ShipOS, you agree that your contributions will be licensed under the terms of the [CLA](CLA.md), which grants ShipOS exclusive ownership and all rights to your contributions.
+By contributing to ShipOS, you agree that your contributions will be licensed under the terms of the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md), which grants ShipOS exclusive ownership and all rights to your contributions.
 
 ---
 

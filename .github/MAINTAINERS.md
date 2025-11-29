@@ -2,9 +2,9 @@
 
 This guide is for ShipOS maintainers and project owners.
 
-## CLA Management
+## Contributor Assignment Agreement Management
 
-### Verifying CLA Signatures
+### Verifying Contributor Assignment Agreement Signatures
 
 #### Using CLA Assistant App (Recommended)
 
@@ -25,9 +25,9 @@ This guide is for ShipOS maintainers and project owners.
 If not using CLA Assistant, verify signatures manually:
 
 1. **Check PR Comments:**
-   - Look for comments like: "I have read the CLA.md and agree to its terms"
+   - Look for comments like: "I have read the CONTRIBUTOR_ASSIGNMENT.md and agree to its terms"
    - Verify the comment is from the PR author
-   - Check that the comment explicitly mentions signing the CLA
+   - Check that the comment explicitly mentions signing the Contributor Assignment Agreement
 
 2. **Document Signature:**
    - Record the signature in your signature storage
@@ -40,7 +40,7 @@ If not using CLA Assistant, verify signatures manually:
    gh pr status --repo owner/ShipOS
    ```
 
-### Handling CLA Issues
+### Handling Contributor Assignment Agreement Issues
 
 #### Contributor Hasn't Signed
 
@@ -50,7 +50,7 @@ If not using CLA Assistant, verify signatures manually:
 
 2. **Follow-up:**
    - If no response, comment again with a friendly reminder
-   - Provide direct link to CLA.md
+   - Provide direct link to CONTRIBUTOR_ASSIGNMENT.md
    - Offer to answer questions
 
 3. **Final Notice:**
@@ -60,23 +60,23 @@ If not using CLA Assistant, verify signatures manually:
 #### Contributor Refuses to Sign
 
 - **Politely decline the contribution**
-- Explain that CLA is required for all contributions
+- Explain that Contributor Assignment Agreement is required for all contributions
 - Offer to discuss concerns if they have any
 - Keep the door open for future contributions
 
-#### CLA Signature Disputes
+#### Contributor Assignment Agreement Signature Disputes
 
 - Review the signature carefully
 - Check if it was signed before or after the contribution
 - Verify the signature matches the contributor
 - If in doubt, ask the contributor to re-sign
 
-### Updating the CLA
+### Updating the Contributor Assignment Agreement
 
-If you need to update the CLA:
+If you need to update the Contributor Assignment Agreement:
 
-1. **Version the CLA:**
-   - Update version number in CLA.md
+1. **Version the Contributor Assignment Agreement:**
+   - Update version number in CONTRIBUTOR_ASSIGNMENT.md
    - Document what changed
    - Consider requiring re-signing for major changes
 
@@ -110,7 +110,7 @@ If you need to update the CLA:
 3. **Save Changes**
 
 This ensures:
-- PRs cannot be merged without signed CLA
+- PRs cannot be merged without signed Contributor Assignment Agreement
 - PRs must pass all CI checks
 - Code review is required
 
@@ -118,8 +118,8 @@ This ensures:
 
 ### Before Reviewing
 
-1. **Check CLA Status:**
-   - Verify CLA is signed (automated check should show this)
+1. **Check Contributor Assignment Agreement Status:**
+   - Verify Contributor Assignment Agreement is signed (automated check should show this)
    - If not signed, request signature before reviewing
 
 2. **Check CI Status:**
@@ -165,11 +165,11 @@ This ensures:
 3. **Merge:**
    - Use "Squash and merge" for cleaner history
    - Write a clear merge commit message
-   - Verify CLA is signed before merging
+   - Verify Contributor Assignment Agreement is signed before merging
 
-## Handling Contributions Without CLA
+## Handling Contributions Without Contributor Assignment Agreement
 
-**Do not merge PRs without a signed CLA**, even if:
+**Do not merge PRs without a signed Contributor Assignment Agreement**, even if:
 - The code is excellent
 - The contributor is well-known
 - It's a small change
@@ -219,7 +219,7 @@ cla-signatures/
 ### GitHub Actions
 
 The repository includes:
-- `.github/workflows/cla-check.yml` - Checks CLA status on PRs
+- `.github/workflows/cla-check.yml` - Checks Contributor Assignment Agreement status on PRs
 - `.github/workflows/ci.yml` - Builds and tests code
 
 ### CLA Assistant App
@@ -228,17 +228,17 @@ If using CLA Assistant:
 - Automatic signature verification
 - Automatic PR status updates
 - Signature storage management
-- Re-signing on CLA updates
+- Re-signing on Contributor Assignment Agreement updates
 
 ## Best Practices
 
 1. **Be Consistent:**
-   - Always require CLA before merging
+   - Always require Contributor Assignment Agreement before merging
    - Don't make exceptions
    - Treat all contributors equally
 
 2. **Be Clear:**
-   - Explain why CLA is required
+   - Explain why Contributor Assignment Agreement is required
    - Make the process easy
    - Answer questions promptly
 
@@ -248,13 +248,13 @@ If using CLA Assistant:
    - Value all contributions
 
 4. **Document Everything:**
-   - Keep CLA up to date
+   - Keep Contributor Assignment Agreement up to date
    - Document any changes
    - Maintain clear records
 
 ## Troubleshooting
 
-### CLA Check Not Running
+### Contributor Assignment Agreement Check Not Running
 
 1. Check workflow file exists
 2. Verify workflow permissions

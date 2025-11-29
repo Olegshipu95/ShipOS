@@ -1,4 +1,4 @@
-name: 🔏 CLA Check
+name: 🔏 Contributor Assignment Agreement Check
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   cla-check:
-    name: Check CLA Signature
+    name: Check Contributor Assignment Agreement Signature
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && github.event.issue.pull_request)
     
@@ -18,13 +18,13 @@ jobs:
       with:
         fetch-depth: 0
     
-    - name: 🔍 Check if PR author has signed CLA
+    - name: 🔍 Check if PR author has signed Contributor Assignment Agreement
       id: cla_check
       run: |
         PR_AUTHOR="${{ github.event.pull_request.user.login }}"
         PR_NUMBER="${{ github.event.pull_request.number }}"
         
-        echo "Checking CLA for contributor: $PR_AUTHOR"
+        echo "Checking Contributor Assignment Agreement for contributor: $PR_AUTHOR"
         
         # Check if this is the first contribution
         # In a real setup, you would check against a database or file
@@ -35,14 +35,14 @@ jobs:
         # 2. Or check a signatures file/database
         # 3. Or use the CLA Assistant GitHub App (recommended)
         
-        echo "⚠️ Note: This is a basic check. For full CLA verification,"
+        echo "⚠️ Note: This is a basic check. For full Contributor Assignment Agreement verification,"
         echo "please install the CLA Assistant GitHub App:"
         echo "https://github.com/apps/cla-assistant"
         echo ""
         echo "The CLA Assistant App will automatically:"
-        echo "- Prompt contributors to sign the CLA"
+        echo "- Prompt contributors to sign the Contributor Assignment Agreement"
         echo "- Verify signatures automatically"
-        echo "- Update PR status based on CLA status"
+        echo "- Update PR status based on Contributor Assignment Agreement status"
         
         # For now, we'll set a status that requires manual verification
         # In production with CLA Assistant, this would be automated
@@ -57,31 +57,31 @@ jobs:
           const prNumber = context.payload.pull_request.number;
           const author = context.payload.pull_request.user.login;
           
-          const comment = `## 🔏 Contributor License Agreement Required
+          const comment = `## 🔏 Contributor Assignment Agreement Required
           
           Thank you for your contribution, @${author}!
           
-          Before we can review and merge your pull request, you need to sign our [Contributor License Agreement (CLA)](CLA.md).
+          Before we can review and merge your pull request, you need to sign our [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md).
           
-          ### 📋 What is the CLA?
+          ### 📋 What is the Contributor Assignment Agreement?
           
-          The CLA ensures that all contributions to ShipOS become the exclusive property of the project owner. This allows ShipOS to:
+          The Contributor Assignment Agreement ensures that all contributions to ShipOS become the exclusive property of the project owner. This allows ShipOS to:
           - Maintain exclusive ownership of all code
           - Control distribution and licensing
           - Commercialize the project if desired
           
           ### ✍️ How to Sign
           
-          1. **Read the CLA:** Please carefully read the [CLA.md](CLA.md) document
+          1. **Read the Contributor Assignment Agreement:** Please carefully read the [CONTRIBUTOR_ASSIGNMENT.md](CONTRIBUTOR_ASSIGNMENT.md) document
           2. **Sign via CLA Assistant:** If you have the CLA Assistant app installed, it will prompt you automatically
           3. **Manual Signing:** If CLA Assistant is not available, please comment on this PR with:
              \`\`\`
-             I have read the CLA.md and agree to its terms. I hereby sign the CLA.
+             I have read the CONTRIBUTOR_ASSIGNMENT.md and agree to its terms. I hereby sign the Contributor Assignment Agreement.
              \`\`\`
           
           ### ⚠️ Important
           
-          By signing the CLA, you agree that:
+          By signing the Contributor Assignment Agreement, you agree that:
           - All your contributions (past, present, and future) become the exclusive property of ShipOS
           - ShipOS has full rights to use, modify, distribute, and commercialize your contributions
           - You grant ShipOS all necessary rights and licenses
@@ -113,10 +113,10 @@ jobs:
             repo: context.repo.repo,
             sha: sha,
             state: claSigned ? 'success' : 'pending',
-            target_url: `${context.payload.repository.html_url}/blob/main/CLA.md`,
+            target_url: `${context.payload.repository.html_url}/blob/main/CONTRIBUTOR_ASSIGNMENT.md`,
             description: claSigned 
-              ? 'CLA has been signed ✓' 
-              : 'CLA signature required - please sign the Contributor License Agreement',
+              ? 'Contributor Assignment Agreement has been signed ✓' 
+              : 'Contributor Assignment Agreement signature required - please sign the Contributor Assignment Agreement',
             context: 'cla/signature'
           });
 
