@@ -118,7 +118,7 @@ ShipOS/
 - **[CONTRIBUTOR_ASSIGNMENT.md](CONTRIBUTOR_ASSIGNMENT.md)** - Contributor Assignment Agreement (required for all contributors)
 
 ## Contributing
-gay
+
 We welcome contributions to ShipOS! However, **all contributors must sign our [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md)** before their contributions can be accepted.
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines, code style requirements, and development workflow.
