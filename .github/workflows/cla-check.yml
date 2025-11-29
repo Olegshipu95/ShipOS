@@ -11,6 +11,12 @@ jobs:
     name: Check Contributor Assignment Agreement Signature
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' || (github.event_name == 'issue_comment' && github.event.issue.pull_request)
+    permissions:
+      issues: write
+      pull-requests: write
+      statuses: write
+      contents: read
+      checks: read
     
     steps:
     - name: 📥 Checkout repository
@@ -20,36 +26,72 @@ jobs:
     
     - name: 🔍 Check if PR author has signed Contributor Assignment Agreement
       id: cla_check
-      run: |
-        PR_AUTHOR="${{ github.event.pull_request.user.login }}"
-        PR_NUMBER="${{ github.event.pull_request.number }}"
-        
-        echo "Checking Contributor Assignment Agreement for contributor: $PR_AUTHOR"
-        
-        # Check if this is the first contribution
-        # In a real setup, you would check against a database or file
-        # For now, we'll use a simple check that can be enhanced
-        
-        # This is a placeholder - in production, you would:
-        # 1. Check against CLA Assistant API
-        # 2. Or check a signatures file/database
-        # 3. Or use the CLA Assistant GitHub App (recommended)
-        
-        echo "⚠️ Note: This is a basic check. For full Contributor Assignment Agreement verification,"
-        echo "please install the CLA Assistant GitHub App:"
-        echo "https://github.com/apps/cla-assistant"
-        echo ""
-        echo "The CLA Assistant App will automatically:"
-        echo "- Prompt contributors to sign the Contributor Assignment Agreement"
-        echo "- Verify signatures automatically"
-        echo "- Update PR status based on Contributor Assignment Agreement status"
-        
-        # For now, we'll set a status that requires manual verification
-        # In production with CLA Assistant, this would be automated
-        echo "cla_signed=false" >> $GITHUB_OUTPUT
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const prNumber = context.payload.pull_request.number;
+          const author = context.payload.pull_request.user.login;
+          const sha = context.payload.pull_request.head.sha;
+          
+          console.log(`Checking Contributor Assignment Agreement for contributor: ${author}`);
+          
+          // Check if CLA Assistant has already verified (license/cla check)
+          let claSigned = false;
+          
+          try {
+            const checks = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: sha,
+            });
+            
+            const claCheck = checks.data.check_runs.find(
+              check => check.name === 'license/cla' || check.name.includes('CLA') || check.name.includes('cla')
+            );
+            
+            if (claCheck && claCheck.conclusion === 'success') {
+              console.log('✅ CLA Assistant has verified the signature');
+              claSigned = true;
+            } else {
+              console.log('⚠️ CLA Assistant check not found or not successful');
+            }
+          } catch (error) {
+            console.log('Could not check CLA Assistant status:', error.message);
+          }
+          
+          // Also check PR comments for manual signature
+          if (!claSigned) {
+            try {
+              const comments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+              });
+              
+              const signatureComment = comments.data.find(comment => 
+                comment.user.login === author &&
+                (comment.body.includes('I have read the CONTRIBUTOR_ASSIGNMENT.md') ||
+                 comment.body.includes('I hereby sign the Contributor Assignment Agreement'))
+              );
+              
+              if (signatureComment) {
+                console.log('✅ Found manual signature comment');
+                claSigned = true;
+              }
+            } catch (error) {
+              console.log('Could not check comments:', error.message);
+            }
+          }
+          
+          // Set output for next steps
+          const fs = require('fs');
+          const outputPath = process.env.GITHUB_OUTPUT || '/tmp/github_output';
+          fs.appendFileSync(outputPath, `cla_signed=${claSigned.toString()}\n`);
+          console.log(`CLA signed status: ${claSigned}`);
     
     - name: 📝 Comment on PR
-      if: steps.cla_check.outputs.cla_signed == 'false' && github.event_name == 'pull_request'
+      if: steps.cla_check.outputs.cla_signed == 'false' && github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
       uses: actions/github-script@v7
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -57,7 +99,21 @@ jobs:
           const prNumber = context.payload.pull_request.number;
           const author = context.payload.pull_request.user.login;
           
-          const comment = `## 🔏 Contributor Assignment Agreement Required
+          // Check if a comment from this bot already exists
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: prNumber,
+          });
+          
+          const botComment = comments.data.find(comment => 
+            comment.user.type === 'Bot' && 
+            comment.body.includes('🔏 Contributor Assignment Agreement Required')
+          );
+          
+          // Only post if no existing comment found
+          if (!botComment) {
+            const comment = `## 🔏 Contributor Assignment Agreement Required
           
           Thank you for your contribution, @${author}!
           
@@ -91,15 +147,17 @@ jobs:
           ---
           
           **Note:** This is an automated check. For the best experience, install the [CLA Assistant GitHub App](https://github.com/apps/cla-assistant).`;
-          
-          github.rest.issues.createComment({
-            issue_number: prNumber,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
+            
+            await github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
     
     - name: ✅ Set PR status
+      if: always()
       uses: actions/github-script@v7
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -108,15 +166,21 @@ jobs:
           const sha = context.payload.pull_request.head.sha;
           const claSigned = '${{ steps.cla_check.outputs.cla_signed }}' === 'true';
           
-          github.rest.repos.createCommitStatus({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            sha: sha,
-            state: claSigned ? 'success' : 'pending',
-            target_url: `${context.payload.repository.html_url}/blob/main/CONTRIBUTOR_ASSIGNMENT.md`,
-            description: claSigned 
-              ? 'Contributor Assignment Agreement has been signed ✓' 
-              : 'Contributor Assignment Agreement signature required - please sign the Contributor Assignment Agreement',
-            context: 'cla/signature'
-          });
+          try {
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: sha,
+              state: claSigned ? 'success' : 'pending',
+              target_url: `${context.payload.repository.html_url}/blob/main/CONTRIBUTOR_ASSIGNMENT.md`,
+              description: claSigned 
+                ? 'Contributor Assignment Agreement has been signed ✓' 
+                : 'Contributor Assignment Agreement signature required - please sign the Contributor Assignment Agreement',
+              context: 'cla/signature'
+            });
+            console.log(`Status check set to: ${claSigned ? 'success' : 'pending'}`);
+          } catch (error) {
+            console.error('Failed to set status check:', error);
+            core.setFailed(`Failed to set status check: ${error.message}`);
+          }
 
