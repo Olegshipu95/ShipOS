@@ -158,4 +158,4 @@ Copyright (c) 2023 SHIPOS. All rights reserved.
 
 ---
 
-**ShipOS** - Import substitution of foreign products. ShipOS power.
+**ShipOS** - We stealed your threads
