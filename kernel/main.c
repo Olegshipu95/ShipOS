@@ -81,9 +81,9 @@ int kernel_main(){
         set_default_serial_port(serial_ports[used_port]);
         LOG("Found %d serial port(s)", serial_ports_count);
         LOG("Using port 0x%p as default", serial_ports[used_port]);
+        LOG_SERIAL("SERIAL", "Serial ports initialized successfully");
     }
 
-    LOG_SERIAL("SERIAL", "Serial ports initialized successfully");
     LOG("Kernel started");
 
     init_tty();
