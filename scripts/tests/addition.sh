@@ -1,4 +1,5 @@
 #!/bin/bash
+# Just sample test to check addittion
 
 check_success() {
     if grep -q "$2 - Passed" tests.log; then
