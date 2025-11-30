@@ -4,8 +4,8 @@
 NASM := nasm
 NASM_FLAGS := -f elf64           # Output 64-bit ELF objects for assembly
 
-CC := gcc
-CFLAGS := -Wall -c -ggdb -ffreestanding -mgeneral-regs-only  # Compile C for bare metal
+CC := gcc-13
+CFLAGS := -Wall -c -ggdb -ffreestanding -mgeneral-regs-only -fno-stack-protector # Compile C for bare metal
 
 LD := ld
 LINKER := x86_64/boot/linker.ld

@@ -2,60 +2,46 @@
 // Created by ShipOS developers on 03.01.24.
 // Copyright (c) 2024 SHIPOS. All rights reserved.
 //
-// Simple mutex implementation for ShipOS kernel.
-// Uses an underlying spinlock and a thread waiting list for blocking.
-//
 
 #include "mutex.h"
+#include "../lib/include/panic.h"
+#include "../sched/scheduler.h"
+
+extern struct cpu current_cpu;
 
 int init_mutex(struct mutex *lk, char *name) {
-    lk->spinlock = kalloc();
- 
-    // Initialize waiting thread list to empty
-    lk->thread_list = 0;
-    init_spinlock(lk->spinlock, name);
+    lk->locked = 0;
+    lk->wait_list = 0;
+    lk->name = name;
+
+    init_spinlock(&lk->lock, "mutex_inner_lock");
 }
 
 void acquire_mutex(struct mutex *lk) {
+    acquire_spinlock(&lk->lock);   // захватываем спинлок для защиты полей locked и wait_list
 
-    if (lk == 0) {
-        panic("panic in acquire_mutex");
-    }
-
-    check_mutex:
-    int bool = holding_spinlock(lk->spinlock);
-    if (bool == 0) {
-        acquire_spinlock(lk->spinlock);
-        return;
-    } else {
-        // Mutex is locked, add current thread to wait list
-        push_thread_list(&lk->thread_list, current_cpu.current_thread);
+    while (lk->locked) {  // между пробуждением и захватом мьютекс могли перехватить
+        push_thread_list(&lk->wait_list, current_cpu.current_thread);
         change_thread_state(current_cpu.current_thread, WAIT);
-
-        yield();
-
-        // Ensure spinlock is free before retrying
-        if(holding_spinlock(lk->spinlock) != 0)
-            panic("acquire_mutex: spinlock in not free");
-        goto check_mutex;
+        
+        release_spinlock(&lk->lock);  // если не отпустить спинлок, прерывания останутся выключенными (дедлок)
+        
+        yield();  // уходим в сон, отдавая процессор другим задачам
+        
+        acquire_spinlock(&lk->lock);  // спинлок для безопасной проверки lk->locked
     }
-};
 
-void release_mutex(struct mutex *lk) {
-    if (lk->spinlock->is_locked == 0) {
-        panic("release_mutex");
-    }
-    if (lk->thread_list == 0) {
-        // No waiting threads: simply release spinlock
-        release_spinlock(lk->spinlock);
-        return;
-    } else {
-        // Wake up one waiting thread
-        struct thread *thread = pop_thread_list(&lk->thread_list);
-        change_thread_state(thread, RUNNABLE);
-    }
+    lk->locked = 1;  // теперь мьютекс наш
+    release_spinlock(&lk->lock);  // отпускаем защиту структуры
 }
 
-void destroy_mutex(struct mutex *lk) {
-    kfree(lk);
+void release_mutex(struct mutex *lk) {
+    acquire_spinlock(&lk->lock);
+
+    lk->locked = 0;
+
+    if (lk->wait_list) {
+        struct thread *t = pop_thread_list(&lk->wait_list);
+        change_thread_state(t, RUNNABLE);
+    }
 }
