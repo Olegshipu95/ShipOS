@@ -24,7 +24,7 @@
  * @param format Format string
  * @param ... Variadic arguments
  */
-#define LOG_SERIAL(logger, format, ...) serial_printf(get_default_serial_port(), "[" logger  "] " format "\n\r", ##__VA_ARGS__)
+#define LOG_SERIAL(logger, format, ...) serial_printf(get_default_serial_port(), "[" logger  "] " format "\r\n", ##__VA_ARGS__)
 
 
 #ifdef DEBUG
