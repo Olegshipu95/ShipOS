@@ -19,7 +19,7 @@ int ptoa(uint64_t num, char *str) {
     int i = 0;
 
     do {
-        if (i > MAX_DIGIT_BUFFER_SIZE) {
+        if (i > MAX_DIGIT_BUFFER_SIZE - 1) {
             return -1;
         }
         int rem = (num % 16);
@@ -46,7 +46,7 @@ int itoa(int num, char *str, int radix) {
     }
 
     do {
-        if (i > MAX_DIGIT_BUFFER_SIZE) {
+        if (i > MAX_DIGIT_BUFFER_SIZE - 1) {
             return -1;
         }
         int rem = n % radix;
