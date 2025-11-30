@@ -25,6 +25,13 @@
 #define QEMU_SHUTDOWN_VALUE 0x2000
 
 /**
+ * @brief Legacy shutdown port for QEMU/Bochs
+ * Writing 0x2000 to port 0x604 triggers a shutdown in QEMU
+ */
+#define LEGACY_QEMU_SHUTDOWN_PORT 0x501
+#define LEGACY_QEMU_SHUTDOWN_VALUE 0x01
+
+/**
  * @brief Legacy APM (Advanced Power Management) interface
  * Used by older systems for power management
  */
@@ -49,7 +56,7 @@ void shutdown(void) {
 
     // Try older QEMU shutdown port
     LOG_SERIAL("SHUTDOWN", "Attempting legacy QEMU shutdown (port 0x501)");
-    outb(0x501, 0x01);
+    outb(LEGACY_QEMU_SHUTDOWN_PORT, LEGACY_QEMU_SHUTDOWN_VALUE);
 
     // Hardware shutdown failed
     LOG_SERIAL("SHUTDOWN", "Hardware shutdown not supported");
