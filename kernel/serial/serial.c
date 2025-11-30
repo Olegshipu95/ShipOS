@@ -46,6 +46,16 @@ static const uint16_t standard_com_ports[MAX_SERIAL_PORTS] = {
 };
 
 /**
+ * @brief Standard spinlock names
+ */
+static const char* serial_printf_spinlock_names[MAX_SERIAL_PORTS] = {
+    "serial_printf_1",
+    "serial_printf_2",
+    "serial_printf_3",
+    "serial_printf_4",
+};
+
+/**
  * @brief Array of initialized ports
  */
 static uint16_t initialized_ports[MAX_SERIAL_PORTS] = {0};
@@ -137,9 +147,7 @@ int init_serial(uint16_t port) {
     }
 
     // Initialize spinlock for this port
-    char lock_name[32];
-    // snprintf(lock_name, sizeof(lock_name), "serial_printf_%x", port);
-    init_spinlock(&serial_printf_spinlocks[index], lock_name);
+    init_spinlock(&serial_printf_spinlocks[index], serial_printf_spinlock_names[index]);
 
     // Log success using this port
     serial_printf(port, "[SERIAL] Serial port at 0x%x initialized successfully\r\n", port);
