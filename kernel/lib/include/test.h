@@ -6,10 +6,10 @@
 /**
  * @brief Maps test result to 1 for success and -1 for failure
  * 
- * @param result Test result, 1 for success, 0 for failure
+ * @param test_fn Test function without params, should return 1 for pass, 0 for failure
  * 
  */
-#define CHECK(result) (result ? 1 : -1)
+#define CHECK(test_fn) (test_fn() ? 1 : -1)
 
 #ifndef SHIPOS_TEST_H
 #define SHIPOS_TEST_H

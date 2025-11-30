@@ -10,7 +10,7 @@ int test_addition() {
     int a = 1;
     int b = 2;
 
-    return a + b == 2;
+    return a + b == 3;
 }
 
 void run_tests() {
