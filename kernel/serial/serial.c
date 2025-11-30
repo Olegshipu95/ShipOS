@@ -59,7 +59,7 @@ static const char* serial_printf_spinlock_names[MAX_SERIAL_PORTS] = {
  * @brief Array of initialized ports
  */
 static uint16_t initialized_ports[MAX_SERIAL_PORTS] = {0};
-static int num_initialized_ports = 0;
+static int num_initialized_ports = -1;
 
 /**
  * @brief Default serial port (initially COM1)
@@ -86,15 +86,28 @@ static int get_port_index(uint16_t port) {
     return -1;
 }
 
-int detect_serial_ports(uint16_t *ports) {
-    int detected = 0;
+int init_serial_ports() {
+    int serial_ports_count = detect_serial_ports();
+    if (serial_ports_count <= 0) {
+        return -1;
+    }
+    int used_port = serial_ports_count - 1;
+    set_default_serial_port(initialized_ports[used_port]);
+}
+
+int detect_serial_ports() {
+    if (num_initialized_ports != -1) {
+        return num_initialized_ports;
+    }
+
+    num_initialized_ports = 0;
     for (int i = 0; i < MAX_SERIAL_PORTS; i++) {
         uint16_t port = standard_com_ports[i];
         if (init_serial(port) == 0) {
-            ports[detected++] = port;
+            initialized_ports[num_initialized_ports++] = port;
         }
     }
-    return detected;
+    return num_initialized_ports;
 }
 
 int init_serial(uint16_t port) {

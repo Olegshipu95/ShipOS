@@ -72,15 +72,12 @@ int kernel_main(){
     current_cpu.current_thread = 0;
     
     // Initialize serial ports
-    uint16_t serial_ports[MAX_SERIAL_PORTS];
-    int serial_ports_count = detect_serial_ports(serial_ports);
-    if (serial_ports_count == 0) {
+    int serial_ports_count = init_serial_ports();
+    if (serial_ports_count == -1) {
         LOG("No serial ports detected");
     } else {
-        int used_port = serial_ports_count - 1;
-        set_default_serial_port(serial_ports[used_port]);
         LOG("Found %d serial port(s)", serial_ports_count);
-        LOG("Using port 0x%p as default", serial_ports[used_port]);
+        LOG("Using port 0x%p as default", get_default_serial_port());
         LOG_SERIAL("SERIAL", "Serial ports initialized successfully");
     }
 

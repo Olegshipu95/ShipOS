@@ -25,13 +25,20 @@
 #define MAX_SERIAL_PORTS 4
 
 /**
+ * @brief Detect, initialize available ports, set default serial
+ * port as last available
+ * 
+ * @return Number of detected ports if successful else -1
+ */
+int init_serial_ports();
+
+/**
  * @brief Detect and enumerate available serial ports.
  * Probes standard COM port addresses and tests them using loopback mode.
  * 
- * @param ports Array to store detected port addresses (must be at least MAX_SERIAL_PORTS size)
  * @return Number of detected ports (0 to MAX_SERIAL_PORTS)
  */
-int detect_serial_ports(uint16_t *ports);
+int detect_serial_ports();
 
 /**
  * @brief Initialize a specific serial port with standard settings:
