@@ -2,7 +2,7 @@
 // Created by ShipOS developers on 22.11.25.
 // Copyright (c) 2025 SHIPOS. All rights reserved.
 //
-// Serial port (COM1) driver for kernel debugging and logging.
+// Serial ports driver for kernel debugging and logging.
 // Provides text output to serial port which can be redirected by QEMU.
 //
 
