@@ -1,0 +1,52 @@
+# Top-most EditorConfig file
+root = true
+
+# All files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# C/C++ files
+[*.{c,h}]
+indent_style = space
+indent_size = 4
+max_line_length = 120
+
+# Assembly files
+[*.asm]
+indent_style = space
+indent_size = 4
+
+# Linker scripts
+[*.ld]
+indent_style = space
+indent_size = 4
+
+# Makefiles
+[{Makefile,*.mk}]
+indent_style = tab
+indent_size = 4
+
+# Shell scripts
+[*.sh]
+indent_style = space
+indent_size = 4
+
+# Markdown
+[*.md]
+indent_style = space
+indent_size = 4
+max_line_length = 120
+trim_trailing_whitespace = false
+
+# YAML
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# JSON
+[*.json]
+indent_style = space
+indent_size = 2

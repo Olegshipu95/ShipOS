@@ -10,7 +10,7 @@
 
 int init_mutex(struct mutex *lk, char *name) {
     lk->spinlock = kalloc();
- 
+
     // Initialize waiting thread list to empty
     lk->thread_list = 0;
     init_spinlock(lk->spinlock, name);

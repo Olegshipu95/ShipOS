@@ -1,0 +1,56 @@
+---
+# ShipOS C/C++ Code Style Configuration
+# Based on Allman style with 4-space indentation
+
+BasedOnStyle: LLVM
+Language: Cpp
+
+# Bracing
+BreakBeforeBraces: Allman
+BraceWrapping:
+  AfterFunction: true
+  AfterControlStatement: Always
+  AfterStruct: true
+  AfterEnum: true
+  SplitEmptyFunction: false
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+IndentCaseLabels: false
+
+# Alignment
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignOperands: true
+AlignTrailingComments: true
+PointerAlignment: Right
+
+# Line Breaking
+ColumnLimit: 120
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+
+# Spacing
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# Comments
+ReflowComments: true
+
+# Includes
+IncludeBlocks: Preserve
+SortIncludes: false

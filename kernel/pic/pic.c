@@ -15,7 +15,7 @@ void pic_send_eoi(uint8_t irq) {
 void pic_init() {
     outb(PIC1_COMMAND, ICW1);
     outb(PIC2_COMMAND, ICW1);
-    
+
     outb(PIC1_DATA, PIC_MASTER_OFFSET);
     outb(PIC2_DATA, PIC_SLAVE_OFFSET);
 

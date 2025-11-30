@@ -1,13 +1,12 @@
-#include "../include/panic.h"
-#include "../../serial/serial.h"
+#include "../../lib/include/logging.h"
 
 void panic(char *message) {
     // Output to both VGA and serial for maximum visibility
     print(message);
     print("\tpanic!");
-    
-    serial_printf("[PANIC] %s\n", message);
-    serial_printf("[PANIC] System halted!\n");
-    
+
+    PANIC_SERIAL("%s", message);
+    PANIC_SERIAL("System halted!");
+
     while (1) {}
 }

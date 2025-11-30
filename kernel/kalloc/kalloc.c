@@ -4,7 +4,7 @@
 //#include "../lib/include/stdint.h"
 #include <inttypes.h>
 #include <stddef.h>
-#include "../tty/tty.h"
+#include "../lib/include/logging.h"
 
 struct run {
     struct run *next;
@@ -30,7 +30,7 @@ void kfree(void *pa) {
     struct run *r;
 
     if (((uint64_t) pa % PGSIZE) != 0 || (char *) pa < end || (uint64_t) pa >= PHYSTOP) {
-        printf("Panic while trying to free memory\nPA: %p END: %p PHYSTOP: %p", pa, end, PHYSTOP);
+        LOG("Panic while trying to free memory\nPA: %p END: %p PHYSTOP: %p", pa, end, PHYSTOP);
         panic("kfree");
     }
 
@@ -70,5 +70,6 @@ uint64_t count_pages() {
         r = r->next;
     }
 
+    LOG("%d pages available in allocator", res);
     return res;
 }
