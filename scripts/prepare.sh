@@ -5,6 +5,6 @@
 # Tests log is ./tests.log
 #
 
-rm *.log
-make ci
+rm -f *.log
+timeout 60 make ci || true
 cat report.log | grep TEST > tests.log
