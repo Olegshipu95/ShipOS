@@ -51,12 +51,13 @@ void push_thread_list(struct thread_node **list, struct thread *thread) {
     }
 }
 
+// TODO very strange logic
 struct thread *pop_thread_list(struct thread_node **list) {
     if (*list == 0) {
         panic("Empty thread list while popping\n");
     } else {
         struct thread* t = (*list)->data;
-        if ((*list)->next = (*list)) {
+        if (((*list)->next = (*list))) {
             kfree(*list);
             *list = 0;
         } else {

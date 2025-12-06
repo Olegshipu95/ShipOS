@@ -130,6 +130,7 @@ pagetable_t kvminit(uint64_t start, uint64_t end) {
         //printf("Walking address %p\n", addr);
         page_entry_raw *entry_raw = walk(tbl4, addr, 1);
         // printf("FOUND ENTRY AT ADDRESS: %p\n", entry_raw);
+        // TODO an infinite busy-wait loop. Add panic
         while (entry_raw == 0) {}
         init_entry(entry_raw, addr);
         // printf("INITIALIZED ENTRY: %p\n", addr);

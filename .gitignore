@@ -1,8 +1,11 @@
 build
 isofiles/kernel.iso
 kernel/test
+*.log
 .vscode
 /isofiles/boot/kernel.bin
 .idea
 bx_enh_dbg.ini
 .gdbinit
+compile_commands.json
+.cache

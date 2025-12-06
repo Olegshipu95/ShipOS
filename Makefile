@@ -16,6 +16,7 @@ GRUB_FLAGS := -o
 
 QEMU := qemu-system-x86_64
 QEMU_FLAGS := -m 128M -cdrom
+QEMU_HEADLESS_FLAGS := -nographic -serial file:serial.log
 
 # ==============================
 # Directories
@@ -68,7 +69,7 @@ $(ISO_DIR)/kernel.iso: $(ISO_BOOT_DIR)/kernel.bin
 # ==============================
 # Phony targets
 # ==============================
-.PHONY: build_kernel build_iso qemu qemu-gdb clean install
+.PHONY: build_kernel build_iso qemu qemu-headless clean install
 
 # Build kernel binary only
 build_kernel: $(ISO_BOOT_DIR)/kernel.bin
@@ -79,6 +80,12 @@ build_iso: $(ISO_DIR)/kernel.iso
 # Run QEMU in BIOS mode
 qemu: $(ISO_DIR)/kernel.iso
 	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
+
+# Run QEMU in Headless mode (no GUI, logs to serial.log)
+qemu-headless: $(ISO_DIR)/kernel.iso
+	@echo "Running in headless mode. Logs will be saved to serial.log"
+	@echo "Press Ctrl+C to stop QEMU"
+	$(QEMU) $(QEMU_HEADLESS_FLAGS) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
 
 # ==============================
 # GDB integration
@@ -105,6 +112,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f $(ISO_DIR)/kernel.*
 	rm -f $(ISO_DIR)/**/kernel.*
+	rm -f serial.log
 
 # ==============================
 # Install dependencies (Linux/Debian)
