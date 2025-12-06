@@ -14,7 +14,7 @@
 // Private data for tmpfs inode
 struct tmpfs_inode_info {
     void *data;              // For files: pointer to data
-    struct list entries;     // For directories: list of entries
+    struct list entries;     // For directories: list of tmpfs_dir_entry
     uint64_t data_size;      // Size of allocated memory
 };
 
@@ -22,7 +22,11 @@ struct tmpfs_inode_info {
 struct tmpfs_dir_entry {
     char name[MAX_NAME_LEN];
     struct inode *inode;
-    struct list list_node;   // For entries list
+
+    // It is an intrusive list
+    // Allows to embed pointer to next node directly to the struct (hence, no need of external list)
+    // Uses `container_of` to get the container structure - `tmpfs_dir_entry`.
+    struct list list_node;
 };
 
 /**
