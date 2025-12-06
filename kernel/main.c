@@ -17,6 +17,9 @@
 #include "sched/proc.h"
 #include "sched/threads.h"
 #include "sched/scheduler.h"
+#include "vfs/vfs.h"
+#include "vfs/tests/vfs_test.h"
+#include "lib/include/panic.h"
 
 
 /**
@@ -58,8 +61,10 @@ void thread_function(int argc, struct argument *args) {
  * 2. Prints debug information about CR3 register and kernel memory layout.
  * 3. Initializes the physical memory allocator and page tables.
  * 4. Initializes the first process and its main thread.
- * 5. Sets up the Interrupt Descriptor Table (IDT).
- * 6. Starts the scheduler (currently commented out for testing).
+ * 5. Initializes the virtual file system (VFS).
+ * 5.1 Runs tests for the VFS. (TODO: remove from main)
+ * 6. Sets up the Interrupt Descriptor Table (IDT).
+ * 7. Starts the scheduler (currently commented out for testing).
  * 
  * @return int Always returns 0 (never reached).
  */
@@ -101,6 +106,15 @@ int kernel_main(){
     printf("Successfully allocated physical memory up to %p\n", PHYSTOP);
     serial_printf("[MEMORY] Physical memory initialized up to: %p\r\n", PHYSTOP);
     
+    // Initialize VFS
+    if (vfs_init() != VFS_OK) {
+        panic("Failed to initialize VFS");
+    }
+    
+    // Run VFS tests
+    serial_printf("[FILESYSTEM] Running VFS tests...\r\n");
+    run_vfs_tests();
+
     int pages = count_pages();
     printf("%d pages available in allocator\n", pages);
     serial_printf("[MEMORY] Available pages: %d\r\n", pages);
