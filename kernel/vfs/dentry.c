@@ -11,14 +11,16 @@
 #include "../lib/include/string.h"
 #include "vfs.h"
 
-
-struct dentry *vfs_alloc_dentry(const char *name, struct inode *inode) {
-    if (!name || !inode) {
+struct dentry *vfs_alloc_dentry(const char *name, struct inode *inode)
+{
+    if (!name || !inode)
+    {
         return NULL;
     }
 
     struct dentry *dentry = kalloc();
-    if (!dentry) {
+    if (!dentry)
+    {
         return NULL;
     }
 
@@ -26,7 +28,8 @@ struct dentry *vfs_alloc_dentry(const char *name, struct inode *inode) {
 
     // Copy name
     size_t name_len = strlen(name);
-    if (name_len >= MAX_NAME_LEN) {
+    if (name_len >= MAX_NAME_LEN)
+    {
         name_len = MAX_NAME_LEN - 1;
     }
     strncpy(dentry->name, name, name_len);
@@ -46,16 +49,19 @@ struct dentry *vfs_alloc_dentry(const char *name, struct inode *inode) {
     return dentry;
 }
 
+void vfs_free_dentry(struct dentry *dentry)
+{
+    if (!dentry)
+        return;
 
-void vfs_free_dentry(struct dentry *dentry) {
-    if (!dentry) return;
-
-    if (dentry->ref != 0) {
+    if (dentry->ref != 0)
+    {
         panic("vfs_free_dentry: ref != 0");
     }
 
     // Release inode reference
-    if (dentry->inode) {
+    if (dentry->inode)
+    {
         vfs_put_inode(dentry->inode);
     }
 
@@ -65,8 +71,10 @@ void vfs_free_dentry(struct dentry *dentry) {
 /**
  * Acquires a dentry reference by incrementing the reference count.
  **/
-struct dentry *vfs_get_dentry(struct dentry *dentry) {
-    if (!dentry) return NULL;
+struct dentry *vfs_get_dentry(struct dentry *dentry)
+{
+    if (!dentry)
+        return NULL;
 
     acquire_spinlock(&dentry->lock);
     dentry->ref++;
@@ -79,15 +87,18 @@ struct dentry *vfs_get_dentry(struct dentry *dentry) {
  * Releases a dentry reference by decrementing the reference count.
  * @note If the reference count reaches zero, the dentry is freed.
  **/
-void vfs_put_dentry(struct dentry *dentry) {
-    if (!dentry) return;
+void vfs_put_dentry(struct dentry *dentry)
+{
+    if (!dentry)
+        return;
 
     acquire_spinlock(&dentry->lock);
     dentry->ref--;
     uint32_t ref = dentry->ref;
     release_spinlock(&dentry->lock);
 
-    if (ref == 0) {
+    if (ref == 0)
+    {
         vfs_free_dentry(dentry);
     }
 }
@@ -98,32 +109,38 @@ void vfs_put_dentry(struct dentry *dentry) {
  * @example
  *   vfs_lookup(vfs_get_root(), "home")
  **/
-struct dentry *vfs_lookup(struct dentry *parent, const char *name) {
-    if (!parent || !name) {
+struct dentry *vfs_lookup(struct dentry *parent, const char *name)
+{
+    if (!parent || !name)
+    {
         return NULL;
     }
 
     struct inode *parent_inode = parent->inode;
     // Check if parent is a directory
-    if (!parent_inode || parent_inode->type != INODE_TYPE_DIR) {
+    if (!parent_inode || parent_inode->type != INODE_TYPE_DIR)
+    {
         return NULL;
     }
 
     // Check if operations are available
-    if (!parent_inode->i_op || !parent_inode->i_op->lookup) {
+    if (!parent_inode->i_op || !parent_inode->i_op->lookup)
+    {
         return NULL;
     }
 
     // Use inode's lookup operation to find child
     struct inode *child_inode = parent_inode->i_op->lookup(parent_inode, name);
-    if (!child_inode) {
+    if (!child_inode)
+    {
         return NULL;
     }
 
     // Create dentry for found inode
     // TODO: implement dentry cache, so that we don't allocate a new dentry every time
     struct dentry *child_dentry = vfs_alloc_dentry(name, child_inode);
-    if (!child_dentry) {
+    if (!child_dentry)
+    {
         vfs_put_inode(child_inode);
         return NULL;
     }

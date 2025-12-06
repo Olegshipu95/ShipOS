@@ -17,8 +17,8 @@
  * @param member Name of the member.
  * @return Pointer to the container structure.
  **/
- #define container_of(ptr, type, member) \
- ((type *)((char *)(ptr) - __builtin_offsetof(type, member)))
+#define container_of(ptr, type, member) \
+    ((type *) ((char *) (ptr) - __builtin_offsetof(type, member)))
 
 // Forward declarations
 static int64_t tmpfs_read(struct file *file, char *buf, uint64_t count);
@@ -56,8 +56,7 @@ struct inode_operations tmpfs_file_inode_ops = {
     .create = NULL,
     .mkdir = NULL,
     .unlink = NULL,
-    .rmdir = NULL
-};
+    .rmdir = NULL};
 
 // Inode operations for directories
 struct inode_operations tmpfs_dir_inode_ops = {
@@ -65,8 +64,7 @@ struct inode_operations tmpfs_dir_inode_ops = {
     .create = tmpfs_create,
     .mkdir = tmpfs_mkdir,
     .unlink = tmpfs_unlink,
-    .rmdir = NULL
-};
+    .rmdir = NULL};
 
 /**
  * @brief File operations for directories
@@ -79,40 +77,42 @@ struct file_operations tmpfs_dir_file_ops = {
     .write = NULL,
     .open = NULL,
     .close = NULL,
-    .lseek = NULL
-};
+    .lseek = NULL};
 
 // Superblock operations
 struct superblock_operations tmpfs_sb_ops = {
     .alloc_inode = tmpfs_alloc_inode,
     .destroy_inode = tmpfs_destroy_inode,
-    .sync_fs = NULL
-};
+    .sync_fs = NULL};
 
 // Read from tmpfs file
-static int64_t tmpfs_read(struct file *file, char *buf, uint64_t count) {
+static int64_t tmpfs_read(struct file *file, char *buf, uint64_t count)
+{
     struct inode *inode = file->inode;
     struct tmpfs_inode_info *info = inode->fs_private;
 
-    if (!info || !info->data) {
+    if (!info || !info->data)
+    {
         return 0;
     }
 
     acquire_spinlock(&inode->lock);
 
     // Check bounds
-    if (file->offset >= inode->size) {
+    if (file->offset >= inode->size)
+    {
         release_spinlock(&inode->lock);
         return 0;
     }
 
     // Adjust count
-    if (file->offset + count > inode->size) {
+    if (file->offset + count > inode->size)
+    {
         count = inode->size - file->offset;
     }
 
     // Copy data
-    memcpy(buf, (char *)info->data + file->offset, count);
+    memcpy(buf, (char *) info->data + file->offset, count);
     file->offset += count;
 
     release_spinlock(&inode->lock);
@@ -120,11 +120,13 @@ static int64_t tmpfs_read(struct file *file, char *buf, uint64_t count) {
 }
 
 // Write to tmpfs file
-static int64_t tmpfs_write(struct file *file, const char *buf, uint64_t count) {
+static int64_t tmpfs_write(struct file *file, const char *buf, uint64_t count)
+{
     struct inode *inode = file->inode;
     struct tmpfs_inode_info *info = inode->fs_private;
 
-    if (!info) {
+    if (!info)
+    {
         return VFS_EINVAL;
     }
 
@@ -133,30 +135,36 @@ static int64_t tmpfs_write(struct file *file, const char *buf, uint64_t count) {
     uint64_t new_size = file->offset + count;
 
     // If we need more memory - allocate
-    if (new_size > info->data_size) {
+    if (new_size > info->data_size)
+    {
         uint64_t pages_needed = PGROUNDUP(new_size) / PGSIZE;
 
         // Allocate new memory
         void *new_data = NULL;
-        for (uint64_t i = 0; i < pages_needed; i++) {
+        for (uint64_t i = 0; i < pages_needed; i++)
+        {
             void *page = kalloc();
-            if (!page) {
+            if (!page)
+            {
                 release_spinlock(&inode->lock);
                 return VFS_ENOMEM;
             }
-            if (i == 0) {
+            if (i == 0)
+            {
                 new_data = page;
             }
         }
 
         // Copy old data if exists
-        if (info->data && inode->size > 0) {
+        if (info->data && inode->size > 0)
+        {
             memcpy(new_data, info->data, inode->size);
 
             // Free old pages
             uint64_t old_pages = info->data_size / PGSIZE;
-            for (uint64_t i = 0; i < old_pages; i++) {
-                kfree((char *)info->data + i * PGSIZE);
+            for (uint64_t i = 0; i < old_pages; i++)
+            {
+                kfree((char *) info->data + i * PGSIZE);
             }
         }
 
@@ -165,10 +173,11 @@ static int64_t tmpfs_write(struct file *file, const char *buf, uint64_t count) {
     }
 
     // Write data
-    memcpy((char *)info->data + file->offset, buf, count);
+    memcpy((char *) info->data + file->offset, buf, count);
     file->offset += count;
 
-    if (file->offset > inode->size) {
+    if (file->offset > inode->size)
+    {
         inode->size = file->offset;
     }
 
@@ -176,25 +185,30 @@ static int64_t tmpfs_write(struct file *file, const char *buf, uint64_t count) {
     return count;
 }
 
-static int tmpfs_open(struct inode *inode, struct file *file) {
+static int tmpfs_open(struct inode *inode, struct file *file)
+{
     // Nothing special
     return VFS_OK;
 }
 
-static int tmpfs_close(struct file *file) {
+static int tmpfs_close(struct file *file)
+{
     // Nothing special
     return VFS_OK;
 }
 
 // Lookup file in directory
-static struct inode *tmpfs_lookup(struct inode *dir, const char *name) {
+static struct inode *tmpfs_lookup(struct inode *dir, const char *name)
+{
     // Check arguments
-    if (!dir || dir->type != INODE_TYPE_DIR) {
+    if (!dir || dir->type != INODE_TYPE_DIR)
+    {
         return NULL;
     }
 
     struct tmpfs_inode_info *dir_info = dir->fs_private;
-    if (!dir_info) {
+    if (!dir_info)
+    {
         return NULL;
     }
 
@@ -202,10 +216,12 @@ static struct inode *tmpfs_lookup(struct inode *dir, const char *name) {
 
     // Search through directory entries
     struct list *node;
-    for (node = dir_info->entries.next; node != &dir_info->entries; node = node->next) {
+    for (node = dir_info->entries.next; node != &dir_info->entries; node = node->next)
+    {
         struct tmpfs_dir_entry *entry = container_of(node, struct tmpfs_dir_entry, list_node);
 
-        if (strcmp(entry->name, name) == 0) {
+        if (strcmp(entry->name, name) == 0)
+        {
             struct inode *found = entry->inode;
             vfs_get_inode(found);
             release_spinlock(&dir->lock);
@@ -219,29 +235,34 @@ static struct inode *tmpfs_lookup(struct inode *dir, const char *name) {
 
 /**
  * @brief Create new file in directory
- * 
+ *
  * @note Uses same logic with `struct inode **result` as `vfs_open`
  */
-static int tmpfs_create(struct inode *dir, const char *name, struct inode **result) {
-    if (!dir || dir->type != INODE_TYPE_DIR || !name || !result) {
+static int tmpfs_create(struct inode *dir, const char *name, struct inode **result)
+{
+    if (!dir || dir->type != INODE_TYPE_DIR || !name || !result)
+    {
         return VFS_EINVAL;
     }
 
     struct tmpfs_inode_info *dir_info = dir->fs_private;
-    if (!dir_info) {
+    if (!dir_info)
+    {
         return VFS_EINVAL;
     }
 
     // Check if file already exists
     struct inode *existing = tmpfs_lookup(dir, name);
-    if (existing) {
+    if (existing)
+    {
         vfs_put_inode(existing);
         return VFS_EEXIST;
     }
 
     // Create new inode
     struct inode *new_inode = tmpfs_alloc_inode(dir->sb);
-    if (!new_inode) {
+    if (!new_inode)
+    {
         return VFS_ENOMEM;
     }
 
@@ -252,7 +273,8 @@ static int tmpfs_create(struct inode *dir, const char *name, struct inode **resu
 
     // Create directory entry
     struct tmpfs_dir_entry *entry = kalloc();
-    if (!entry) {
+    if (!entry)
+    {
         tmpfs_destroy_inode(new_inode);
         return VFS_ENOMEM;
     }
@@ -272,26 +294,31 @@ static int tmpfs_create(struct inode *dir, const char *name, struct inode **resu
 }
 
 // Create new directory
-static int tmpfs_mkdir(struct inode *dir, const char *name) {
-    if (!dir || dir->type != INODE_TYPE_DIR || !name) {
+static int tmpfs_mkdir(struct inode *dir, const char *name)
+{
+    if (!dir || dir->type != INODE_TYPE_DIR || !name)
+    {
         return VFS_EINVAL;
     }
 
     struct tmpfs_inode_info *dir_info = dir->fs_private;
-    if (!dir_info) {
+    if (!dir_info)
+    {
         return VFS_EINVAL;
     }
 
     // Check if directory already exists
     struct inode *existing = tmpfs_lookup(dir, name);
-    if (existing) {
+    if (existing)
+    {
         vfs_put_inode(existing);
         return VFS_EEXIST;
     }
 
     // Create new inode
     struct inode *new_inode = tmpfs_alloc_inode(dir->sb);
-    if (!new_inode) {
+    if (!new_inode)
+    {
         return VFS_ENOMEM;
     }
 
@@ -302,7 +329,8 @@ static int tmpfs_mkdir(struct inode *dir, const char *name) {
 
     // Create directory entry
     struct tmpfs_dir_entry *entry = kalloc();
-    if (!entry) {
+    if (!entry)
+    {
         tmpfs_destroy_inode(new_inode);
         return VFS_ENOMEM;
     }
@@ -321,13 +349,16 @@ static int tmpfs_mkdir(struct inode *dir, const char *name) {
 }
 
 // Unlink (delete) file from directory
-static int tmpfs_unlink(struct inode *dir, const char *name) {
-    if (!dir || dir->type != INODE_TYPE_DIR || !name) {
+static int tmpfs_unlink(struct inode *dir, const char *name)
+{
+    if (!dir || dir->type != INODE_TYPE_DIR || !name)
+    {
         return VFS_EINVAL;
     }
 
     struct tmpfs_inode_info *dir_info = dir->fs_private;
-    if (!dir_info) {
+    if (!dir_info)
+    {
         return VFS_EINVAL;
     }
 
@@ -335,10 +366,12 @@ static int tmpfs_unlink(struct inode *dir, const char *name) {
 
     // Find entry
     struct list *node;
-    for (node = dir_info->entries.next; node != &dir_info->entries; node = node->next) {
+    for (node = dir_info->entries.next; node != &dir_info->entries; node = node->next)
+    {
         struct tmpfs_dir_entry *entry = container_of(node, struct tmpfs_dir_entry, list_node);
 
-        if (strcmp(entry->name, name) == 0) {
+        if (strcmp(entry->name, name) == 0)
+        {
             // Remove from list
             lst_remove(&entry->list_node);
 
@@ -358,15 +391,18 @@ static int tmpfs_unlink(struct inode *dir, const char *name) {
 }
 
 // Allocate new inode
-static struct inode *tmpfs_alloc_inode(struct superblock *sb) {
+static struct inode *tmpfs_alloc_inode(struct superblock *sb)
+{
     struct inode *inode = vfs_alloc_inode(sb);
-    if (!inode) {
+    if (!inode)
+    {
         return NULL;
     }
 
     // Allocate tmpfs-specific data
     struct tmpfs_inode_info *info = kalloc();
-    if (!info) {
+    if (!info)
+    {
         vfs_free_inode(inode);
         return NULL;
     }
@@ -379,23 +415,30 @@ static struct inode *tmpfs_alloc_inode(struct superblock *sb) {
 }
 
 // Destroy inode
-static void tmpfs_destroy_inode(struct inode *inode) {
-    if (!inode) return;
+static void tmpfs_destroy_inode(struct inode *inode)
+{
+    if (!inode)
+        return;
 
     struct tmpfs_inode_info *info = inode->fs_private;
-    if (info) {
+    if (info)
+    {
         // Free data if it's a file
-        if (inode->type == INODE_TYPE_FILE && info->data) {
+        if (inode->type == INODE_TYPE_FILE && info->data)
+        {
             uint64_t pages = info->data_size / PGSIZE;
-            for (uint64_t i = 0; i < pages; i++) {
-                kfree((char *)info->data + i * PGSIZE);
+            for (uint64_t i = 0; i < pages; i++)
+            {
+                kfree((char *) info->data + i * PGSIZE);
             }
         }
 
         // Free directory entries if it's a directory
-        if (inode->type == INODE_TYPE_DIR) {
+        if (inode->type == INODE_TYPE_DIR)
+        {
             struct list *node = info->entries.next;
-            while (node != &info->entries) {
+            while (node != &info->entries)
+            {
                 struct list *next = node->next;
                 struct tmpfs_dir_entry *entry = container_of(node, struct tmpfs_dir_entry, list_node);
 
@@ -410,9 +453,11 @@ static void tmpfs_destroy_inode(struct inode *inode) {
 }
 
 // Mount tmpfs
-struct superblock *tmpfs_mount(void) {
+struct superblock *tmpfs_mount(void)
+{
     struct superblock *sb = kalloc();
-    if (!sb) {
+    if (!sb)
+    {
         return NULL;
     }
 
@@ -424,7 +469,8 @@ struct superblock *tmpfs_mount(void) {
 
     // Allocate filesystem info
     struct tmpfs_fs_info *fs_info = kalloc();
-    if (!fs_info) {
+    if (!fs_info)
+    {
         kfree(sb);
         return NULL;
     }
@@ -434,7 +480,8 @@ struct superblock *tmpfs_mount(void) {
 
     // Create root inode
     struct inode *root = tmpfs_alloc_inode(sb);
-    if (!root) {
+    if (!root)
+    {
         kfree(fs_info);
         kfree(sb);
         return NULL;
@@ -450,19 +497,23 @@ struct superblock *tmpfs_mount(void) {
     return sb;
 }
 
-int tmpfs_unmount(struct superblock *sb) {
-    if (!sb) {
+int tmpfs_unmount(struct superblock *sb)
+{
+    if (!sb)
+    {
         return VFS_EINVAL;
     }
 
     // Free root inode
-    if (sb->s_root) {
+    if (sb->s_root)
+    {
         tmpfs_destroy_inode(sb->s_root);
         vfs_free_inode(sb->s_root);
     }
 
     // Free fs info
-    if (sb->s_fs_info) {
+    if (sb->s_fs_info)
+    {
         kfree(sb->s_fs_info);
     }
 
@@ -470,7 +521,8 @@ int tmpfs_unmount(struct superblock *sb) {
     return VFS_OK;
 }
 
-int tmpfs_init(void) {
+int tmpfs_init(void)
+{
     // Nothing special
     printf("tmpfs initialized\n");
     return VFS_OK;

@@ -14,13 +14,16 @@
 static uint64_t next_ino = 1;
 static struct spinlock ino_lock;
 
-void inode_init(void) {
+void inode_init(void)
+{
     init_spinlock(&ino_lock, "ino_lock");
 }
 
-struct inode *vfs_alloc_inode(struct superblock *sb) {
+struct inode *vfs_alloc_inode(struct superblock *sb)
+{
     struct inode *inode = kalloc();
-    if (!inode) {
+    if (!inode)
+    {
         return NULL;
     }
 
@@ -38,10 +41,13 @@ struct inode *vfs_alloc_inode(struct superblock *sb) {
     return inode;
 }
 
-void vfs_free_inode(struct inode *inode) {
-    if (!inode) return;
+void vfs_free_inode(struct inode *inode)
+{
+    if (!inode)
+        return;
 
-    if (inode->ref != 0) {
+    if (inode->ref != 0)
+    {
         panic("vfs_free_inode: ref != 0");
     }
 
@@ -51,8 +57,10 @@ void vfs_free_inode(struct inode *inode) {
 /**
  * Acquires an inode reference by incrementing the reference count.
  **/
-struct inode *vfs_get_inode(struct inode *inode) {
-    if (!inode) return NULL;
+struct inode *vfs_get_inode(struct inode *inode)
+{
+    if (!inode)
+        return NULL;
 
     acquire_spinlock(&inode->lock);
     inode->ref++;
@@ -65,17 +73,21 @@ struct inode *vfs_get_inode(struct inode *inode) {
  * Releases an inode reference by decrementing the reference count.
  * @note If the reference count reaches zero, the inode is destroyed and freed.
  **/
-void vfs_put_inode(struct inode *inode) {
-    if (!inode) return;
+void vfs_put_inode(struct inode *inode)
+{
+    if (!inode)
+        return;
 
     acquire_spinlock(&inode->lock);
     inode->ref--;
     uint32_t ref = inode->ref;
     release_spinlock(&inode->lock);
 
-    if (ref == 0) {
+    if (ref == 0)
+    {
         // Call destroy_inode from superblock if available
-        if (inode->sb && inode->sb->s_op && inode->sb->s_op->destroy_inode) {
+        if (inode->sb && inode->sb->s_op && inode->sb->s_op->destroy_inode)
+        {
             inode->sb->s_op->destroy_inode(inode);
         }
         vfs_free_inode(inode);

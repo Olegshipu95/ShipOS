@@ -12,14 +12,16 @@
 #define TMPFS_MAGIC 0x01021994
 
 // Private data for tmpfs inode
-struct tmpfs_inode_info {
-    void *data;              // For files: pointer to data
-    struct list entries;     // For directories: list of tmpfs_dir_entry
-    uint64_t data_size;      // Size of allocated memory
+struct tmpfs_inode_info
+{
+    void *data;          // For files: pointer to data
+    struct list entries; // For directories: list of tmpfs_dir_entry
+    uint64_t data_size;  // Size of allocated memory
 };
 
 // Directory entry in tmpfs
-struct tmpfs_dir_entry {
+struct tmpfs_dir_entry
+{
     char name[MAX_NAME_LEN];
     struct inode *inode;
 
@@ -33,14 +35,15 @@ struct tmpfs_dir_entry {
  * tmpfs filesystem info
  * @note Stub for now
  */
-struct tmpfs_fs_info {
+struct tmpfs_fs_info
+{
     uint64_t blocks_used;
     uint64_t blocks_total;
 };
 
 // tmpfs initialization
 int tmpfs_init(void);
-struct superblock* tmpfs_mount(void);
+struct superblock *tmpfs_mount(void);
 int tmpfs_unmount(struct superblock *sb);
 
 // tmpfs operations
@@ -51,4 +54,3 @@ extern struct file_operations tmpfs_dir_file_ops;
 extern struct superblock_operations tmpfs_sb_ops;
 
 #endif // TMPFS_H
-

@@ -12,26 +12,31 @@
 /**
  * Splits a path string into individual components.
  **/
-static int split_path(const char *path, char components[][MAX_NAME_LEN], int max_components) {
+static int split_path(const char *path, char components[][MAX_NAME_LEN], int max_components)
+{
     int count = 0;
     const char *start = path;
 
     // Skip leading slashes
-    while (*start == '/') {
+    while (*start == '/')
+    {
         start++;
     }
 
-    while (*start && count < max_components) {
+    while (*start && count < max_components)
+    {
         const char *end = start;
 
         // Find next slash or end
-        while (*end && *end != '/') {
+        while (*end && *end != '/')
+        {
             end++;
         }
 
         // Copy component
         int len = end - start;
-        if (len > 0 && len < MAX_NAME_LEN) {
+        if (len > 0 && len < MAX_NAME_LEN)
+        {
             memcpy(components[count], start, len);
             components[count][len] = '\0';
             count++;
@@ -39,7 +44,8 @@ static int split_path(const char *path, char components[][MAX_NAME_LEN], int max
 
         // Move to next component
         start = end;
-        while (*start == '/') {
+        while (*start == '/')
+        {
             start++;
         }
     }
@@ -49,19 +55,22 @@ static int split_path(const char *path, char components[][MAX_NAME_LEN], int max
 
 /**
  * Resolves a full path to a dentry.
- * 
+ *
  * @example
  *   vfs_path_lookup("/home/s1riys/dopsa")
  **/
-struct dentry *vfs_path_lookup(const char *path) {
+struct dentry *vfs_path_lookup(const char *path)
+{
     struct dentry *root_dentry = vfs_get_root();
 
-    if (!path || !root_dentry) {
+    if (!path || !root_dentry)
+    {
         return NULL;
     }
 
     // Handle root directory
-    if (strcmp(path, "/") == 0) {
+    if (strcmp(path, "/") == 0)
+    {
         vfs_get_dentry(root_dentry);
         return root_dentry;
     }
@@ -70,7 +79,8 @@ struct dentry *vfs_path_lookup(const char *path) {
     char components[32][MAX_NAME_LEN];
     int num_components = split_path(path, components, 32);
 
-    if (num_components == 0) {
+    if (num_components == 0)
+    {
         vfs_get_dentry(root_dentry);
         return root_dentry;
     }
@@ -80,20 +90,25 @@ struct dentry *vfs_path_lookup(const char *path) {
     vfs_get_dentry(current);
 
     // Walk through path components
-    for (int i = 0; i < num_components; i++) {
+    for (int i = 0; i < num_components; i++)
+    {
         // Skip empty components
-        if (components[i][0] == '\0') {
+        if (components[i][0] == '\0')
+        {
             continue;
         }
 
         // Handle "." (current directory)
-        if (strcmp(components[i], ".") == 0) {
+        if (strcmp(components[i], ".") == 0)
+        {
             continue;
         }
 
         // Handle ".." (parent directory)
-        if (strcmp(components[i], "..") == 0) {
-            if (current->parent) {
+        if (strcmp(components[i], "..") == 0)
+        {
+            if (current->parent)
+            {
                 struct dentry *parent = current->parent;
                 vfs_get_dentry(parent);
                 vfs_put_dentry(current);
@@ -104,7 +119,8 @@ struct dentry *vfs_path_lookup(const char *path) {
 
         // Lookup child
         struct dentry *child = vfs_lookup(current, components[i]);
-        if (!child) {
+        if (!child)
+        {
             vfs_put_dentry(current);
             return NULL;
         }

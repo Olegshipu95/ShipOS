@@ -21,7 +21,8 @@
 #define MAX_PATH_LEN 4096
 
 // Types of inodes
-enum inode_type {
+enum inode_type
+{
     INODE_TYPE_FILE,
     INODE_TYPE_DIR,
     INODE_TYPE_DEV,
@@ -58,7 +59,8 @@ struct file;
 struct superblock;
 
 // Inode operations
-struct inode_operations {
+struct inode_operations
+{
     struct inode *(*lookup)(struct inode *dir, const char *name);
     int (*create)(struct inode *dir, const char *name, struct inode **result);
     int (*mkdir)(struct inode *dir, const char *name);
@@ -67,7 +69,8 @@ struct inode_operations {
 };
 
 // File operations
-struct file_operations {
+struct file_operations
+{
     int64_t (*read)(struct file *file, char *buf, uint64_t count);
     int64_t (*write)(struct file *file, const char *buf, uint64_t count);
     int (*open)(struct inode *inode, struct file *file);
@@ -76,14 +79,16 @@ struct file_operations {
 };
 
 // Superblock operations
-struct superblock_operations {
+struct superblock_operations
+{
     struct inode *(*alloc_inode)(struct superblock *sb);
     void (*destroy_inode)(struct inode *inode);
     int (*sync_fs)(struct superblock *sb);
 };
 
 // Inode structure
-struct inode {
+struct inode
+{
     uint64_t ino;                  // Inode number
     enum inode_type type;          // Type (file, dir, etc)
     uint32_t nlink;                // Hard link count
@@ -97,7 +102,8 @@ struct inode {
 };
 
 // Directory entry
-struct dentry {
+struct dentry
+{
     char name[MAX_NAME_LEN]; // Name
     struct inode *inode;     // Associated inode
     struct dentry *parent;   // Parent dentry
@@ -108,7 +114,8 @@ struct dentry {
 };
 
 // Open file structure
-struct file {
+struct file
+{
     struct inode *inode;          // Associated inode
     struct dentry *dentry;        // Associated dentry
     uint64_t offset;              // Current read/write position
@@ -119,7 +126,8 @@ struct file {
 };
 
 // Superblock
-struct superblock {
+struct superblock
+{
     uint64_t s_magic;                   // Magic number
     struct inode *s_root;               // Root inode
     struct superblock_operations *s_op; // Operations

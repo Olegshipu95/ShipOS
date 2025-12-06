@@ -17,11 +17,13 @@ extern void inode_init(void);
 static struct dentry *root_dentry = NULL;
 static struct superblock *root_sb = NULL;
 
-struct dentry *vfs_get_root(void) {
+struct dentry *vfs_get_root(void)
+{
     return root_dentry;
 }
 
-int vfs_init(void) {
+int vfs_init(void)
+{
     printf("Initializing VFS...\n");
 
     // Initialize inode subsystem
@@ -29,14 +31,16 @@ int vfs_init(void) {
 
     // Mount tmpfs as root filesystem
     root_sb = tmpfs_mount();
-    if (!root_sb) {
+    if (!root_sb)
+    {
         panic("Failed to mount root tmpfs");
         return VFS_ERR;
     }
 
     // Create root dentry
     root_dentry = vfs_alloc_dentry("/", root_sb->s_root);
-    if (!root_dentry) {
+    if (!root_dentry)
+    {
         panic("Failed to create root dentry");
         return VFS_ERR;
     }

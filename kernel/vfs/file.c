@@ -11,9 +11,11 @@
 #include "../lib/include/string.h"
 #include "vfs.h"
 
-struct file *vfs_alloc_file(void) {
+struct file *vfs_alloc_file(void)
+{
     struct file *file = kalloc();
-    if (!file) {
+    if (!file)
+    {
         return NULL;
     }
 
@@ -24,10 +26,13 @@ struct file *vfs_alloc_file(void) {
     return file;
 }
 
-void vfs_free_file(struct file *file) {
-    if (!file) return;
+void vfs_free_file(struct file *file)
+{
+    if (!file)
+        return;
 
-    if (file->ref != 0) {
+    if (file->ref != 0)
+    {
         panic("vfs_free_file: ref != 0");
     }
 
@@ -39,8 +44,10 @@ void vfs_free_file(struct file *file) {
  * @note That this function accepts `struct file **result` as a parameter in order to return pointer to `struct file` through it
  * @note It is implented so, because we want caller to recive exit code of the operation
  **/
-int vfs_open(const char *path, int flags, struct file **result) {
-    if (!path || !result) {
+int vfs_open(const char *path, int flags, struct file **result)
+{
+    if (!path || !result)
+    {
         return VFS_EINVAL;
     }
 
@@ -48,7 +55,8 @@ int vfs_open(const char *path, int flags, struct file **result) {
     struct dentry *dentry = vfs_path_lookup(path);
 
     // If not found and O_CREAT is set, create the file
-    if (!dentry && (flags & O_CREAT)) {
+    if (!dentry && (flags & O_CREAT))
+    {
         struct dentry *root_dentry = vfs_get_root();
 
         // Find parent directory
@@ -58,8 +66,10 @@ int vfs_open(const char *path, int flags, struct file **result) {
 
         // Find last slash
         char *last_slash = NULL;
-        for (char *p = path_copy; *p; p++) {
-            if (*p == '/') {
+        for (char *p = path_copy; *p; p++)
+        {
+            if (*p == '/')
+            {
                 last_slash = p;
             }
         }
@@ -67,44 +77,52 @@ int vfs_open(const char *path, int flags, struct file **result) {
         struct dentry *parent;
         const char *filename;
 
-        if (last_slash) {
+        if (last_slash)
+        {
             *last_slash = '\0';        // NOTE: at this points path_copy will turn from "/home/user/file.txt" to "/home/user"
             filename = last_slash + 1; // NOTE: filename will have value "file.txt"
             parent = vfs_path_lookup(path_copy[0] ? path_copy : "/");
-        } else {
+        }
+        else
+        {
             // Fallback to root directory
             parent = root_dentry;
             vfs_get_dentry(parent);
             filename = path;
         }
 
-        if (!parent) {
+        if (!parent)
+        {
             return VFS_ENOENT;
         }
 
         // Create file
         struct inode *parent_inode = parent->inode;
-        if (!parent_inode || parent_inode->type != INODE_TYPE_DIR) {
+        if (!parent_inode || parent_inode->type != INODE_TYPE_DIR)
+        {
             vfs_put_dentry(parent);
             return VFS_ENOTDIR;
         }
 
         // Check if parent inode has create operation
-        if (!parent_inode->i_op || !parent_inode->i_op->create) {
+        if (!parent_inode->i_op || !parent_inode->i_op->create)
+        {
             vfs_put_dentry(parent);
             return VFS_EINVAL;
         }
 
         struct inode *new_inode = NULL;
         int ret = parent_inode->i_op->create(parent_inode, filename, &new_inode);
-        if (ret != VFS_OK || !new_inode) {
+        if (ret != VFS_OK || !new_inode)
+        {
             vfs_put_dentry(parent);
             return ret;
         }
 
         // Create dentry for new file
         dentry = vfs_alloc_dentry(filename, new_inode);
-        if (!dentry) {
+        if (!dentry)
+        {
             vfs_put_inode(new_inode);
             vfs_put_dentry(parent);
             return VFS_ENOMEM;
@@ -119,25 +137,29 @@ int vfs_open(const char *path, int flags, struct file **result) {
         vfs_put_dentry(parent);
     }
 
-    if (!dentry) {
+    if (!dentry)
+    {
         return VFS_ENOENT;
     }
 
     struct inode *inode = dentry->inode;
-    if (!inode) {
+    if (!inode)
+    {
         vfs_put_dentry(dentry);
         return VFS_EINVAL;
     }
 
     // Check if it's a directory (can't open directories for reading/writing)
-    if (inode->type == INODE_TYPE_DIR) {
+    if (inode->type == INODE_TYPE_DIR)
+    {
         vfs_put_dentry(dentry);
         return VFS_EISDIR;
     }
 
     // Allocate file structure
     struct file *file = vfs_alloc_file();
-    if (!file) {
+    if (!file)
+    {
         vfs_put_dentry(dentry);
         return VFS_ENOMEM;
     }
@@ -151,16 +173,19 @@ int vfs_open(const char *path, int flags, struct file **result) {
     vfs_get_inode(inode);
 
     // Call open operation if available
-    if (file->f_op && file->f_op->open) {
+    if (file->f_op && file->f_op->open)
+    {
         int ret = file->f_op->open(inode, file);
-        if (ret != VFS_OK) {
+        if (ret != VFS_OK)
+        {
             vfs_close(file);
             return ret;
         }
     }
 
     // Handle O_TRUNC flag
-    if (flags & O_TRUNC) {
+    if (flags & O_TRUNC)
+    {
         inode->size = 0;
     }
 
@@ -168,21 +193,26 @@ int vfs_open(const char *path, int flags, struct file **result) {
     return VFS_OK;
 }
 
-int vfs_close(struct file *file) {
-    if (!file) {
+int vfs_close(struct file *file)
+{
+    if (!file)
+    {
         return VFS_EINVAL;
     }
 
     // Call close operation if available
-    if (file->f_op && file->f_op->close) {
+    if (file->f_op && file->f_op->close)
+    {
         file->f_op->close(file);
     }
 
     // Release references
-    if (file->inode) {
+    if (file->inode)
+    {
         vfs_put_inode(file->inode);
     }
-    if (file->dentry) {
+    if (file->dentry)
+    {
         vfs_put_dentry(file->dentry);
     }
 
@@ -191,7 +221,8 @@ int vfs_close(struct file *file) {
     uint32_t ref = file->ref;
     release_spinlock(&file->lock);
 
-    if (ref == 0) {
+    if (ref == 0)
+    {
         vfs_free_file(file);
     }
 
