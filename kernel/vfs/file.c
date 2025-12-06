@@ -8,6 +8,7 @@
 #include "../kalloc/kalloc.h"
 #include "../lib/include/memset.h"
 #include "../lib/include/panic.h"
+#include "../lib/include/string.h"
 #include "vfs.h"
 
 struct file *vfs_alloc_file(void) {
