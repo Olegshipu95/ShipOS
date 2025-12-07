@@ -1,0 +1,39 @@
+# ShipOS Kernel Code Style Configuration
+# Allman style - Opening braces on new line
+
+Language: Cpp
+BasedOnStyle: LLVM
+
+# Indentation
+IndentWidth: 4
+UseTab: Never
+TabWidth: 4
+ContinuationIndentWidth: 4
+
+# Braces - Allman style (opening braces on new line)
+BreakBeforeBraces: Allman
+
+# Pointer alignment
+PointerAlignment: Right
+ReferenceAlignment: Right
+
+# Line length
+ColumnLimit: 0
+
+# Includes
+SortIncludes: false
+IncludeBlocks: Preserve
+
+# Spacing
+SpaceAfterCStyleCast: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+SpacesBeforeTrailingComments: 1
+
+# Other important settings
+AlignOperands: true
+AlignTrailingComments: true
+AllowShortBlocksOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
