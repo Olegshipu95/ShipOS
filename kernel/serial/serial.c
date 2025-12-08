@@ -93,6 +93,7 @@ int init_serial_ports() {
     }
     int used_port = serial_ports_count - 1;
     set_default_serial_port(initialized_ports[used_port]);
+    return serial_ports_count;
 }
 
 int detect_serial_ports() {
