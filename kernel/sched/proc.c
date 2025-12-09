@@ -6,6 +6,7 @@
 
 #include "proc.h"
 #include "../lib/include/panic.h"
+#include "../lib/include/logging.h"
 #include "sched_states.h"
 
 struct cpu current_cpu;
@@ -30,7 +31,7 @@ struct proc *allocproc(void) {
     }
 
     pid_t pid = generate_pid();
-    
+
     proc->threads = 0;
     proc->killed = 0;
 
@@ -44,9 +45,9 @@ struct proc *allocproc(void) {
 struct proc_node *procinit(void) {
     init_spinlock(&pid_lock, "pid_lock");
     init_spinlock(&proc_lock, "proc_lock");
-    
+
     struct proc *init_proc = allocproc();
-    printf("Init proc allocated\n");
+    LOG("Init proc allocated");
 
     static uint32_t arg_value1 = 1;
     static uint32_t arg_value2 = 2;
@@ -56,17 +57,18 @@ struct proc_node *procinit(void) {
     arg1.value = &arg_value1;
     arg2.arg_size = sizeof(uint32_t);
     arg2.value = &arg_value2;
-    printf("arg initialized\n");
+    LOG("arg initialized");
     struct thread *new_thread1 = create_thread(thread_function, 1, &arg1);
     struct thread *new_thread2 = create_thread(thread_function, 1, &arg2);
-    printf("thread initialized\n");
+    LOG("thread initialized");
     change_thread_state(new_thread1, RUNNABLE);
     change_thread_state(new_thread2, RUNNABLE);
-    printf("thread state initialized\n");
+    LOG("thread state initialized");
     push_thread_list(&(init_proc->threads), new_thread1);
     push_thread_list(&(init_proc->threads), new_thread2);
-    printf("thread pushed into list\n");
+    LOG("thread pushed into list");
 
+    LOG("Init proc node %p", proc_list);
     return proc_list;
 }
 

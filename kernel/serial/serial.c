@@ -2,12 +2,13 @@
 // Created by ShipOS developers on 22.11.25.
 // Copyright (c) 2025 SHIPOS. All rights reserved.
 //
-// Serial port (COM1) driver implementation for kernel debugging and logging.
+// Serial port driver implementation for kernel debugging and logging.
 //
 
 #include "serial.h"
 #include <stdarg.h>
 #include "../lib/include/x86_64.h"
+#include "../lib/include/str_utils.h"
 #include "../sync/spinlock.h"
 
 /**
@@ -20,149 +21,201 @@
 #define SERIAL_LINE_STATUS_PORT(base)   (base + 5)
 
 /**
- * @brief Spinlock for serial_printf to ensure thread-safe output
+ * @brief Constants for serial port configuration
  */
-static struct spinlock serial_printf_spinlock;
+#define SERIAL_DISABLE_INTERRUPTS       0x00
+#define SERIAL_ENABLE_DLAB              0x80
+#define SERIAL_BAUD_DIVISOR_LOW         0x03  // Low byte for divisor 3 (38400 baud)
+#define SERIAL_BAUD_DIVISOR_HIGH        0x00  // High byte for divisor 3
+#define SERIAL_LINE_CONFIG_8N1          0x03  // 8 bits, no parity, 1 stop bit
+#define SERIAL_FIFO_ENABLE_CLEAR_14B    0xC7  // Enable FIFO, clear buffers, 14-byte threshold
+#define SERIAL_MODEM_IRQ_RTS_DSR        0x0B  // IRQs enabled, RTS/DSR set
+#define SERIAL_MODEM_LOOPBACK           0x1E  // Loopback mode for testing
+#define SERIAL_TEST_PAYLOAD             0xAE  // Test byte for serial chip verification
+#define SERIAL_MODEM_NORMAL_OP          0x0F  // Normal operation mode with IRQs
+#define SERIAL_TRANSMIT_EMPTY_MASK      0x20  // Mask for transmit holding register empty bit
 
 /**
- * @brief Flag indicating if serial port is initialized
+ * @brief Standard COM port addresses to probe
  */
-static int serial_initialized = 0;
+static const uint16_t standard_com_ports[MAX_SERIAL_PORTS] = {
+    SERIAL_COM1_PORT,
+    SERIAL_COM2_PORT,
+    SERIAL_COM3_PORT,
+    SERIAL_COM4_PORT
+};
 
-int init_serial() {
-    // Disable all interrupts
-    outb(SERIAL_COM1_PORT + 1, 0x00);
-    
-    // Enable DLAB (set baud rate divisor)
-    outb(SERIAL_LINE_COMMAND_PORT(SERIAL_COM1_PORT), 0x80);
-    
-    // Set divisor to 3 (lo byte) 38400 baud
-    outb(SERIAL_DATA_PORT(SERIAL_COM1_PORT), 0x03);
-    
-    // Set divisor to 3 (hi byte)
-    outb(SERIAL_COM1_PORT + 1, 0x00);
-    
-    // 8 bits, no parity, one stop bit
-    outb(SERIAL_LINE_COMMAND_PORT(SERIAL_COM1_PORT), 0x03);
-    
-    // Enable FIFO, clear them, with 14-byte threshold
-    outb(SERIAL_FIFO_COMMAND_PORT(SERIAL_COM1_PORT), 0xC7);
-    
-    // IRQs enabled, RTS/DSR set
-    outb(SERIAL_MODEM_COMMAND_PORT(SERIAL_COM1_PORT), 0x0B);
-    
-    // Set in loopback mode, test the serial chip
-    outb(SERIAL_MODEM_COMMAND_PORT(SERIAL_COM1_PORT), 0x1E);
-    
-    // Test serial chip (send byte 0xAE and check if serial returns same byte)
-    outb(SERIAL_DATA_PORT(SERIAL_COM1_PORT), 0xAE);
-    
-    // Check if serial is faulty (i.e: not same byte as sent)
-    if(inb(SERIAL_DATA_PORT(SERIAL_COM1_PORT)) != 0xAE) {
+/**
+ * @brief Standard spinlock names
+ */
+static const char* serial_printf_spinlock_names[MAX_SERIAL_PORTS] = {
+    "serial_printf_1",
+    "serial_printf_2",
+    "serial_printf_3",
+    "serial_printf_4",
+};
+
+/**
+ * @brief Array of initialized ports
+ */
+static uint16_t initialized_ports[MAX_SERIAL_PORTS] = {0};
+static int num_initialized_ports = -1;
+
+/**
+ * @brief Default serial port (initially COM1)
+ */
+static uint16_t default_serial_port = SERIAL_COM1_PORT;
+
+/**
+ * @brief Per-port spinlocks for thread-safe output
+ * Using an array to support multiple ports
+ */
+static struct spinlock serial_printf_spinlocks[MAX_SERIAL_PORTS];
+
+/**
+ * @brief Find the index of a port in the initialized_ports array
+ * @param port Port address
+ * @return Index if found, -1 otherwise
+ */
+static int get_port_index(uint16_t port) {
+    for (int i = 0; i < num_initialized_ports; i++) {
+        if (initialized_ports[i] == port) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int init_serial_ports() {
+    int serial_ports_count = detect_serial_ports();
+    if (serial_ports_count <= 0) {
         return -1;
     }
-    
+    int used_port = serial_ports_count - 1;
+    set_default_serial_port(initialized_ports[used_port]);
+    return serial_ports_count;
+}
+
+int detect_serial_ports() {
+    if (num_initialized_ports != -1) {
+        return num_initialized_ports;
+    }
+
+    num_initialized_ports = 0;
+    for (int i = 0; i < MAX_SERIAL_PORTS; i++) {
+        uint16_t port = standard_com_ports[i];
+        if (init_serial(port) == 0) {
+            initialized_ports[num_initialized_ports++] = port;
+        }
+    }
+    return num_initialized_ports;
+}
+
+int init_serial(uint16_t port) {
+    if (port == 0) return -1;
+
+    // Disable all interrupts
+    outb(port + 1, SERIAL_DISABLE_INTERRUPTS);
+
+    // Enable DLAB (set baud rate divisor)
+    outb(SERIAL_LINE_COMMAND_PORT(port), SERIAL_ENABLE_DLAB);
+
+    // Set divisor to 3 (lo byte) 38400 baud
+    outb(SERIAL_DATA_PORT(port), SERIAL_BAUD_DIVISOR_LOW);
+
+    // Set divisor to 3 (hi byte)
+    outb(port + 1, SERIAL_BAUD_DIVISOR_HIGH);
+
+    // 8 bits, no parity, one stop bit
+    outb(SERIAL_LINE_COMMAND_PORT(port), SERIAL_LINE_CONFIG_8N1);
+
+    // Enable FIFO, clear them, with 14-byte threshold
+    outb(SERIAL_FIFO_COMMAND_PORT(port), SERIAL_FIFO_ENABLE_CLEAR_14B);
+
+    // IRQs enabled, RTS/DSR set
+    outb(SERIAL_MODEM_COMMAND_PORT(port), SERIAL_MODEM_IRQ_RTS_DSR);
+
+    // Set in loopback mode, test the serial chip
+    outb(SERIAL_MODEM_COMMAND_PORT(port), SERIAL_MODEM_LOOPBACK);
+
+    // Test serial chip (send byte 0xAE and check if serial returns same byte)
+    outb(SERIAL_DATA_PORT(port), SERIAL_TEST_PAYLOAD);
+
+    // Check if serial is faulty (i.e: not same byte as sent)
+    if (inb(SERIAL_DATA_PORT(port)) != SERIAL_TEST_PAYLOAD) {
+        return -1;
+    }
+
     // If serial is not faulty set it in normal operation mode
     // (not-loopback with IRQs enabled and OUT#1 and OUT#2 bits enabled)
-    outb(SERIAL_MODEM_COMMAND_PORT(SERIAL_COM1_PORT), 0x0F);
-    
-    // Initialize spinlock for printf
-    init_spinlock(&serial_printf_spinlock, "serial_printf spinlock");
-    
-    // Mark serial as initialized
-    serial_initialized = 1;
-    serial_printf("[SERIAL] Serial port COM1 initialized successfully\r\n");
+    outb(SERIAL_MODEM_COMMAND_PORT(port), SERIAL_MODEM_NORMAL_OP);
+
+    // Add to initialized ports if not already present
+    int index = get_port_index(port);
+    if (index == -1) {
+        if (num_initialized_ports >= MAX_SERIAL_PORTS) {
+            return -1; // No more slots
+        }
+        index = num_initialized_ports++;
+        initialized_ports[index] = port;
+    }
+
+    // Initialize spinlock for this port
+    init_spinlock(&serial_printf_spinlocks[index], serial_printf_spinlock_names[index]);
+
+    // Log success using this port
+    serial_printf(port, "[SERIAL] Serial port at 0x%x initialized successfully\r\n", port);
+
+    // If first port, set as default
+    if (num_initialized_ports == 1) {
+        set_default_serial_port(port);
+    }
 
     return 0;
 }
 
-int serial_is_transmit_empty() {
-    return inb(SERIAL_LINE_STATUS_PORT(SERIAL_COM1_PORT)) & 0x20;
+void set_default_serial_port(uint16_t port) {
+    if (get_port_index(port) != -1) {
+        default_serial_port = port;
+    }
 }
 
-void serial_putchar(char c) {
-    if (!serial_initialized) return;
-    
+uint16_t get_default_serial_port() {
+    return default_serial_port;
+}
+
+int serial_is_transmit_empty(uint16_t port) {
+    if (get_port_index(port) == -1) return 0;
+    return inb(SERIAL_LINE_STATUS_PORT(port)) & SERIAL_TRANSMIT_EMPTY_MASK;
+}
+
+void serial_putchar(uint16_t port, char c) {
+    if (get_port_index(port) == -1) return;
+
     // Wait for transmit buffer to be empty
-    while (serial_is_transmit_empty() == 0);
-    
-    outb(SERIAL_DATA_PORT(SERIAL_COM1_PORT), c);
+    while (serial_is_transmit_empty(port) == 0);
+
+    outb(SERIAL_DATA_PORT(port), c);
 }
 
-void serial_write(const char *str) {
-    if (!serial_initialized) return;
-    
+void serial_write(uint16_t port, const char *str) {
+    if (get_port_index(port) == -1) return;
+
     while (*str != 0) {
-        serial_putchar(*str++);
+        serial_putchar(port, *str++);
     }
 }
 
-/**
- * @brief Reverse a string in-place
- * @param str String to reverse
- * @param n Length of the string
- */
-static void reverse_str(char *str, int n) {
-    int i = 0;
-    int j = n - 1;
-    while (i < j) {
-        char tmp = str[i];
-        str[i++] = str[j];
-        str[j--] = tmp;
-    }
-}
+void serial_printf(uint16_t port, const char *format, ...) {
+    int index = get_port_index(port);
+    if (index == -1) return;
 
-/**
- * @brief Convert integer to string with specified radix
- * @param num Integer value
- * @param str Output buffer
- * @param radix Base (e.g., 10, 16, 2)
- */
-static void serial_itoa(int num, char *str, int radix) {
-    int i = 0;
-    int is_negative = 0;
-    if (num < 0 && radix != 16) {
-        is_negative = 1;
-        num *= -1;
-    }
-
-    do {
-        int rem = (num % radix);
-        str[i++] = (rem > 9 ? 'a' - 10 : '0') + rem;
-        num /= radix;
-    } while (num);
-
-    if (is_negative) str[i++] = '-';
-    reverse_str(str, i);
-    str[i] = 0;
-}
-
-/**
- * @brief Convert 64-bit integer to hexadecimal string
- * @param num 64-bit number
- * @param str Output buffer
- */
-static void serial_ptoa(uint64_t num, char *str) {
-    int i = 0;
-
-    do {
-        int rem = (num % 16);
-        str[i++] = (rem > 9 ? 'a' - 10 : '0') + rem;
-        num /= 16;
-    } while (num);
-
-    reverse_str(str, i);
-    str[i] = 0;
-}
-
-void serial_printf(const char *format, ...) {
-    if (!serial_initialized) return;
-    
-    acquire_spinlock(&serial_printf_spinlock);
+    acquire_spinlock(&serial_printf_spinlocks[index]);
     va_list varargs;
     va_start(varargs, format);
-    char digits_buf[100];
-    for (int i = 0; i < 100; i++) digits_buf[i] = 0;
+
+    char digits_buf[MAX_DIGIT_BUFFER_SIZE];
+    memset(digits_buf, 0, MAX_DIGIT_BUFFER_SIZE);
 
     while (*format) {
         switch (*format) {
@@ -170,40 +223,55 @@ void serial_printf(const char *format, ...) {
                 format++;
                 switch (*format) {
                     case 'd':
-                        serial_itoa(va_arg(varargs, int), digits_buf, 10);
-                        serial_write(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 10) == 0) {
+                            serial_write(port, digits_buf);
+                        } else {
+                            serial_putchar(port, '#');
+                        }
                         break;
                     case 'o':
-                        serial_itoa(va_arg(varargs, int), digits_buf, 8);
-                        serial_write(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 8) == 0) {
+                            serial_write(port, digits_buf);
+                        } else {
+                            serial_putchar(port, '#');
+                        }
                         break;
                     case 'x':
-                        serial_itoa(va_arg(varargs, int), digits_buf, 16);
-                        serial_write(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 16) == 0) {
+                            serial_write(port, digits_buf);
+                        } else {
+                            serial_putchar(port, '#');
+                        }
                         break;
                     case 'b':
-                        serial_itoa(va_arg(varargs, int), digits_buf, 2);
-                        serial_write(digits_buf);
+                        if (itoa(va_arg(varargs, int), digits_buf, 2) == 0) {
+                            serial_write(port, digits_buf);
+                        } else {
+                            serial_putchar(port, '#');
+                        }
                         break;
                     case 'p':
-                        serial_ptoa(va_arg(varargs, uint64_t), digits_buf);
-                        serial_write(digits_buf);
+                        if (ptoa(va_arg(varargs, uint64_t), digits_buf) == 0) {
+                            serial_write(port, digits_buf);
+                        } else {
+                            serial_putchar(port, '#');
+                        }
                         break;
                     case 's':
-                        serial_write(va_arg(varargs, char*));
+                        serial_write(port, va_arg(varargs, char*));
                         break;
                     case '%':
-                        serial_putchar('%');
+                        serial_putchar(port, '%');
                         break;
                     default:
-                        serial_putchar('#');
+                        serial_putchar(port, '#');
                 }
                 break;
             default:
-                serial_putchar(*format);
+                serial_putchar(port, *format);
         }
         format++;
     }
-
-    release_spinlock(&serial_printf_spinlock);
+    va_end(varargs);
+    release_spinlock(&serial_printf_spinlocks[index]);
 }
