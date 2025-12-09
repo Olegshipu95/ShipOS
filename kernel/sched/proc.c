@@ -87,12 +87,13 @@ void push_proc_list(struct proc_node **list, struct proc *proc) {
     }
 }
 
+// TODO very strange logic. Check it
 struct proc *pop_proc_list(struct proc_node **list) {
     if (*list == 0) {
         panic("Empty proc list while popping\n");
     } else {
         struct proc* p = (*list)->data;
-        if ((*list)->next = (*list)) {
+        if (((*list)->next = (*list))) {
             kfree(*list);
             *list = 0;
         } else {

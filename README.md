@@ -115,11 +115,11 @@ ShipOS/
 
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide, build system, debugging, and tools
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines and development workflow
-- **[CLA.md](CLA.md)** - Contributor License Agreement (required for all contributors)
+- **[CONTRIBUTOR_ASSIGNMENT.md](CONTRIBUTOR_ASSIGNMENT.md)** - Contributor Assignment Agreement (required for all contributors)
 
 ## Contributing
 
-We welcome contributions to ShipOS! However, **all contributors must sign our [Contributor License Agreement (CLA)](CLA.md)** before their contributions can be accepted.
+We welcome contributions to ShipOS! However, **all contributors must sign our [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md)** before their contributions can be accepted.
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines, code style requirements, and development workflow.
 
@@ -131,7 +131,7 @@ ShipOS is a proprietary project. All code, documentation, and contributions are 
 
 **Important Legal Notice:**
 
-- **Contributor License Agreement**: All contributors must sign the [CLA](CLA.md) before contributing. The CLA grants ShipOS exclusive ownership of all contributions (past, present, and future).
+- **Contributor Assignment Agreement**: All contributors must sign the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md) before contributing.
 
 - **Exclusive Rights**: ShipOS retains full rights to:
   - Close or restrict access to the repository
@@ -140,11 +140,11 @@ ShipOS is a proprietary project. All code, documentation, and contributions are 
   - Modify, remove, or reject any contribution
   - Change license terms at any time
 
-- **No Contributor Rights**: Contributors do not retain any rights to their contributions after signing the CLA. All intellectual property rights are transferred to ShipOS.
+For complete legal terms, please read the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md).
 
-- **Retroactive Application**: The CLA applies retroactively to all past contributions once signed by a contributor.
+### Why we use a Contributor Assignment Agreement (CAA)
 
-For complete legal terms, please read the [Contributor License Agreement (CLA.md)](CLA.md).
+We use a Contributor Assignment Agreement (CAA) to ensure the project’s stability and future development. It helps avoid legal issues and allows all contributions to be managed under a single license, so the project can grow consistently and securely over time.
 
 ## Copyright
 

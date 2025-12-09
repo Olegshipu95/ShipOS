@@ -17,6 +17,7 @@ struct {
 
 
 void kinit(uint64_t start, uint64_t stop) {
+    // TODO Race Cond.
     //  init_spinlock(&kmem.lock, "kmem");
     char *p;
     p = (char *) PGROUNDUP(start);
@@ -25,6 +26,7 @@ void kinit(uint64_t start, uint64_t stop) {
 }
 
 void kfree(void *pa) {
+    // TODO Race Cond.
     struct run *r;
 
     if (((uint64_t) pa % PGSIZE) != 0 || (char *) pa < end || (uint64_t) pa >= PHYSTOP) {
@@ -45,6 +47,7 @@ void kfree(void *pa) {
 }
 
 void *kalloc() {
+    // TODO Race Cond.
     struct run *r;
 
 //    acquire_spinlock(&kmem.lock);

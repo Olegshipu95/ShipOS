@@ -33,11 +33,11 @@ This file enables LSP servers (like clangd, ccls, etc.) to understand your build
 
 ### `verify_cla.sh`
 
-Helper script for maintainers to verify CLA signatures manually.
+Helper script for maintainers to verify Contributor Assignment Agreement signatures manually.
 
 **Usage:**
 ```bash
-# Check if a user has signed the CLA
+# Check if a user has signed the Contributor Assignment Agreement
 ./scripts/verify_cla.sh --check username
 
 # List all signed contributors

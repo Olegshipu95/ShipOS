@@ -1,56 +1,39 @@
----
-# ShipOS C/C++ Code Style Configuration
-# Based on Allman style with 4-space indentation
+# ShipOS Kernel Code Style Configuration
+# Allman style - Opening braces on new line
 
-BasedOnStyle: LLVM
 Language: Cpp
-
-# Bracing
-BreakBeforeBraces: Allman
-BraceWrapping:
-  AfterFunction: true
-  AfterControlStatement: Always
-  AfterStruct: true
-  AfterEnum: true
-  SplitEmptyFunction: false
+BasedOnStyle: LLVM
 
 # Indentation
 IndentWidth: 4
-TabWidth: 4
 UseTab: Never
+TabWidth: 4
 ContinuationIndentWidth: 4
-IndentCaseLabels: false
 
-# Alignment
-AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
-AlignOperands: true
-AlignTrailingComments: true
+# Braces - Allman style (opening braces on new line)
+BreakBeforeBraces: Allman
+
+# Pointer alignment
 PointerAlignment: Right
+ReferenceAlignment: Right
 
-# Line Breaking
-ColumnLimit: 120
-AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: Never
-AllowShortLoopsOnASingleLine: false
-AllowShortBlocksOnASingleLine: Never
-AllowShortCaseLabelsOnASingleLine: false
-BreakBeforeBinaryOperators: None
-BreakBeforeTernaryOperators: true
-
-# Spacing
-SpaceAfterCStyleCast: false
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeParens: ControlStatements
-SpaceInEmptyParentheses: false
-SpacesInCStyleCastParentheses: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-
-# Comments
-ReflowComments: true
+# Line length
+ColumnLimit: 0
 
 # Includes
-IncludeBlocks: Preserve
 SortIncludes: false
+IncludeBlocks: Preserve
+
+# Spacing
+SpaceAfterCStyleCast: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+SpacesBeforeTrailingComments: 1
+
+# Other important settings
+AlignOperands: true
+AlignTrailingComments: true
+AllowShortBlocksOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty

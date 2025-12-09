@@ -28,7 +28,7 @@ If you have ideas on how to implement this, please describe:
 Add any other context, mockups, or examples about the feature request here.
 
 ## Contribution
-Are you willing to implement this feature? (Note: You must sign the CLA before contributing)
+Are you willing to implement this feature? (Note: You must sign the Contributor Assignment Agreement before contributing)
 
 - [ ] Yes, I'm willing to implement this
 - [ ] No, but I can help with testing/documentation

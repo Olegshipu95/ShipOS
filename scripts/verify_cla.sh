@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Helper script for maintainers to verify CLA signatures
+# Helper script for maintainers to verify Contributor Assignment Agreement signatures
 # This is a simple tool - for full automation, use CLA Assistant App
 #
 
@@ -18,7 +18,7 @@ usage() {
     cat << EOF
 Usage: $0 [OPTIONS] [USERNAME]
 
-Verify if a contributor has signed the CLA.
+Verify if a contributor has signed the Contributor Assignment Agreement.
 
 Options:
     -h, --help          Show this help message
@@ -50,7 +50,7 @@ check_signature() {
         local sig_file=$(find "$SIGNATURES_DIR" -name "${username}.json" -o -name "${username}.txt" 2>/dev/null | head -1)
         
         if [ -n "$sig_file" ]; then
-            echo "✅ $username has signed the CLA"
+            echo "✅ $username has signed the Contributor Assignment Agreement"
             echo "   Signature file: $sig_file"
             if [ -f "$sig_file" ]; then
                 echo "   Details:"
@@ -60,14 +60,14 @@ check_signature() {
         fi
     fi
     
-    # Check git log for CLA-related commits/comments
-    if git log --all --grep="CLA" --author="$username" --oneline | head -1 > /dev/null 2>&1; then
-        echo "⚠️  Found CLA-related activity for $username, but no signature file"
+    # Check git log for Contributor Assignment Agreement-related commits/comments
+    if git log --all --grep="CLA\|Contributor Assignment" --author="$username" --oneline | head -1 > /dev/null 2>&1; then
+        echo "⚠️  Found Contributor Assignment Agreement-related activity for $username, but no signature file"
         echo "   Please verify manually"
         return 1
     fi
     
-    echo "❌ No CLA signature found for $username"
+    echo "❌ No Contributor Assignment Agreement signature found for $username"
     return 1
 }
 

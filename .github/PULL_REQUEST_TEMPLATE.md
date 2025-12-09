@@ -48,7 +48,7 @@ Closes #
 
 - [ ] My code follows the ShipOS code style guidelines
 - [ ] I have formatted my code using `./scripts/format_code.sh`
-- [ ] I have read and signed the [Contributor License Agreement (CLA)](CLA.md)
+- [ ] I have read and signed the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md)
 - [ ] I have updated documentation if necessary
 - [ ] My changes generate no new warnings
 - [ ] I have tested my changes thoroughly
@@ -61,7 +61,7 @@ Closes #
 ---
 
 **By submitting this pull request, I confirm that:**
-- I have read and agree to the terms of the [CLA](CLA.md)
+- I have read and agree to the terms of the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md)
 - All my contributions become the exclusive property of ShipOS
 - ShipOS has full rights to use, modify, distribute, and commercialize my contributions
 
