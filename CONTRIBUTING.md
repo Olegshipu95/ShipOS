@@ -1,6 +1,6 @@
-# Contributing to ShipOS
+# Contributing to untitled-os
 
-Thank you for your interest in contributing to ShipOS! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to untitled-os! This document provides guidelines and instructions for contributing to the project.
 
 ## Code of Conduct
 
@@ -13,14 +13,14 @@ By participating in this project, you agree to maintain a respectful and profess
 **IMPORTANT:** Before your first contribution, you must sign the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md).
 
 The Contributor Assignment Agreement ensures that:
-- All contributions become the exclusive property of ShipOS
-- ShipOS retains full rights to use, modify, distribute, and commercialize your contributions
-- You grant ShipOS the necessary rights to incorporate your work
+- All contributions become the exclusive property of untitled-os
+- untitled-os retains full rights to use, modify, distribute, and commercialize your contributions
+- You grant untitled-os the necessary rights to incorporate your work
 
 **How to sign the Contributor Assignment Agreement:**
 
 1. Read the [CONTRIBUTOR_ASSIGNMENT.md](CONTRIBUTOR_ASSIGNMENT.md) document carefully
-2. Open a pull request to the ShipOS repository
+2. Open a pull request to the untitled-os repository
 3. The CLA Assistant bot will automatically prompt you to sign the Contributor Assignment Agreement
 4. Follow the instructions provided by the bot to complete the signing process
 5. Once signed, your pull request will be eligible for review
@@ -33,8 +33,8 @@ The Contributor Assignment Agreement ensures that:
 
 ```bash
 # Fork the repository on GitHub, then:
-git clone https://github.com/YOUR_USERNAME/ShipOS.git
-cd ShipOS
+git clone https://github.com/YOUR_USERNAME/untitled-os.git
+cd untitled-os
 ```
 
 ### 2. Create a Branch
@@ -78,7 +78,7 @@ Then create a pull request on GitHub.
 
 ### C Code Style
 
-ShipOS uses **Allman style** for code formatting:
+untitled-os uses **Allman style** for code formatting:
 
 - Opening braces on a new line
 - 4-space indentation (no tabs)
@@ -207,9 +207,9 @@ We welcome contributions in the following areas:
 
 ## License
 
-By contributing to ShipOS, you agree that your contributions will be licensed under the terms of the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md), which grants ShipOS exclusive ownership and all rights to your contributions.
+By contributing to untitled-os, you agree that your contributions will be licensed under the terms of the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md), which grants untitled-os exclusive ownership and all rights to your contributions.
 
 ---
 
-Thank you for contributing to ShipOS!
+Thank you for contributing to untitled-os!
 

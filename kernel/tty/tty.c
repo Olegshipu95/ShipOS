@@ -1,8 +1,8 @@
 //
-// Created by ShipOS developers on 28.10.23.
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 28.10.23.
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
-// Terminal (TTY) handling for ShipOS kernel.
+// Terminal (TTY) handling for untitled-os kernel.
 // Provides multiple virtual terminals, text output, and
 // formatted printing to VGA memory.
 //

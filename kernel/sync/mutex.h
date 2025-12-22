@@ -1,8 +1,8 @@
 //
-// Created by ShipOS developers on 03.01.24.
-// Copyright (c) 2024 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 03.01.24.
+// Copyright (c) 2024 untitled-os. All rights reserved.
 //
-// Mutex interface for ShipOS kernel
+// Mutex interface for untitled-os kernel
 // Provides basic mutual exclusion with support for thread blocking.
 //
 

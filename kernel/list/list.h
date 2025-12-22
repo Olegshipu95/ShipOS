@@ -1,6 +1,6 @@
 //
-// Created by ShipOS developers
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Created by untitled-os developers
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
 // Simple circular double-linked list implementation.
 // Provides fast insert, remove, push and pop operations.

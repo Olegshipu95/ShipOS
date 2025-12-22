@@ -1,13 +1,13 @@
 //
-// Created by ShipOS developers on 22.11.25.
-// Copyright (c) 2025 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 22.11.25.
+// Copyright (c) 2025 untitled-os. All rights reserved.
 //
 // Serial ports driver for kernel debugging and logging.
 // Provides text output to serial port which can be redirected by QEMU.
 //
 
-#ifndef SHIPOS_SERIAL_H
-#define SHIPOS_SERIAL_H
+#ifndef untitled-os_SERIAL_H
+#define untitled-os_SERIAL_H
 
 #include <inttypes.h>
 
@@ -102,4 +102,4 @@ void serial_write(uint16_t port, const char *str);
  */
 void serial_printf(uint16_t port, const char* format, ...);
 
-#endif //SHIPOS_SERIAL_H
+#endif //untitled-os_SERIAL_H

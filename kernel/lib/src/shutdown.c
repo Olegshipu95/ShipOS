@@ -1,8 +1,8 @@
 //
-// Created by ShipOS developers on 28.11.25.
-// Copyright (c) 2025 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 28.11.25.
+// Copyright (c) 2025 untitled-os. All rights reserved.
 //
-// System shutdown implementation for ShipOS kernel.
+// System shutdown implementation for untitled-os kernel.
 //
 
 #include "../include/shutdown.h"
@@ -40,7 +40,7 @@
 
 void shutdown(void) {
     LOG("System shutdown initiated");
-    LOG_SERIAL("SHUTDOWN", "Shutting down ShipOS...");
+    LOG_SERIAL("SHUTDOWN", "Shutting down untitled-os...");
 
     // Method 1: QEMU debug-exit device (most reliable for automated testing)
     LOG_SERIAL("SHUTDOWN", "Attempting QEMU debug-exit (port 0xf4)");

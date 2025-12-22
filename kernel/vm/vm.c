@@ -1,8 +1,8 @@
 //
-// Created by ShipOS developers
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Created by untitled-os developers
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
-// Virtual memory definitions and utility macros for ShipOS kernel.
+// Virtual memory definitions and utility macros for untitled-os kernel.
 //
 
 

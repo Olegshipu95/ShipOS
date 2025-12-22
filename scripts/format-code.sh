@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Format ShipOS kernel code according to Allman style
+# Format untitled-os kernel code according to Allman style
 # Uses clang-format with .clang-format configuration
 # Allman style: Opening braces on new line
 #
@@ -36,7 +36,7 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             echo "Usage: $0 [OPTIONS] [FILES...]"
             echo ""
-            echo "Format ShipOS kernel code according to Allman style (opening braces on new line)."
+            echo "Format untitled-os kernel code according to Allman style (opening braces on new line)."
             echo ""
             echo "Options:"
             echo "  -h, --help          Show this help message"

@@ -1,13 +1,13 @@
 //
-// Created by ShipOS developers on 28.11.25.
-// Copyright (c) 2025 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 28.11.25.
+// Copyright (c) 2025 untitled-os. All rights reserved.
 //
-// System shutdown interface for ShipOS kernel.
+// System shutdown interface for untitled-os kernel.
 // Provides graceful shutdown via ACPI or port I/O methods.
 //
 
-#ifndef SHIPOS_SHUTDOWN_H
-#define SHIPOS_SHUTDOWN_H
+#ifndef untitled-os_SHUTDOWN_H
+#define untitled-os_SHUTDOWN_H
 
 /**
  * @brief Gracefully shut down the operating system
@@ -22,4 +22,4 @@
  */
 void shutdown(void);
 
-#endif // SHIPOS_SHUTDOWN_H
+#endif // untitled-os_SHUTDOWN_H

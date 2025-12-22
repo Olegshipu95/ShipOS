@@ -46,7 +46,7 @@ Closes #
 
 <!-- Mark completed items with an 'x' -->
 
-- [ ] My code follows the ShipOS code style guidelines
+- [ ] My code follows the untitled-os code style guidelines
 - [ ] I have formatted my code using `./scripts/format_code.sh`
 - [ ] I have read and signed the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md)
 - [ ] I have updated documentation if necessary
@@ -62,6 +62,6 @@ Closes #
 
 **By submitting this pull request, I confirm that:**
 - I have read and agree to the terms of the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md)
-- All my contributions become the exclusive property of ShipOS
-- ShipOS has full rights to use, modify, distribute, and commercialize my contributions
+- All my contributions become the exclusive property of untitled-os
+- untitled-os has full rights to use, modify, distribute, and commercialize my contributions
 

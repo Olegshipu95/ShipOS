@@ -1,6 +1,6 @@
-# ShipOS Development Guide
+# untitled-os Development Guide
 
-This guide explains the development workflow, build system, and debugging tools for ShipOS.
+This guide explains the development workflow, build system, and debugging tools for untitled-os.
 
 ## Build System
 
@@ -42,7 +42,7 @@ Build artifacts are in `build/` directory. The final ISO is `isofiles/kernel.iso
 
 ### GDB Debugging
 
-ShipOS uses a unique GDB port per user (based on user ID) to avoid conflicts.
+untitled-os uses a unique GDB port per user (based on user ID) to avoid conflicts.
 
 **Setup:**
 ```bash
@@ -154,7 +154,7 @@ This enables code completion, error checking, and navigation in editors like VSC
 ## Project Structure
 
 ```
-ShipOS/
+untitled-os/
 ├── kernel/          # Kernel source code
 │   ├── idt/         # Interrupt Descriptor Table
 │   ├── kalloc/      # Physical memory allocator

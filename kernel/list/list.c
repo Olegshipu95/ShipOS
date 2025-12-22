@@ -1,6 +1,6 @@
 //
-// Created by ShipOS developers
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Created by untitled-os developers
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
 
 #include "../tty/tty.h"

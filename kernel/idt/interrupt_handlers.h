@@ -1,8 +1,8 @@
 //
-// Created by ShipOS developers
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Created by untitled-os developers
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
-// This header declares all interrupt handlers for ShipOS kernel.
+// This header declares all interrupt handlers for untitled-os kernel.
 // It includes keyboard, timer, default, and CPU exception handlers.
 //
 

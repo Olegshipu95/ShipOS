@@ -1,28 +1,28 @@
-# ShipOS
+# untitled-os
 
-**ShipOS** is a modern, educational operating system kernel written from scratch for x86-64 architecture. The project aims to provide a complete, production-quality operating system as an alternative to foreign products, demonstrating import substitution capabilities while serving as a comprehensive learning resource for low-level systems programming.
+**untitled-os** is a modern, educational operating system kernel written from scratch for x86-64 architecture. The project aims to provide a complete, production-quality operating system as an alternative to foreign products, demonstrating import substitution capabilities while serving as a comprehensive learning resource for low-level systems programming.
 
 ## About the Project
 
-ShipOS is a fully functional operating system kernel that implements core OS concepts including memory management, process scheduling, interrupt handling, and device drivers. Built with educational and practical goals in mind, ShipOS demonstrates how modern operating systems work at the lowest level.
+untitled-os is a fully functional operating system kernel that implements core OS concepts including memory management, process scheduling, interrupt handling, and device drivers. Built with educational and practical goals in mind, untitled-os demonstrates how modern operating systems work at the lowest level.
 
-### Why ShipOS?
+### Why untitled-os?
 
-1. **Import Substitution**: ShipOS provides a domestic alternative to foreign operating systems, reducing dependency on external software products.
+1. **Import Substitution**: untitled-os provides a domestic alternative to foreign operating systems, reducing dependency on external software products.
 
 2. **Educational Value**: The codebase serves as a comprehensive learning resource for understanding operating system internals, from bootloader to kernel subsystems.
 
-3. **Full Control**: By building from scratch, ShipOS maintains complete control over its architecture, security model, and feature set without external dependencies.
+3. **Full Control**: By building from scratch, untitled-os maintains complete control over its architecture, security model, and feature set without external dependencies.
 
 4. **Research Platform**: The project provides a clean foundation for experimenting with new OS concepts, scheduling algorithms, and system designs.
 
-5. **Production Potential**: With proper development, ShipOS can evolve into a production-ready operating system suitable for specialized use cases.
+5. **Production Potential**: With proper development, untitled-os can evolve into a production-ready operating system suitable for specialized use cases.
 
 ## Current Status
 
 ### ✅ Implemented Features
 
-ShipOS currently implements the following core subsystems:
+untitled-os currently implements the following core subsystems:
 
 #### Boot and Initialization
 - **Bootloader**: Custom bootloader with long jump to x86-64 mode
@@ -96,7 +96,7 @@ For detailed development instructions, debugging, and advanced usage, see [DEVEL
 ## Project Structure
 
 ```
-ShipOS/
+untitled-os/
 ├── kernel/          # Kernel source code
 │   ├── idt/         # Interrupt Descriptor Table
 │   ├── kalloc/      # Physical memory allocator
@@ -119,7 +119,7 @@ ShipOS/
 
 ## Contributing
 
-We welcome contributions to ShipOS! However, **all contributors must sign our [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md)** before their contributions can be accepted.
+We welcome contributions to untitled-os! However, **all contributors must sign our [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md)** before their contributions can be accepted.
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines, code style requirements, and development workflow.
 
@@ -127,13 +127,13 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guideli
 
 ### License and Ownership
 
-ShipOS is a proprietary project. All code, documentation, and contributions are the exclusive property of the ShipOS project owner.
+untitled-os is a proprietary project. All code, documentation, and contributions are the exclusive property of the untitled-os project owner.
 
 **Important Legal Notice:**
 
 - **Contributor Assignment Agreement**: All contributors must sign the [Contributor Assignment Agreement](CONTRIBUTOR_ASSIGNMENT.md) before contributing.
 
-- **Exclusive Rights**: ShipOS retains full rights to:
+- **Exclusive Rights**: untitled-os retains full rights to:
   - Close or restrict access to the repository
   - Prohibit distribution of the code
   - Sell, license, or commercialize the project
@@ -148,14 +148,14 @@ We use a Contributor Assignment Agreement (CAA) to ensure the project’s stabil
 
 ## Copyright
 
-Copyright (c) 2023 SHIPOS. All rights reserved.
+Copyright (c) 2023 untitled-os. All rights reserved.
 
 ## Support
 
-- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/YOUR_USERNAME/ShipOS/issues)
+- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/YOUR_USERNAME/untitled-os/issues)
 - **Development Questions**: See [DEVELOPMENT.md](DEVELOPMENT.md)
 - **Contribution Questions**: See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-**ShipOS** - Import substitution of foreign products. ShipOS power.
+**untitled-os** - Import substitution of foreign products. untitled-os power.

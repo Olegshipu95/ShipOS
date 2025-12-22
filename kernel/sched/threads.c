@@ -1,6 +1,6 @@
 //
-// Created by ShipOS developers on 20.12.23.
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 20.12.23.
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
 
 #include "threads.h"

@@ -1,6 +1,6 @@
 # Maintainer Guide
 
-This guide is for ShipOS maintainers and project owners.
+This guide is for untitled-os maintainers and project owners.
 
 ## Contributor Assignment Agreement Management
 
@@ -37,7 +37,7 @@ If not using CLA Assistant, verify signatures manually:
 3. **Update PR Status:**
    ```bash
    # Use GitHub CLI or web interface to update status
-   gh pr status --repo owner/ShipOS
+   gh pr status --repo owner/untitled-os
    ```
 
 ### Handling Contributor Assignment Agreement Issues

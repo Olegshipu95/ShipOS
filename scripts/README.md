@@ -1,6 +1,6 @@
 # Scripts Directory
 
-This directory contains utility scripts for the ShipOS project.
+This directory contains utility scripts for the untitled-os project.
 
 ## Scripts
 

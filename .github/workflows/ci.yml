@@ -1,4 +1,4 @@
-name: 🚀 ShipOS CI
+name: 🚀 untitled-os CI
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-test:
-    name: 🔧 Build & Test ShipOS
+    name: 🔧 Build & Test untitled-os
     runs-on: ubuntu-latest
 
     steps:

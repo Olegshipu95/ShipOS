@@ -1,6 +1,6 @@
 //
 // Created by oleg on 28.09.23.
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
 // This file sets up the Interrupt Descriptor Table (IDT) for x86_64 architecture.
 // It initializes all interrupt descriptors and points the CPU to the IDT.

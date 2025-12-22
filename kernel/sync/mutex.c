@@ -1,8 +1,8 @@
 //
-// Created by ShipOS developers on 03.01.24.
-// Copyright (c) 2024 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 03.01.24.
+// Copyright (c) 2024 untitled-os. All rights reserved.
 //
-// Simple mutex implementation for ShipOS kernel.
+// Simple mutex implementation for untitled-os kernel.
 // Uses an underlying spinlock and a thread waiting list for blocking.
 //
 

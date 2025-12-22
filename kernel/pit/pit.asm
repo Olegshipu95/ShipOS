@@ -1,6 +1,6 @@
 ; -----------------------------------------------------------------------------
-; Created by ShipOS developers
-; Copyright (c) 2023 SHIPOS. All rights reserved.
+; Created by untitled-os developers
+; Copyright (c) 2023 untitled-os. All rights reserved.
 ;
 ; This file implements the PIT (Programmable Interval Timer) setup and control.
 ; It provides functions to initialize the PIT, send values to the scheduler,

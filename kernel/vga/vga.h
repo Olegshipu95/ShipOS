@@ -1,8 +1,8 @@
 //
-// Created by ShipOS developers on 28.10.23.
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 28.10.23.
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
-// VGA text-mode definitions for ShipOS kernel.
+// VGA text-mode definitions for untitled-os kernel.
 // Provides constants, types, and function declarations for
 // working with the VGA text buffer.
 //

@@ -1,8 +1,8 @@
 //
-// Created by ShipOS developers
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Created by untitled-os developers
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
-// This file contains interrupt handlers for the ShipOS kernel,
+// This file contains interrupt handlers for the untitled-os kernel,
 // including keyboard, timer, and default/unhandled interrupts.
 // It also defines error messages for CPU exceptions.
 //

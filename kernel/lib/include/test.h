@@ -1,6 +1,6 @@
 //
-// Created by ShipOS developers on 28.11.25.
-// Copyright (c) 2025 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 28.11.25.
+// Copyright (c) 2025 untitled-os. All rights reserved.
 //
 
 /**
@@ -11,8 +11,8 @@
  */
 #define CHECK(test_fn) (test_fn() ? 1 : -1)
 
-#ifndef SHIPOS_TEST_H
-#define SHIPOS_TEST_H
+#ifndef untitled-os_TEST_H
+#define untitled-os_TEST_H
 
 /**
  * @brief Run all testcases

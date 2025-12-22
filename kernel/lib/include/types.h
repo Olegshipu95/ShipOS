@@ -1,6 +1,6 @@
 //
-// Created by ShipOS developers on 23.12.23.
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 23.12.23.
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
 
 #ifndef UNTITLED_OS_MY_TYPES_H

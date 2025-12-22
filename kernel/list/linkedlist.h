@@ -1,8 +1,8 @@
 //
-// Created by ShipOS developers
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Created by untitled-os developers
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
-// Generic typed linked list for ShipOS kernel.
+// Generic typed linked list for untitled-os kernel.
 //
 
 #ifndef LINKEDLIST_H

@@ -1,8 +1,8 @@
 //
-// Created by ShipOS developers on 28.10.23.
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 28.10.23.
+// Copyright (c) 2023 untitled-os. All rights reserved.
 //
-// Memory layout definitions for ShipOS kernel
+// Memory layout definitions for untitled-os kernel
 // Defines kernel start/end addresses, physical memory limits, and page properties.
 //
 

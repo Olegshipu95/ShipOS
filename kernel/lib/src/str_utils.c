@@ -1,6 +1,6 @@
 //
-// Created by ShipOS developers on 26.11.25.
-// Copyright (c) 2025 SHIPOS. All rights reserved.
+// Created by untitled-os developers on 26.11.25.
+// Copyright (c) 2025 untitled-os. All rights reserved.
 //
 
 #include "../include/str_utils.h"

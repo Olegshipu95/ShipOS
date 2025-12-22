@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest a new feature for ShipOS
+about: Suggest a new feature for untitled-os
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''

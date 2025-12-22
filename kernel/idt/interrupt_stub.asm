@@ -1,6 +1,6 @@
 ; -------------------------------------------------------------------
-; Created by ShipOS developers
-; Copyright (c) 2023 SHIPOS. All rights reserved.
+; Created by untitled-os developers
+; Copyright (c) 2023 untitled-os. All rights reserved.
 ;
 ; This file defines the assembly stubs for CPU interrupts and exceptions.
 ; It provides a common entry point for all interrupts and handles

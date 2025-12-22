@@ -17,7 +17,7 @@ CLA Assistant is a GitHub App that automatically:
 1. **Install the CLA Assistant App:**
    - Go to: https://github.com/apps/cla-assistant
    - Click "Configure" or "Install"
-   - Select your repository (ShipOS)
+   - Select your repository (untitled-os)
    - Grant the necessary permissions
 
 2. **Configure CLA Assistant:**
@@ -69,10 +69,10 @@ GitHub Actions workflow for manual Contributor Assignment Agreement checking (ba
 
 ### Recommended: Separate Repository
 
-Create a separate private repository (e.g., `shipos-cla-signatures`) to store signatures:
+Create a separate private repository (e.g., `untitled-os-cla-signatures`) to store signatures:
 
 ```
-shipos-cla-signatures/
+untitled-os-cla-signatures/
 ├── signatures/
 │   ├── username1.json
 │   ├── username2.json
