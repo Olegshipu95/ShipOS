@@ -20,4 +20,4 @@
 #define container_of(ptr, type, member) \
     ((type *) ((char *) (ptr) - __builtin_offsetof(type, member)))
 
-#endif //TYPES_H
+#endif // TYPES_H

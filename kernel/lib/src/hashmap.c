@@ -157,13 +157,13 @@ int hashmap_remove(struct hashmap *map, const void *key)
         {
             // Remove from list
             lst_remove(&entry->list_node);
-            
+
             // Free key if callback is set
             if (map->key_free)
             {
                 map->key_free(entry->key);
             }
-            
+
             kfree(entry);
             map->size--;
             return 0;
@@ -186,15 +186,15 @@ void hashmap_clear(struct hashmap *map)
         struct list *bucket = &map->buckets[i];
         while (!lst_empty(bucket))
         {
-            struct list *node = (struct list *)lst_pop(bucket);
+            struct list *node = (struct list *) lst_pop(bucket);
             struct hashmap_entry *entry = container_of(node, struct hashmap_entry, list_node);
-            
+
             // Free key if callback is set
             if (map->key_free)
             {
                 map->key_free(entry->key);
             }
-            
+
             kfree(entry);
         }
     }
@@ -222,32 +222,32 @@ int hashmap_is_empty(const struct hashmap *map)
     return map->size == 0;
 }
 
-
 // Hash functions
 
 // Uses djb2 hashing algorithm
 uint64_t hashmap_hash_string(const void *key)
 {
- const char *str = (const char *)key;
+    const char *str = (const char *) key;
     uint64_t hash = 5381;
     int c;
-    
-    while ((c = *str++)) {
+
+    while ((c = *str++))
+    {
         hash = ((hash << 5) + hash) + c;
     }
-    
+
     return hash;
 }
 
 uint64_t hashmap_hash_ptr(const void *key)
 {
-    uintptr_t ptr = (uintptr_t)key;
+    uintptr_t ptr = (uintptr_t) key;
     return hashmap_hash_uint64(ptr);
 }
 
 uint64_t hashmap_hash_uint64(const void *key)
 {
-    uint64_t x = (uint64_t)key;
+    uint64_t x = (uint64_t) key;
     x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
     x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;
     return x ^ (x >> 31);
@@ -257,15 +257,15 @@ uint64_t hashmap_hash_uint64(const void *key)
 
 int hashmap_cmp_string(const void *key1, const void *key2)
 {
-    const char *str1 = (const char *)key1;
-    const char *str2 = (const char *)key2;
+    const char *str1 = (const char *) key1;
+    const char *str2 = (const char *) key2;
     return strcmp(str1, str2);
 }
 
 int hashmap_cmp_ptr(const void *key1, const void *key2)
 {
-    const void *ptr1 = (const void *)key1;
-    const void *ptr2 = (const void *)key2;
+    const void *ptr1 = (const void *) key1;
+    const void *ptr2 = (const void *) key2;
     if (ptr1 < ptr2)
         return -1;
     if (ptr1 > ptr2)
@@ -275,12 +275,11 @@ int hashmap_cmp_ptr(const void *key1, const void *key2)
 
 int hashmap_cmp_uint64(const void *key1, const void *key2)
 {
-    const uint64_t *val1 = (const uint64_t *)key1;
-    const uint64_t *val2 = (const uint64_t *)key2;
+    const uint64_t *val1 = (const uint64_t *) key1;
+    const uint64_t *val2 = (const uint64_t *) key2;
     if (*val1 < *val2)
         return -1;
     if (*val1 > *val2)
         return 1;
     return 0;
 }
-

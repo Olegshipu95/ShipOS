@@ -46,12 +46,12 @@ enum inode_type
 // Error codes
 #define VFS_OK 0
 #define VFS_ERR -1
-#define VFS_ENOENT -2  // No such file or directory
-#define VFS_EEXIST -3  // File exists
-#define VFS_ENOTDIR -4 // Not a directory
-#define VFS_EISDIR -5  // Is a directory
-#define VFS_EINVAL -6  // Invalid argument
-#define VFS_ENOMEM -7  // Out of memory
+#define VFS_ENOENT -2    // No such file or directory
+#define VFS_EEXIST -3    // File exists
+#define VFS_ENOTDIR -4   // Not a directory
+#define VFS_EISDIR -5    // Is a directory
+#define VFS_EINVAL -6    // Invalid argument
+#define VFS_ENOMEM -7    // Out of memory
 #define VFS_ENOTEMPTY -8 // Directory is not empty
 
 // Forward declarations
@@ -91,9 +91,9 @@ struct superblock_operations
 // File system type structure
 struct file_system_type
 {
-    const char *name;                                   // Name of the filesystem (e.g., "tmpfs", "ext2")
-    struct superblock *(*mount)(const char *dev_name);  // Mount function
-    struct list list_node;                              // For filesystem registration list
+    const char *name;                                  // Name of the filesystem (e.g., "tmpfs", "ext2")
+    struct superblock *(*mount)(const char *dev_name); // Mount function
+    struct list list_node;                             // For filesystem registration list
 };
 
 // Inode structure
@@ -114,14 +114,14 @@ struct inode
 // Directory entry
 struct dentry
 {
-    char name[MAX_NAME_LEN];        // Name
-    struct inode *inode;            // Associated inode
-    struct dentry *parent;          // Parent dentry
-    struct list children;           // List of child dentries
-    struct list sibling;            // For parent's children list
-    struct spinlock lock;           // Lock
-    uint32_t ref;                   // Reference count
-    struct superblock *mounted_sb;  // Mounted filesystem (if this is a mount point)
+    char name[MAX_NAME_LEN];       // Name
+    struct inode *inode;           // Associated inode
+    struct dentry *parent;         // Parent dentry
+    struct list children;          // List of child dentries
+    struct list sibling;           // For parent's children list
+    struct spinlock lock;          // Lock
+    uint32_t ref;                  // Reference count
+    struct superblock *mounted_sb; // Mounted filesystem (if this is a mount point)
 };
 
 // Open file structure
@@ -137,12 +137,12 @@ struct file
 };
 
 // Directory entry structure
-struct dirent {
+struct dirent
+{
     char d_name[MAX_NAME_LEN];
     uint64_t d_ino;
     enum inode_type d_type;
 };
-
 
 // Superblock
 struct superblock

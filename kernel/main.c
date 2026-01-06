@@ -30,11 +30,13 @@
  *
  * @param num Thread identifier number
  */
-void print_num(uint32_t num) {
-  while (1) {
-    printf("Hello from thread %d\r\n", num);
-    // yield();
-  }
+void print_num(uint32_t num)
+{
+    while (1)
+    {
+        printf("Hello from thread %d\r\n", num);
+        // yield();
+    }
 }
 
 /**
@@ -47,9 +49,10 @@ void print_num(uint32_t num) {
  * @param argc Number of arguments
  * @param args Array of thread arguments
  */
-void thread_function(int argc, struct argument *args) {
-  uint32_t num = *((uint32_t *)args[0].value);
-  print_num(num);
+void thread_function(int argc, struct argument *args)
+{
+    uint32_t num = *((uint32_t *) args[0].value);
+    print_num(num);
 }
 
 /**
@@ -67,93 +70,99 @@ void thread_function(int argc, struct argument *args) {
  *
  * @return int Always returns 0 (never reached).
  */
-int kernel_main() {
-  // Initialize serial port FIRST for early boot logging
-  init_serial();
-  serial_write("[BOOT] Kernel started\r\n");
+int kernel_main()
+{
+    // Initialize serial port FIRST for early boot logging
+    init_serial();
+    serial_write("[BOOT] Kernel started\r\n");
 
-  init_tty();
-  serial_printf("[BOOT] TTY subsystem initialized\r\n");
+    init_tty();
+    serial_printf("[BOOT] TTY subsystem initialized\r\n");
 
-  for (uint8_t i = 0; i < TERMINALS_NUMBER; i++) {
-    set_tty(i);
-    printf("TTY %d\n", i);
-    serial_printf("[BOOT] TTY %d initialized\r\n", i);
-  }
-  set_tty(0);
+    for (uint8_t i = 0; i < TERMINALS_NUMBER; i++)
+    {
+        set_tty(i);
+        printf("TTY %d\n", i);
+        serial_printf("[BOOT] TTY %d initialized\r\n", i);
+    }
+    set_tty(0);
 
-  serial_printf("[BOOT] CR3 register: %x\r\n", rcr3());
-  printf(" CR3: %x\n", rcr3());
+    serial_printf("[BOOT] CR3 register: %x\r\n", rcr3());
+    printf(" CR3: %x\n", rcr3());
 
-  print("$ \r\n");
+    print("$ \r\n");
 
-  serial_printf("[BOOT] Kernel start: %p, end: %p\r\n", KSTART, KEND);
-  serial_printf("[BOOT] Kernel size: %d bytes\r\n", KEND - KSTART);
-  printf("Kernel end at address: %d\n", KEND);
-  printf("Kernel size: %d\n", KEND - KSTART);
+    serial_printf("[BOOT] Kernel start: %p, end: %p\r\n", KSTART, KEND);
+    serial_printf("[BOOT] Kernel size: %d bytes\r\n", KEND - KSTART);
+    printf("Kernel end at address: %d\n", KEND);
+    printf("Kernel size: %d\n", KEND - KSTART);
 
-  serial_printf(
-      "[MEMORY] Initializing physical memory allocator (phase 1)...\r\n");
-  kinit(KEND, INIT_PHYSTOP);
+    serial_printf(
+        "[MEMORY] Initializing physical memory allocator (phase 1)...\r\n");
+    kinit(KEND, INIT_PHYSTOP);
 
-  serial_printf("[MEMORY] Setting up kernel page table...\r\n");
-  pagetable_t kernel_table = kvminit(INIT_PHYSTOP, PHYSTOP);
-  printf("kernel table: %p\n", kernel_table);
-  serial_printf("[MEMORY] Kernel page table at: %p\r\n", kernel_table);
+    serial_printf("[MEMORY] Setting up kernel page table...\r\n");
+    pagetable_t kernel_table = kvminit(INIT_PHYSTOP, PHYSTOP);
+    printf("kernel table: %p\n", kernel_table);
+    serial_printf("[MEMORY] Kernel page table at: %p\r\n", kernel_table);
 
-  serial_printf(
-      "[MEMORY] Initializing physical memory allocator (phase 2)...\r\n");
-  kinit(INIT_PHYSTOP, PHYSTOP);
-  printf("Successfully allocated physical memory up to %p\n", PHYSTOP);
-  serial_printf("[MEMORY] Physical memory initialized up to: %p\r\n", PHYSTOP);
+    serial_printf(
+        "[MEMORY] Initializing physical memory allocator (phase 2)...\r\n");
+    kinit(INIT_PHYSTOP, PHYSTOP);
+    printf("Successfully allocated physical memory up to %p\n", PHYSTOP);
+    serial_printf("[MEMORY] Physical memory initialized up to: %p\r\n", PHYSTOP);
 
-  // Initialize VFS
-  serial_printf("[FILESYSTEM] Initializing VFS...\r\n");
-  if (vfs_init() != VFS_OK) {
-    panic("Failed to initialize VFS");
-  }
+    // Initialize VFS
+    serial_printf("[FILESYSTEM] Initializing VFS...\r\n");
+    if (vfs_init() != VFS_OK)
+    {
+        panic("Failed to initialize VFS");
+    }
 
-  // Initialize and register filesystems
-  serial_printf("[FILESYSTEM] Initializing tmpfs...\r\n");
-  if (tmpfs_init() != VFS_OK) {
-    panic("Failed to initialize tmpfs");
-  }
-  // ! NOTE: As number of implemented file systems will grow, register them here
+    // Initialize and register filesystems
+    serial_printf("[FILESYSTEM] Initializing tmpfs...\r\n");
+    if (tmpfs_init() != VFS_OK)
+    {
+        panic("Failed to initialize tmpfs");
+    }
+    // ! NOTE: As number of implemented file systems will grow, register them here
 
-  // Mount filesystems from configuration file
-  serial_printf("[FILESYSTEM] Mounting filesystems from configuration...\r\n");
-  if (vfs_mount_from_config() != VFS_OK) {
-    panic("Failed to mount filesystems from configuration");
-  }
+    // Mount filesystems from configuration file
+    serial_printf("[FILESYSTEM] Mounting filesystems from configuration...\r\n");
+    if (vfs_mount_from_config() != VFS_OK)
+    {
+        panic("Failed to mount filesystems from configuration");
+    }
 
-  // Run VFS tests
-  serial_printf("[FILESYSTEM] Running VFS tests...\r\n");
-  run_vfs_tests();
+    // Run VFS tests
+    serial_printf("[FILESYSTEM] Running VFS tests...\r\n");
+    run_vfs_tests();
 
-  int pages = count_pages();
-  printf("%d pages available in allocator\n", pages);
-  serial_printf("[MEMORY] Available pages: %d\r\n", pages);
+    int pages = count_pages();
+    printf("%d pages available in allocator\n", pages);
+    serial_printf("[MEMORY] Available pages: %d\r\n", pages);
 
-  serial_printf("[PROCESS] Initializing first process...\r\n");
-  struct proc_node *init_proc_node = procinit();
-  printf("Init proc node %p\n", init_proc_node);
-  serial_printf("[PROCESS] Init process node created at: %p\r\n",
-                init_proc_node);
+    serial_printf("[PROCESS] Initializing first process...\r\n");
+    struct proc_node *init_proc_node = procinit();
+    printf("Init proc node %p\n", init_proc_node);
+    serial_printf("[PROCESS] Init process node created at: %p\r\n",
+                  init_proc_node);
 
-  struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
-  printf("Got init thread\n");
-  serial_printf("[PROCESS] Init thread retrieved successfully\r\n");
+    struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
+    printf("Got init thread\n");
+    serial_printf("[PROCESS] Init thread retrieved successfully\r\n");
 
-  serial_printf("[INTERRUPT] Setting up IDT...\r\n");
-  setup_idt();
-  serial_printf("[INTERRUPT] IDT initialized\r\n");
+    serial_printf("[INTERRUPT] Setting up IDT...\r\n");
+    setup_idt();
+    serial_printf("[INTERRUPT] IDT initialized\r\n");
 
-  serial_printf("[KERNEL] Boot sequence completed successfully\r\n");
-  serial_printf("[KERNEL] Entering idle loop...\r\n");
+    serial_printf("[KERNEL] Boot sequence completed successfully\r\n");
+    serial_printf("[KERNEL] Entering idle loop...\r\n");
 
-  // scheduler();
+    // scheduler();
 
-  while (1) {
-  };
-  return 0;
+    while (1)
+    {
+    };
+    return 0;
 }

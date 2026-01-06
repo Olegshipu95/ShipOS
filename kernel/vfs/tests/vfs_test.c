@@ -342,8 +342,8 @@ static int test_vfs_readdir(void)
     // Check that we found all expected entries
     for (i = 0; i < entries_read; i++)
     {
-        serial_printf("[INFO] Found entry: '%s' (type=%d, ino=%d)\n", 
-                      dirents[i].d_name, (int)dirents[i].d_type, (int)dirents[i].d_ino);
+        serial_printf("[INFO] Found entry: '%s' (type=%d, ino=%d)\n",
+                      dirents[i].d_name, (int) dirents[i].d_type, (int) dirents[i].d_ino);
 
         // Check files
         for (int j = 0; j < 5; j++)
@@ -352,7 +352,7 @@ static int test_vfs_readdir(void)
             {
                 if (dirents[i].d_type != INODE_TYPE_FILE)
                 {
-                    serial_printf("vfs_readdir: FAIL %s wrong type (got %d, expected FILE)\n", 
+                    serial_printf("vfs_readdir: FAIL %s wrong type (got %d, expected FILE)\n",
                                   test_files[j], dirents[i].d_type);
                     vfs_close(dir_file);
                     return -1;
@@ -369,7 +369,7 @@ static int test_vfs_readdir(void)
             {
                 if (dirents[i].d_type != INODE_TYPE_DIR)
                 {
-                    serial_printf("vfs_readdir: FAIL %s wrong type (got %d, expected DIR)\n", 
+                    serial_printf("vfs_readdir: FAIL %s wrong type (got %d, expected DIR)\n",
                                   test_dirs[j], dirents[i].d_type);
                     vfs_close(dir_file);
                     return -1;
@@ -601,9 +601,9 @@ static int test_vfs_mount_at(void)
 
     // Test 3: Write to file
     written = vfs_write(f, data, strlen(data));
-    if (written != (int64_t)strlen(data))
+    if (written != (int64_t) strlen(data))
     {
-        serial_printf("vfs_mount_at: FAIL write=%d exp=%d\n", (int)written, (int)strlen(data));
+        serial_printf("vfs_mount_at: FAIL write=%d exp=%d\n", (int) written, (int) strlen(data));
         vfs_close(f);
         return -1;
     }
@@ -619,9 +619,9 @@ static int test_vfs_mount_at(void)
 
     memset(buf, 0, TEST_BUFSIZE);
     read_bytes = vfs_read(f, buf, TEST_BUFSIZE);
-    if (read_bytes != (int64_t)strlen(data))
+    if (read_bytes != (int64_t) strlen(data))
     {
-        serial_printf("vfs_mount_at: FAIL read=%d exp=%d\n", (int)read_bytes, (int)strlen(data));
+        serial_printf("vfs_mount_at: FAIL read=%d exp=%d\n", (int) read_bytes, (int) strlen(data));
         vfs_close(f);
         return -1;
     }
@@ -675,9 +675,9 @@ static int test_vfs_mount_at(void)
 
     const char *subdata = "Data in subdirectory";
     written = vfs_write(f, subdata, strlen(subdata));
-    if (written != (int64_t)strlen(subdata))
+    if (written != (int64_t) strlen(subdata))
     {
-        serial_printf("vfs_mount_at: FAIL write to subfile=%d exp=%d\n", (int)written, (int)strlen(subdata));
+        serial_printf("vfs_mount_at: FAIL write to subfile=%d exp=%d\n", (int) written, (int) strlen(subdata));
         vfs_close(f);
         return -1;
     }
@@ -693,7 +693,7 @@ static int test_vfs_mount_at(void)
 
     memset(buf, 0, TEST_BUFSIZE);
     read_bytes = vfs_read(f, buf, TEST_BUFSIZE);
-    if (read_bytes != (int64_t)strlen(subdata) || strcmp(buf, subdata) != 0)
+    if (read_bytes != (int64_t) strlen(subdata) || strcmp(buf, subdata) != 0)
     {
         serial_printf("vfs_mount_at: FAIL read subfile: got '%s', expected '%s'\n", buf, subdata);
         vfs_close(f);

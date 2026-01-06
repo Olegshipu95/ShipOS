@@ -17,10 +17,10 @@
 // Private data for tmpfs inode
 struct tmpfs_inode_info
 {
-    void *data;                 // For files: pointer to data
-    uint64_t data_size;         // Size of allocated memory
-    struct hashmap entries;     // For directories: hashmap of tmpfs_dir_entry (key: name string, value: tmpfs_dir_entry*)
-    struct list entries_list;   // For directories: list for readdir iteration (same entries as in hashmap)
+    void *data;               // For files: pointer to data
+    uint64_t data_size;       // Size of allocated memory
+    struct hashmap entries;   // For directories: hashmap of tmpfs_dir_entry (key: name string, value: tmpfs_dir_entry*)
+    struct list entries_list; // For directories: list for readdir iteration (same entries as in hashmap)
 };
 
 // Directory entry in tmpfs

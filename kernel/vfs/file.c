@@ -316,7 +316,7 @@ int vfs_unlink(const char *path)
             struct dirent dirent_buf;
             int read_ret = vfs_readdir(dir_file, &dirent_buf, 1);
             vfs_close(dir_file);
-            
+
             if (read_ret > 0)
             {
                 vfs_put_dentry(target_dentry);

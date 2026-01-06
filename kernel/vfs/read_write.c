@@ -90,7 +90,7 @@ int64_t vfs_lseek(struct file *file, int64_t offset, int whence)
         return VFS_EINVAL;
     }
 
-    file->offset = (uint64_t)new_offset;
+    file->offset = (uint64_t) new_offset;
     release_spinlock(&file->lock);
 
     return new_offset;

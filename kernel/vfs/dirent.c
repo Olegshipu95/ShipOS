@@ -8,7 +8,6 @@
 #include "../kalloc/kalloc.h"
 #include "vfs.h"
 
-
 int vfs_opendir(const char *path, struct file **result)
 {
     if (!path || !result)

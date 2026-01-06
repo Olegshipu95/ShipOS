@@ -116,9 +116,11 @@ struct dentry *vfs_lookup(struct dentry *parent, const char *name)
 
     struct inode *parent_inode = parent->inode;
     // Check if parent is a directory
-    if (!parent_inode || parent_inode->type != INODE_TYPE_DIR) return NULL;
+    if (!parent_inode || parent_inode->type != INODE_TYPE_DIR)
+        return NULL;
     // Check if operations are available
-    if (!parent_inode->i_op || !parent_inode->i_op->lookup) return NULL;
+    if (!parent_inode->i_op || !parent_inode->i_op->lookup)
+        return NULL;
 
     // Try to find in cache first
     if (dentry_cache_initialized)

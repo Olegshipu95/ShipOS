@@ -16,22 +16,23 @@
 extern void inode_init(void);
 extern void mount_init(void);
 
-int vfs_init(void) {
-  printf("Initializing VFS...\n");
+int vfs_init(void)
+{
+    printf("Initializing VFS...\n");
 
-  // Initialize inode subsystem
-  inode_init();
+    // Initialize inode subsystem
+    inode_init();
 
-  // Initialize filesystem registration subsystem
-  mount_init();
+    // Initialize filesystem registration subsystem
+    mount_init();
 
-  // Initialize dentry cache
-  if (dentry_cache_init() != 0)
-  {
-    printf("Failed to initialize dentry cache\n");
-    return VFS_ERR;
-  }
+    // Initialize dentry cache
+    if (dentry_cache_init() != 0)
+    {
+        printf("Failed to initialize dentry cache\n");
+        return VFS_ERR;
+    }
 
-  printf("VFS initialized\n");
-  return VFS_OK;
+    printf("VFS initialized\n");
+    return VFS_OK;
 }

@@ -243,7 +243,7 @@ static int tmpfs_readdir(struct file *file, struct dirent *dirent, uint64_t coun
 
     // Return number of entries read (positive value)
     // Negative values are error codes
-    return (int)entries_read;
+    return (int) entries_read;
 }
 
 // Lookup file in directory
@@ -264,7 +264,7 @@ static struct inode *tmpfs_lookup(struct inode *dir, const char *name)
     acquire_spinlock(&dir->lock);
 
     // Lookup in hashmap
-    struct tmpfs_dir_entry *entry = (struct tmpfs_dir_entry *)hashmap_get(&dir_info->entries, (void *)name);
+    struct tmpfs_dir_entry *entry = (struct tmpfs_dir_entry *) hashmap_get(&dir_info->entries, (void *) name);
     if (entry)
     {
         struct inode *found = entry->inode;
@@ -425,14 +425,14 @@ static int tmpfs_remove_entry(struct inode *dir, const char *name)
     acquire_spinlock(&dir->lock);
 
     // Find and remove entry from hashmap and list
-    struct tmpfs_dir_entry *entry = (struct tmpfs_dir_entry *)hashmap_get(&dir_info->entries, (void *)name);
+    struct tmpfs_dir_entry *entry = (struct tmpfs_dir_entry *) hashmap_get(&dir_info->entries, (void *) name);
     if (entry)
     {
         hashmap_remove(&dir_info->entries, entry->name);
         lst_remove(&entry->list_node);
 
         vfs_put_inode(entry->inode);
-        
+
         kfree(entry);
 
         release_spinlock(&dir->lock);
@@ -465,7 +465,7 @@ static struct inode *tmpfs_alloc_inode(struct superblock *sb)
         vfs_free_inode(inode);
         return NULL;
     }
-    
+
     // Initialize hashmap and list for directories
     lst_init(&info->entries_list);
     if (hashmap_init(&info->entries, TMPFS_DIR_BUCKETS, hashmap_hash_string, hashmap_cmp_string, NULL) != 0)
@@ -512,7 +512,7 @@ static void tmpfs_destroy_inode(struct inode *inode)
                 kfree(entry);
                 node = next;
             }
-            
+
             // Destroy hashmap
             hashmap_destroy(&info->entries);
         }
@@ -525,7 +525,7 @@ static void tmpfs_destroy_inode(struct inode *inode)
 static struct superblock *tmpfs_mount_impl(const char *dev_name)
 {
     // tmpfs doesn't use device name, but we accept it for compatibility
-    (void)dev_name;
+    (void) dev_name;
     return tmpfs_mount();
 }
 
@@ -609,7 +609,7 @@ int tmpfs_init(void)
         printf("Failed to register tmpfs filesystem\n");
         return ret;
     }
-    
+
     printf("tmpfs initialized and registered\n");
     return VFS_OK;
 }

@@ -11,10 +11,11 @@
 #include <stddef.h>
 
 // Structure for filesystem mount configuration
-struct vfs_mount_config {
-    const char *mount_point;  // Mount point path (e.g., "/", "/mnt/usb")
-    const char *fs_type;      // Filesystem type (e.g., "tmpfs", "ext2")
-    const char *device;       // Device name (NULL for filesystems that don't need a device)
+struct vfs_mount_config
+{
+    const char *mount_point; // Mount point path (e.g., "/", "/mnt/usb")
+    const char *fs_type;     // Filesystem type (e.g., "tmpfs", "ext2")
+    const char *device;      // Device name (NULL for filesystems that don't need a device)
 };
 
 // Array of mount configurations (terminated with {NULL, NULL, NULL})
@@ -24,4 +25,3 @@ extern struct vfs_mount_config vfs_mount_configs[];
 extern size_t vfs_mount_configs_count;
 
 #endif // VFS_CONFIG_H
-

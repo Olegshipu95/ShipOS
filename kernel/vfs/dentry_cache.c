@@ -18,8 +18,8 @@ int dentry_cache_initialized = 0;
 
 static uint64_t dentry_cache_hash(const void *key)
 {
-    const struct dentry_cache_key *k = (const struct dentry_cache_key *)key;
-    uint64_t hash = hashmap_hash_ptr((void *)k->parent_inode);
+    const struct dentry_cache_key *k = (const struct dentry_cache_key *) key;
+    uint64_t hash = hashmap_hash_ptr((void *) k->parent_inode);
     // Combine with name hash
     if (k->name)
     {
@@ -31,19 +31,19 @@ static uint64_t dentry_cache_hash(const void *key)
 
 static int dentry_cache_cmp(const void *key1, const void *key2)
 {
-    const struct dentry_cache_key *k1 = (const struct dentry_cache_key *)key1;
-    const struct dentry_cache_key *k2 = (const struct dentry_cache_key *)key2;
-    
+    const struct dentry_cache_key *k1 = (const struct dentry_cache_key *) key1;
+    const struct dentry_cache_key *k2 = (const struct dentry_cache_key *) key2;
+
     if (k1->parent_inode != k2->parent_inode)
     {
         return 1;
     }
-    
+
     if (!k1->name || !k2->name)
     {
         return 1;
     }
-    
+
     return strcmp(k1->name, k2->name);
 }
 
@@ -55,8 +55,8 @@ int dentry_cache_init(void)
     }
 
     init_spinlock(&dentry_cache_lock, "dentry_cache");
-    
-    if (hashmap_init(&dentry_cache, DENTRY_CACHE_BUCKETS, dentry_cache_hash, dentry_cache_cmp, (key_free_func_t)kfree) != 0)
+
+    if (hashmap_init(&dentry_cache, DENTRY_CACHE_BUCKETS, dentry_cache_hash, dentry_cache_cmp, (key_free_func_t) kfree) != 0)
     {
         return -1;
     }
@@ -76,7 +76,6 @@ void dentry_cache_destroy(void)
     dentry_cache_initialized = 0;
 }
 
-
 struct dentry *dentry_cache_lookup(struct inode *parent, const char *name)
 {
     if (!dentry_cache_initialized || !parent || !name)
@@ -86,11 +85,10 @@ struct dentry *dentry_cache_lookup(struct inode *parent, const char *name)
 
     struct dentry_cache_key key = {
         .parent_inode = parent,
-        .name = name
-    };
+        .name = name};
 
     acquire_spinlock(&dentry_cache_lock);
-    struct dentry *dentry = (struct dentry *)hashmap_get(&dentry_cache, &key);
+    struct dentry *dentry = (struct dentry *) hashmap_get(&dentry_cache, &key);
     if (dentry)
     {
         vfs_get_dentry(dentry);
@@ -117,9 +115,9 @@ void dentry_cache_add(struct dentry *dentry)
     key->name = dentry->name;
 
     acquire_spinlock(&dentry_cache_lock);
-    
+
     // Check if dentry is already in cache
-    struct dentry *existing = (struct dentry *)hashmap_get(&dentry_cache, key);
+    struct dentry *existing = (struct dentry *) hashmap_get(&dentry_cache, key);
     if (existing == dentry)
     {
         // Already in cache with same dentry - just free the key and return
@@ -127,7 +125,7 @@ void dentry_cache_add(struct dentry *dentry)
         release_spinlock(&dentry_cache_lock);
         return;
     }
-    
+
     if (existing)
     {
         // Different dentry with same key - remove old one first
@@ -135,9 +133,9 @@ void dentry_cache_add(struct dentry *dentry)
         hashmap_remove(&dentry_cache, key);
         vfs_put_dentry(existing);
     }
-    
+
     vfs_get_dentry(dentry);
-    
+
     hashmap_insert(&dentry_cache, key, dentry);
     release_spinlock(&dentry_cache_lock);
 }
@@ -152,8 +150,7 @@ void dentry_cache_remove(struct dentry *dentry)
     // Create temporary key for lookup
     struct dentry_cache_key search_key = {
         .parent_inode = dentry->parent->inode,
-        .name = dentry->name
-    };
+        .name = dentry->name};
 
     acquire_spinlock(&dentry_cache_lock);
     // NOTE: hashmap_remove will automatically free the key using the callback

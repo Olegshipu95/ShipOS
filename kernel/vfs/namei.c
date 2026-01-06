@@ -136,13 +136,13 @@ struct dentry *vfs_path_lookup(const char *path)
         if (mounted_sb && mounted_sb->s_root)
         {
             struct dentry *mounted_root = NULL;
-            
+
             // Try to find existing dentry for mounted root in cache
             if (dentry_cache_initialized)
             {
                 mounted_root = dentry_cache_lookup(current->inode, "/");
             }
-            
+
             // Create new dentry if not found in cache or invalid
             if (!mounted_root)
             {
@@ -159,11 +159,11 @@ struct dentry *vfs_path_lookup(const char *path)
                     dentry_cache_add(mounted_root);
                 }
             }
-            
+
             // Switch to mounted root
             vfs_put_dentry(current);
             current = mounted_root;
-            
+
             continue;
         }
     }
