@@ -4,6 +4,7 @@
 //#include "../lib/include/stdint.h"
 #include <inttypes.h>
 #include <stddef.h>
+#include "../lib/include/memset.h"
 #include "../tty/tty.h"
 
 struct run {
@@ -59,6 +60,14 @@ void *kalloc() {
     if (r)
         memset((char *) r, 5, PGSIZE); // fill with junk
     return (void *) r;
+}
+
+void *kzalloc(size_t size) {
+    void *ptr = kalloc();
+    if (ptr) {
+        memset(ptr, 0, size);
+    }
+    return ptr;
 }
 
 uint64_t count_pages() {
