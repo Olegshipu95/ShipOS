@@ -12,7 +12,7 @@
 /**
  * Splits a path string into individual components.
  **/
-static int split_path(const char *path, char components[][MAX_NAME_LEN], int max_components)
+int split_path(const char *path, char components[][MAX_NAME_LEN], int max_components)
 {
     int count = 0;
     const char *start = path;
@@ -127,6 +127,45 @@ struct dentry *vfs_path_lookup(const char *path)
 
         vfs_put_dentry(current);
         current = child;
+
+        // Check if the found dentry is a mount point - if so, switch to mounted filesystem root
+        acquire_spinlock(&current->lock);
+        struct superblock *mounted_sb = current->mounted_sb;
+        release_spinlock(&current->lock);
+
+        if (mounted_sb && mounted_sb->s_root)
+        {
+            struct dentry *mounted_root = NULL;
+            
+            // Try to find existing dentry for mounted root in cache
+            if (dentry_cache_initialized)
+            {
+                mounted_root = dentry_cache_lookup(current->inode, "/");
+            }
+            
+            // Create new dentry if not found in cache or invalid
+            if (!mounted_root)
+            {
+                mounted_root = vfs_alloc_dentry("/", mounted_sb->s_root);
+                if (!mounted_root)
+                {
+                    vfs_put_dentry(current);
+                    return NULL;
+                }
+                mounted_root->parent = current;
+
+                if (dentry_cache_initialized)
+                {
+                    dentry_cache_add(mounted_root);
+                }
+            }
+            
+            // Switch to mounted root
+            vfs_put_dentry(current);
+            current = mounted_root;
+            
+            continue;
+        }
     }
 
     return current;

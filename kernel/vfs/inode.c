@@ -21,13 +21,11 @@ void inode_init(void)
 
 struct inode *vfs_alloc_inode(struct superblock *sb)
 {
-    struct inode *inode = kalloc();
+    struct inode *inode = kzalloc(sizeof(struct inode));
     if (!inode)
     {
         return NULL;
     }
-
-    memset(inode, 0, sizeof(struct inode));
 
     acquire_spinlock(&ino_lock);
     inode->ino = next_ino++;

@@ -13,13 +13,11 @@
 
 struct file *vfs_alloc_file(void)
 {
-    struct file *file = kalloc();
+    struct file *file = kzalloc(sizeof(struct file));
     if (!file)
     {
         return NULL;
     }
-
-    memset(file, 0, sizeof(struct file));
     file->ref = 1;
     init_spinlock(&file->lock, "file");
 
@@ -134,6 +132,12 @@ int vfs_open(const char *path, int flags, struct file **result)
         lst_push(&parent->children, &dentry->sibling);
         release_spinlock(&parent->lock);
 
+        // Add to cache - FIX: dentry created via O_CREAT should be cached
+        if (dentry_cache_initialized)
+        {
+            dentry_cache_add(dentry);
+        }
+
         vfs_put_dentry(parent);
     }
 
@@ -149,7 +153,7 @@ int vfs_open(const char *path, int flags, struct file **result)
         return VFS_EINVAL;
     }
 
-    // Check if it's a directory (can't open directories for reading/writing)
+    // Check if it's a directory (can't open directories with vfs_open, use vfs_opendir instead)
     if (inode->type == INODE_TYPE_DIR)
     {
         vfs_put_dentry(dentry);
@@ -183,8 +187,8 @@ int vfs_open(const char *path, int flags, struct file **result)
         }
     }
 
-    // Handle O_TRUNC flag
-    if (flags & O_TRUNC)
+    // Handle O_TRUNC flag (only for regular files)
+    if ((flags & O_TRUNC) && inode->type == INODE_TYPE_FILE)
     {
         inode->size = 0;
     }
@@ -225,6 +229,132 @@ int vfs_close(struct file *file)
     {
         vfs_free_file(file);
     }
+
+    return VFS_OK;
+}
+
+/**
+ * Unlink (delete) a file or empty directory
+ * @param path Path to the file or directory to delete
+ * @note For directories, this function will only delete empty directories.
+ *       Returns VFS_ENOTEMPTY if the directory is not empty.
+ */
+int vfs_unlink(const char *path)
+{
+    if (!path)
+    {
+        return VFS_EINVAL;
+    }
+
+    // Find parent directory and filename
+    char path_copy[MAX_PATH_LEN];
+    strncpy(path_copy, path, MAX_PATH_LEN - 1);
+    path_copy[MAX_PATH_LEN - 1] = '\0';
+
+    // Find last slash
+    char *last_slash = NULL;
+    for (char *p = path_copy; *p; p++)
+    {
+        if (*p == '/')
+        {
+            last_slash = p;
+        }
+    }
+
+    struct dentry *parent;
+    const char *filename;
+
+    if (last_slash)
+    {
+        *last_slash = '\0';
+        filename = last_slash + 1;
+        parent = vfs_path_lookup(path_copy[0] ? path_copy : "/");
+    }
+    else
+    {
+        // File in root directory
+        parent = vfs_get_root();
+        vfs_get_dentry(parent);
+        filename = path;
+    }
+
+    if (!parent)
+    {
+        return VFS_ENOENT;
+    }
+
+    struct inode *parent_inode = parent->inode;
+    if (!parent_inode || parent_inode->type != INODE_TYPE_DIR)
+    {
+        vfs_put_dentry(parent);
+        return VFS_ENOTDIR;
+    }
+
+    // Check if parent inode has unlink operation
+    if (!parent_inode->i_op || !parent_inode->i_op->unlink)
+    {
+        vfs_put_dentry(parent);
+        return VFS_EINVAL;
+    }
+
+    // Lookup the file to be deleted to check it exists and get its dentry
+    struct dentry *target_dentry = vfs_lookup(parent, filename);
+    if (!target_dentry)
+    {
+        vfs_put_dentry(parent);
+        return VFS_ENOENT;
+    }
+
+    // If it's a directory, check if it's empty before deleting
+    if (target_dentry->inode && target_dentry->inode->type == INODE_TYPE_DIR)
+    {
+        // Open directory to check if it's empty
+        struct file *dir_file;
+        int open_ret = vfs_opendir(path, &dir_file);
+        if (open_ret == VFS_OK && dir_file)
+        {
+            struct dirent dirent_buf;
+            int read_ret = vfs_readdir(dir_file, &dirent_buf, 1);
+            vfs_close(dir_file);
+            
+            if (read_ret > 0)
+            {
+                vfs_put_dentry(target_dentry);
+                vfs_put_dentry(parent);
+                return VFS_ENOTEMPTY;
+            }
+        }
+        else
+        {
+            vfs_put_dentry(target_dentry);
+            vfs_put_dentry(parent);
+            return (open_ret != VFS_OK) ? open_ret : VFS_EINVAL;
+        }
+    }
+
+    // Call filesystem-specific unlink operation
+    int ret = parent_inode->i_op->unlink(parent_inode, filename);
+    if (ret != VFS_OK)
+    {
+        vfs_put_dentry(target_dentry);
+        vfs_put_dentry(parent);
+        return ret;
+    }
+
+    // Remove from parent's children list
+    acquire_spinlock(&parent->lock);
+    lst_remove(&target_dentry->sibling);
+    release_spinlock(&parent->lock);
+
+    // Remove from cache
+    if (dentry_cache_initialized)
+    {
+        dentry_cache_remove(target_dentry);
+    }
+
+    // Release references
+    vfs_put_dentry(target_dentry);
+    vfs_put_dentry(parent);
 
     return VFS_OK;
 }

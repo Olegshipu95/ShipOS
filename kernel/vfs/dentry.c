@@ -18,13 +18,11 @@ struct dentry *vfs_alloc_dentry(const char *name, struct inode *inode)
         return NULL;
     }
 
-    struct dentry *dentry = kalloc();
+    struct dentry *dentry = kzalloc(sizeof(struct dentry));
     if (!dentry)
     {
         return NULL;
     }
-
-    memset(dentry, 0, sizeof(struct dentry));
 
     // Copy name
     size_t name_len = strlen(name);
@@ -118,15 +116,18 @@ struct dentry *vfs_lookup(struct dentry *parent, const char *name)
 
     struct inode *parent_inode = parent->inode;
     // Check if parent is a directory
-    if (!parent_inode || parent_inode->type != INODE_TYPE_DIR)
-    {
-        return NULL;
-    }
-
+    if (!parent_inode || parent_inode->type != INODE_TYPE_DIR) return NULL;
     // Check if operations are available
-    if (!parent_inode->i_op || !parent_inode->i_op->lookup)
+    if (!parent_inode->i_op || !parent_inode->i_op->lookup) return NULL;
+
+    // Try to find in cache first
+    if (dentry_cache_initialized)
     {
-        return NULL;
+        struct dentry *cached = dentry_cache_lookup(parent_inode, name);
+        if (cached)
+        {
+            return cached;
+        }
     }
 
     // Use inode's lookup operation to find child
@@ -137,7 +138,6 @@ struct dentry *vfs_lookup(struct dentry *parent, const char *name)
     }
 
     // Create dentry for found inode
-    // TODO: implement dentry cache, so that we don't allocate a new dentry every time
     struct dentry *child_dentry = vfs_alloc_dentry(name, child_inode);
     if (!child_dentry)
     {
@@ -151,6 +151,12 @@ struct dentry *vfs_lookup(struct dentry *parent, const char *name)
     // NOTE: insert head of sibling list to parent's children list
     lst_push(&parent->children, &child_dentry->sibling);
     release_spinlock(&parent->lock);
+
+    // Add to cache
+    if (dentry_cache_initialized)
+    {
+        dentry_cache_add(child_dentry);
+    }
 
     return child_dentry;
 }

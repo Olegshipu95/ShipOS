@@ -7,24 +7,18 @@
 #include "../../kalloc/kalloc.h"
 #include "../../lib/include/memset.h"
 #include "../../lib/include/string.h"
+#include "../../lib/include/types.h"
+#include "../../lib/include/hashmap.h"
 #include "../../memlayout.h"
 #include "../../tty/tty.h"
-
-/**
- * Gets the container structure from a pointer to its member.
- * @param ptr Pointer to the member.
- * @param type Type of the container structure.
- * @param member Name of the member.
- * @return Pointer to the container structure.
- **/
-#define container_of(ptr, type, member) \
-    ((type *) ((char *) (ptr) - __builtin_offsetof(type, member)))
+#include "../../vfs/vfs.h"
 
 // Forward declarations
 static int64_t tmpfs_read(struct file *file, char *buf, uint64_t count);
 static int64_t tmpfs_write(struct file *file, const char *buf, uint64_t count);
 static int tmpfs_open(struct inode *inode, struct file *file);
 static int tmpfs_close(struct file *file);
+static int tmpfs_readdir(struct file *file, struct dirent *dirent, uint64_t count);
 
 static struct inode *tmpfs_lookup(struct inode *dir, const char *name);
 static int tmpfs_create(struct inode *dir, const char *name, struct inode **result);
@@ -55,29 +49,25 @@ struct inode_operations tmpfs_file_inode_ops = {
     .lookup = NULL,
     .create = NULL,
     .mkdir = NULL,
-    .unlink = NULL,
-    .rmdir = NULL};
+    .unlink = NULL};
 
 // Inode operations for directories
 struct inode_operations tmpfs_dir_inode_ops = {
     .lookup = tmpfs_lookup,
     .create = tmpfs_create,
     .mkdir = tmpfs_mkdir,
-    .unlink = tmpfs_unlink,
-    .rmdir = NULL};
+    .unlink = tmpfs_unlink};
 
 /**
  * @brief File operations for directories
- *
- * @note At the moment, this is a placeholder. Later can be used for functions like:
- * - readdir
  */
 struct file_operations tmpfs_dir_file_ops = {
     .read = NULL,
     .write = NULL,
     .open = NULL,
     .close = NULL,
-    .lseek = NULL};
+    .lseek = NULL,
+    .readdir = tmpfs_readdir};
 
 // Superblock operations
 struct superblock_operations tmpfs_sb_ops = {
@@ -197,6 +187,65 @@ static int tmpfs_close(struct file *file)
     return VFS_OK;
 }
 
+// Read directory entries
+static int tmpfs_readdir(struct file *file, struct dirent *dirent, uint64_t count)
+{
+    if (!file || !dirent || count == 0)
+    {
+        return VFS_EINVAL;
+    }
+
+    struct inode *inode = file->inode;
+    if (!inode || inode->type != INODE_TYPE_DIR)
+    {
+        return VFS_ENOTDIR;
+    }
+
+    struct tmpfs_inode_info *dir_info = inode->fs_private;
+    if (!dir_info)
+    {
+        return VFS_EINVAL;
+    }
+
+    acquire_spinlock(&inode->lock);
+
+    // Find starting position based on file->offset
+    struct list *node = dir_info->entries_list.next;
+    uint64_t current_pos = 0;
+
+    // Skip entries until we reach the offset
+    while (node != &dir_info->entries_list && current_pos < file->offset)
+    {
+        node = node->next;
+        current_pos++;
+    }
+
+    // Read entries
+    uint64_t entries_read = 0;
+    while (node != &dir_info->entries_list && entries_read < count)
+    {
+        struct tmpfs_dir_entry *entry = container_of(node, struct tmpfs_dir_entry, list_node);
+
+        // Fill dirent structure
+        strncpy(dirent[entries_read].d_name, entry->name, MAX_NAME_LEN - 1);
+        dirent[entries_read].d_name[MAX_NAME_LEN - 1] = '\0';
+        dirent[entries_read].d_ino = entry->inode->ino;
+        dirent[entries_read].d_type = entry->inode->type;
+
+        entries_read++;
+        node = node->next;
+    }
+
+    // Update file offset
+    file->offset += entries_read;
+
+    release_spinlock(&inode->lock);
+
+    // Return number of entries read (positive value)
+    // Negative values are error codes
+    return (int)entries_read;
+}
+
 // Lookup file in directory
 static struct inode *tmpfs_lookup(struct inode *dir, const char *name)
 {
@@ -214,19 +263,14 @@ static struct inode *tmpfs_lookup(struct inode *dir, const char *name)
 
     acquire_spinlock(&dir->lock);
 
-    // Search through directory entries
-    struct list *node;
-    for (node = dir_info->entries.next; node != &dir_info->entries; node = node->next)
+    // Lookup in hashmap
+    struct tmpfs_dir_entry *entry = (struct tmpfs_dir_entry *)hashmap_get(&dir_info->entries, (void *)name);
+    if (entry)
     {
-        struct tmpfs_dir_entry *entry = container_of(node, struct tmpfs_dir_entry, list_node);
-
-        if (strcmp(entry->name, name) == 0)
-        {
-            struct inode *found = entry->inode;
-            vfs_get_inode(found);
-            release_spinlock(&dir->lock);
-            return found;
-        }
+        struct inode *found = entry->inode;
+        vfs_get_inode(found);
+        release_spinlock(&dir->lock);
+        return found;
     }
 
     release_spinlock(&dir->lock);
@@ -272,7 +316,7 @@ static int tmpfs_create(struct inode *dir, const char *name, struct inode **resu
     new_inode->f_op = &tmpfs_file_ops;
 
     // Create directory entry
-    struct tmpfs_dir_entry *entry = kalloc();
+    struct tmpfs_dir_entry *entry = kzalloc(sizeof(struct tmpfs_dir_entry));
     if (!entry)
     {
         tmpfs_destroy_inode(new_inode);
@@ -284,9 +328,17 @@ static int tmpfs_create(struct inode *dir, const char *name, struct inode **resu
     entry->inode = new_inode;
     vfs_get_inode(new_inode);
 
-    // Add to directory
+    // Add to directory hashmap and list (key is the name string stored in entry)
     acquire_spinlock(&dir->lock);
-    lst_push(&dir_info->entries, &entry->list_node);
+    if (hashmap_insert(&dir_info->entries, entry->name, entry) != 0)
+    {
+        release_spinlock(&dir->lock);
+        vfs_put_inode(new_inode);
+        kfree(entry);
+        tmpfs_destroy_inode(new_inode);
+        return VFS_ENOMEM;
+    }
+    lst_push(&dir_info->entries_list, &entry->list_node);
     release_spinlock(&dir->lock);
 
     *result = new_inode;
@@ -328,7 +380,7 @@ static int tmpfs_mkdir(struct inode *dir, const char *name)
     new_inode->f_op = &tmpfs_dir_file_ops;
 
     // Create directory entry
-    struct tmpfs_dir_entry *entry = kalloc();
+    struct tmpfs_dir_entry *entry = kzalloc(sizeof(struct tmpfs_dir_entry));
     if (!entry)
     {
         tmpfs_destroy_inode(new_inode);
@@ -340,16 +392,24 @@ static int tmpfs_mkdir(struct inode *dir, const char *name)
     entry->inode = new_inode;
     vfs_get_inode(new_inode);
 
-    // Add to parent directory
+    // Add to parent directory hashmap and list (key is the name string stored in entry)
     acquire_spinlock(&dir->lock);
-    lst_push(&dir_info->entries, &entry->list_node);
+    if (hashmap_insert(&dir_info->entries, entry->name, entry) != 0)
+    {
+        release_spinlock(&dir->lock);
+        vfs_put_inode(new_inode);
+        kfree(entry);
+        tmpfs_destroy_inode(new_inode);
+        return VFS_ENOMEM;
+    }
+    lst_push(&dir_info->entries_list, &entry->list_node);
     release_spinlock(&dir->lock);
 
     return VFS_OK;
 }
 
-// Unlink (delete) file from directory
-static int tmpfs_unlink(struct inode *dir, const char *name)
+// Remove entry (file or directory) from directory
+static int tmpfs_remove_entry(struct inode *dir, const char *name)
 {
     if (!dir || dir->type != INODE_TYPE_DIR || !name)
     {
@@ -364,30 +424,29 @@ static int tmpfs_unlink(struct inode *dir, const char *name)
 
     acquire_spinlock(&dir->lock);
 
-    // Find entry
-    struct list *node;
-    for (node = dir_info->entries.next; node != &dir_info->entries; node = node->next)
+    // Find and remove entry from hashmap and list
+    struct tmpfs_dir_entry *entry = (struct tmpfs_dir_entry *)hashmap_get(&dir_info->entries, (void *)name);
+    if (entry)
     {
-        struct tmpfs_dir_entry *entry = container_of(node, struct tmpfs_dir_entry, list_node);
+        hashmap_remove(&dir_info->entries, entry->name);
+        lst_remove(&entry->list_node);
 
-        if (strcmp(entry->name, name) == 0)
-        {
-            // Remove from list
-            lst_remove(&entry->list_node);
+        vfs_put_inode(entry->inode);
+        
+        kfree(entry);
 
-            // Release inode reference
-            vfs_put_inode(entry->inode);
-
-            // Free entry
-            kfree(entry);
-
-            release_spinlock(&dir->lock);
-            return VFS_OK;
-        }
+        release_spinlock(&dir->lock);
+        return VFS_OK;
     }
 
     release_spinlock(&dir->lock);
     return VFS_ENOENT;
+}
+
+// Unlink (delete) file or directory from directory
+static int tmpfs_unlink(struct inode *dir, const char *name)
+{
+    return tmpfs_remove_entry(dir, name);
 }
 
 // Allocate new inode
@@ -400,15 +459,21 @@ static struct inode *tmpfs_alloc_inode(struct superblock *sb)
     }
 
     // Allocate tmpfs-specific data
-    struct tmpfs_inode_info *info = kalloc();
+    struct tmpfs_inode_info *info = kzalloc(sizeof(struct tmpfs_inode_info));
     if (!info)
     {
         vfs_free_inode(inode);
         return NULL;
     }
-
-    memset(info, 0, sizeof(struct tmpfs_inode_info));
-    lst_init(&info->entries);
+    
+    // Initialize hashmap and list for directories
+    lst_init(&info->entries_list);
+    if (hashmap_init(&info->entries, TMPFS_DIR_BUCKETS, hashmap_hash_string, hashmap_cmp_string, NULL) != 0)
+    {
+        kfree(info);
+        vfs_free_inode(inode);
+        return NULL;
+    }
 
     inode->fs_private = info;
     return inode;
@@ -436,8 +501,9 @@ static void tmpfs_destroy_inode(struct inode *inode)
         // Free directory entries if it's a directory
         if (inode->type == INODE_TYPE_DIR)
         {
-            struct list *node = info->entries.next;
-            while (node != &info->entries)
+            // Clear all entries from list (hashmap will be cleared automatically)
+            struct list *node = info->entries_list.next;
+            while (node != &info->entries_list)
             {
                 struct list *next = node->next;
                 struct tmpfs_dir_entry *entry = container_of(node, struct tmpfs_dir_entry, list_node);
@@ -446,36 +512,43 @@ static void tmpfs_destroy_inode(struct inode *inode)
                 kfree(entry);
                 node = next;
             }
+            
+            // Destroy hashmap
+            hashmap_destroy(&info->entries);
         }
 
         kfree(info);
     }
 }
 
+// Wrapper for tmpfs_mount that matches file_system_type signature
+static struct superblock *tmpfs_mount_impl(const char *dev_name)
+{
+    // tmpfs doesn't use device name, but we accept it for compatibility
+    (void)dev_name;
+    return tmpfs_mount();
+}
+
 // Mount tmpfs
 struct superblock *tmpfs_mount(void)
 {
-    struct superblock *sb = kalloc();
+    struct superblock *sb = kzalloc(sizeof(struct superblock));
     if (!sb)
     {
         return NULL;
     }
-
-    memset(sb, 0, sizeof(struct superblock));
 
     sb->s_magic = TMPFS_MAGIC;
     sb->s_op = &tmpfs_sb_ops;
     init_spinlock(&sb->lock, "tmpfs_sb");
 
     // Allocate filesystem info
-    struct tmpfs_fs_info *fs_info = kalloc();
+    struct tmpfs_fs_info *fs_info = kzalloc(sizeof(struct tmpfs_fs_info));
     if (!fs_info)
     {
         kfree(sb);
         return NULL;
     }
-
-    memset(fs_info, 0, sizeof(struct tmpfs_fs_info));
     sb->s_fs_info = fs_info;
 
     // Create root inode
@@ -521,9 +594,22 @@ int tmpfs_unmount(struct superblock *sb)
     return VFS_OK;
 }
 
+// Filesystem type structure for tmpfs
+static struct file_system_type tmpfs_fs_type = {
+    .name = "tmpfs",
+    .mount = tmpfs_mount_impl,
+};
+
 int tmpfs_init(void)
 {
-    // Nothing special
-    printf("tmpfs initialized\n");
+    // Register tmpfs filesystem
+    int ret = vfs_register_filesystem(&tmpfs_fs_type);
+    if (ret != VFS_OK)
+    {
+        printf("Failed to register tmpfs filesystem\n");
+        return ret;
+    }
+    
+    printf("tmpfs initialized and registered\n");
     return VFS_OK;
 }

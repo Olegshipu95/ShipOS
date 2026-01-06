@@ -7,44 +7,31 @@
 
 #include "vfs.h"
 #include "../lib/include/panic.h"
+#include "../lib/include/string.h"
+#include "../lib/include/types.h"
+#include "../sync/spinlock.h"
 #include "../tty/tty.h"
 
 // Forward declaration
-extern struct superblock *tmpfs_mount(void);
 extern void inode_init(void);
+extern void mount_init(void);
 
-// Global root dentry
-static struct dentry *root_dentry = NULL;
-static struct superblock *root_sb = NULL;
+int vfs_init(void) {
+  printf("Initializing VFS...\n");
 
-struct dentry *vfs_get_root(void)
-{
-    return root_dentry;
-}
+  // Initialize inode subsystem
+  inode_init();
 
-int vfs_init(void)
-{
-    printf("Initializing VFS...\n");
+  // Initialize filesystem registration subsystem
+  mount_init();
 
-    // Initialize inode subsystem
-    inode_init();
+  // Initialize dentry cache
+  if (dentry_cache_init() != 0)
+  {
+    printf("Failed to initialize dentry cache\n");
+    return VFS_ERR;
+  }
 
-    // Mount tmpfs as root filesystem
-    root_sb = tmpfs_mount();
-    if (!root_sb)
-    {
-        panic("Failed to mount root tmpfs");
-        return VFS_ERR;
-    }
-
-    // Create root dentry
-    root_dentry = vfs_alloc_dentry("/", root_sb->s_root);
-    if (!root_dentry)
-    {
-        panic("Failed to create root dentry");
-        return VFS_ERR;
-    }
-
-    printf("VFS initialized with tmpfs as root\n");
-    return VFS_OK;
+  printf("VFS initialized\n");
+  return VFS_OK;
 }

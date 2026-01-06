@@ -13,6 +13,7 @@
 
 #include "../list/list.h"
 #include "../sync/spinlock.h"
+#include "../lib/include/hashmap.h"
 #include <inttypes.h>
 #include <stdbool.h>
 
@@ -51,6 +52,7 @@ enum inode_type
 #define VFS_EISDIR -5  // Is a directory
 #define VFS_EINVAL -6  // Invalid argument
 #define VFS_ENOMEM -7  // Out of memory
+#define VFS_ENOTEMPTY -8 // Directory is not empty
 
 // Forward declarations
 struct inode;
@@ -65,7 +67,6 @@ struct inode_operations
     int (*create)(struct inode *dir, const char *name, struct inode **result);
     int (*mkdir)(struct inode *dir, const char *name);
     int (*unlink)(struct inode *dir, const char *name);
-    int (*rmdir)(struct inode *dir, const char *name);
 };
 
 // File operations
@@ -76,6 +77,7 @@ struct file_operations
     int (*open)(struct inode *inode, struct file *file);
     int (*close)(struct file *file);
     int64_t (*lseek)(struct file *file, int64_t offset, int whence);
+    int (*readdir)(struct file *file, struct dirent *dirent, uint64_t count);
 };
 
 // Superblock operations
@@ -84,6 +86,14 @@ struct superblock_operations
     struct inode *(*alloc_inode)(struct superblock *sb);
     void (*destroy_inode)(struct inode *inode);
     int (*sync_fs)(struct superblock *sb);
+};
+
+// File system type structure
+struct file_system_type
+{
+    const char *name;                                   // Name of the filesystem (e.g., "tmpfs", "ext2")
+    struct superblock *(*mount)(const char *dev_name);  // Mount function
+    struct list list_node;                              // For filesystem registration list
 };
 
 // Inode structure
@@ -104,13 +114,14 @@ struct inode
 // Directory entry
 struct dentry
 {
-    char name[MAX_NAME_LEN]; // Name
-    struct inode *inode;     // Associated inode
-    struct dentry *parent;   // Parent dentry
-    struct list children;    // List of child dentries
-    struct list sibling;     // For parent's children list
-    struct spinlock lock;    // Lock
-    uint32_t ref;            // Reference count
+    char name[MAX_NAME_LEN];        // Name
+    struct inode *inode;            // Associated inode
+    struct dentry *parent;          // Parent dentry
+    struct list children;           // List of child dentries
+    struct list sibling;            // For parent's children list
+    struct spinlock lock;           // Lock
+    uint32_t ref;                   // Reference count
+    struct superblock *mounted_sb;  // Mounted filesystem (if this is a mount point)
 };
 
 // Open file structure
@@ -125,6 +136,14 @@ struct file
     struct spinlock lock;         // Lock
 };
 
+// Directory entry structure
+struct dirent {
+    char d_name[MAX_NAME_LEN];
+    uint64_t d_ino;
+    enum inode_type d_type;
+};
+
+
 // Superblock
 struct superblock
 {
@@ -133,10 +152,12 @@ struct superblock
     struct superblock_operations *s_op; // Operations
     void *s_fs_info;                    // FS-specific info
     struct spinlock lock;               // Lock
+    struct dentry *s_mountpoint;        // Dentry where this filesystem is mounted
 };
 
 // VFS initialization
 int vfs_init(void);
+int vfs_mount_root(const char *fs_type, const char *dev_name);
 
 // Inode management
 struct inode *vfs_alloc_inode(struct superblock *sb);
@@ -159,11 +180,38 @@ int vfs_close(struct file *file);
 int64_t vfs_read(struct file *file, char *buf, uint64_t count);
 int64_t vfs_write(struct file *file, const char *buf, uint64_t count);
 int64_t vfs_lseek(struct file *file, int64_t offset, int whence);
+int vfs_unlink(const char *path);
+
+// Directory management
+int vfs_opendir(const char *path, struct file **result);
+int vfs_readdir(struct file *file, struct dirent *dirent, uint64_t count);
+
+// Dentry cache management
+extern int dentry_cache_initialized;
+int dentry_cache_init(void);
+void dentry_cache_destroy(void);
+struct dentry *dentry_cache_lookup(struct inode *parent, const char *name);
+void dentry_cache_add(struct dentry *dentry);
+void dentry_cache_remove(struct dentry *dentry);
 
 // Path resolution
 struct dentry *vfs_path_lookup(const char *path);
 
 // Get root dentry
 struct dentry *vfs_get_root(void);
+
+// Filesystem registration
+int vfs_register_filesystem(struct file_system_type *fs_type);
+int vfs_unregister_filesystem(const char *name);
+struct file_system_type *vfs_find_filesystem(const char *name);
+
+// Mount/unmount operations
+int vfs_mount(struct superblock *sb, struct dentry *mount_point);
+int vfs_unmount(struct dentry *mount_point);
+struct superblock *vfs_get_superblock(const char *fs_type, const char *dev_name);
+int vfs_mount_at(const char *mount_path, const char *fs_name, const char *dev_name);
+
+// Mount filesystems from configuration file
+int vfs_mount_from_config(void);
 
 #endif // VFS_H
