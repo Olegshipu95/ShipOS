@@ -9,3 +9,5 @@ bx_enh_dbg.ini
 .gdbinit
 compile_commands.json
 .cache
+EFI
+tmp
