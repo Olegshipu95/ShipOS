@@ -2,7 +2,6 @@
 #define SLAB_TEST_H
 
 #include <stddef.h>
-#include <stdint.h>
 
 size_t slab_get_cache_count(void);
 size_t slab_get_cache_object_size(int idx);

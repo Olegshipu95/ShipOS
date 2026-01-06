@@ -1,7 +1,7 @@
 #include "slub.h"
-#include "kalloc.h"
-#include "../memlayout.h"
-#include "../list/list.h"
+#include "../kalloc.h"
+#include "../../memlayout.h"
+#include "../../list/list.h"
 
 #define SLAB_SIZES_COUNT 4
 static const size_t slab_sizes[SLAB_SIZES_COUNT] = {8, 16, 32, 64};
@@ -33,7 +33,7 @@ static void slab_cache_init(struct slab_cache *cache, size_t size) {
     lst_init(&cache->slabs_empty);
 }
 
-void slabs_init_all() {
+void init_slub_cache() {
     for (int i = 0; i < SLAB_SIZES_COUNT; i++) {
         slab_cache_init(&caches[i], slab_sizes[i]);
     }
@@ -117,6 +117,11 @@ void* malloc_slub(size_t size) {
 
 
 void free_slub(void *ptr) {
+    if (!ptr) {
+        return;
+    }
+    
+
     struct page *slab = (struct page*)((uintptr_t)ptr & ~(PGSIZE - 1));
     struct slab_cache *cache = slab->cache;
 

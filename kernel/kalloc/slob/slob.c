@@ -1,6 +1,6 @@
 #include "slob.h"
-#include "kalloc.h"
-#include "../memlayout.h"
+#include "../kalloc.h"
+#include "../../memlayout.h"
 
 static slob_page_t *page_list = NULL;
 
@@ -25,6 +25,10 @@ static slob_page_t *slob_new_page() {
 }
 
 void *slob_alloc(size_t size) {
+    if (size > PGSIZE) {
+        return NULL;
+    }
+    
     size = align(size);
 
     slob_page_t *page = page_list;
@@ -70,4 +74,57 @@ void slob_free(void *ptr) {
             b = b->next;
         }
     }
+}
+
+size_t slob_get_page_count(void) {
+    size_t cnt = 0;
+    slob_page_t *p = page_list;
+    while (p) {
+        cnt++;
+        p = p->next;
+    }
+    return cnt;
+}
+
+size_t slob_get_total_free_blocks(void) {
+    size_t cnt = 0;
+    slob_page_t *page = page_list;
+    while (page) {
+        slob_block_t *b = page->blocks;
+        while (b) {
+            if (b->free) cnt++;
+            b = b->next;
+        }
+        page = page->next;
+    }
+    return cnt;
+}
+
+size_t slob_get_total_allocated_blocks(void) {
+    size_t cnt = 0;
+    slob_page_t *page = page_list;
+    while (page) {
+        slob_block_t *b = page->blocks;
+        while (b) {
+            if (!b->free) cnt++;
+            b = b->next;
+        }
+        page = page->next;
+    }
+    return cnt;
+}
+
+int slob_has_adjacent_free_blocks(void) {
+    slob_page_t *page = page_list;
+    while (page) {
+        slob_block_t *b = page->blocks;
+        while (b && b->next) {
+            if (b->free && b->next->free) {
+                return 1;
+            }
+            b = b->next;
+        }
+        page = page->next;
+    }
+    return 0;
 }

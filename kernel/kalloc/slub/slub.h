@@ -6,6 +6,6 @@
 void* malloc_slub(size_t size);
 void free_slub(void *ptr);
 
-void slabs_init_all();
+void init_slub_cache();
 
 #endif
