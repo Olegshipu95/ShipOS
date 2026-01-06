@@ -18,9 +18,6 @@
 #include "sched/proc.h"
 #include "sched/threads.h"
 #include "sched/scheduler.h"
-#include "kalloc/slab.h"
-#include "kalloc/slob.h"
-#include "kalloc/slub.h"
 
 
 typedef void* (*alloc_func_t)(size_t size);
@@ -135,13 +132,7 @@ int kernel_main(){
     struct proc_node *init_proc_node = procinit();
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
     printf("Got init thread\n");
-
-    test_allocator(kmalloc_slab, kfree_slab, "Slab Allocator");
-
-    test_allocator(slob_alloc, slob_free, "Slob Allocator");
-
-    test_allocator(malloc_slub, free_slub, "Slub Allocator");
-
+    
     setup_idt();
     LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
 

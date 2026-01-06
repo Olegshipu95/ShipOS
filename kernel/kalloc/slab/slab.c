@@ -1,8 +1,8 @@
 #include "slab.h"
-#include "kalloc.h"
-#include "../memlayout.h"
-#include "../list/list.h"
-#include "../sync/spinlock.h"
+#include "../kalloc.h"
+#include "../../memlayout.h"
+#include "../../list/list.h"
+#include "../../sync/spinlock.h"
 
 #define SLAB_SIZES_COUNT 9
 static size_t slab_sizes[SLAB_SIZES_COUNT] = {8, 16, 32, 64, 128, 256, 512, 1024, 2048};
@@ -218,4 +218,53 @@ void kfree_slab(void *ptr) {
     }
 
     release_spinlock(&cache->lock);
+}
+
+size_t slab_get_cache_count(void) {
+    return SLAB_SIZES_COUNT;
+}
+
+size_t slab_get_cache_object_size(int idx) {
+    if (idx < 0 || idx >= SLAB_SIZES_COUNT) return 0;
+    return caches[idx].object_size;
+}
+
+static size_t count_slabs_in_list(struct list *head) {
+    size_t cnt = 0;
+    struct list *it = head->next;
+    while (it != head) {
+        cnt++;
+        it = it->next;
+    }
+    return cnt;
+}
+
+size_t slab_get_cache_slabs_full_count(int idx) {
+    if (idx < 0 || idx >= SLAB_SIZES_COUNT) return 0;
+    acquire_spinlock(&caches[idx].lock);
+    size_t cnt = count_slabs_in_list(&caches[idx].slabs_full);
+    release_spinlock(&caches[idx].lock);
+    return cnt;
+}
+
+size_t slab_get_cache_slabs_partial_count(int idx) {
+    if (idx < 0 || idx >= SLAB_SIZES_COUNT) return 0;
+    acquire_spinlock(&caches[idx].lock);
+    size_t cnt = count_slabs_in_list(&caches[idx].slabs_partial);
+    release_spinlock(&caches[idx].lock);
+    return cnt;
+}
+
+size_t slab_get_cache_slabs_empty_count(int idx) {
+    if (idx < 0 || idx >= SLAB_SIZES_COUNT) return 0;
+    acquire_spinlock(&caches[idx].lock);
+    size_t cnt = count_slabs_in_list(&caches[idx].slabs_empty);
+    release_spinlock(&caches[idx].lock);
+    return cnt;
+}
+
+size_t slab_get_cache_total_objects(int idx) {
+    if (idx < 0 || idx >= SLAB_SIZES_COUNT) return 0;
+    size_t obj_sz = caches[idx].object_size + sizeof(struct list);
+    return (PGSIZE - sizeof(struct slab)) / obj_sz;
 }

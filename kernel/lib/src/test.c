@@ -5,6 +5,7 @@
 
 #include "../include/test.h"
 #include "../include/logging.h"
+#include "tests/kalloc_tests/slab_tests.h"
 
 int test_addition() {
     int a = 1;
@@ -23,6 +24,7 @@ void run_tests() {
     // TEST_REPORT_TIMED("TIMEOUT FAIL", 1, 5000, 1000);
 
     TEST_REPORT("Addition", CHECK(test_addition));
+    run_slab_tests();
 
     LOG("No tests yet :(");
 }
