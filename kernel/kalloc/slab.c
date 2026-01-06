@@ -2,9 +2,10 @@
 #include "kalloc.h"
 #include "../memlayout.h"
 #include "../list/list.h"
+#include "../sync/spinlock.h"
 
-#define SLAB_SIZES_COUNT 4
-static size_t slab_sizes[SLAB_SIZES_COUNT] = {8, 16, 32, 64};
+#define SLAB_SIZES_COUNT 9
+static size_t slab_sizes[SLAB_SIZES_COUNT] = {8, 16, 32, 64, 128, 256, 512, 1024, 2048};
 
 struct slab_obj {
     struct list list;
@@ -24,6 +25,8 @@ struct slab_cache {
     struct list slabs_full;
     struct list slabs_partial;
     struct list slabs_empty;
+
+    struct spinlock lock;
 };
 
 
@@ -83,21 +86,29 @@ struct slab* alloc_slab(size_t obj_sz) {
     return slab;
 }
 
+static size_t align_ptr_size(size_t size) {
+    size_t a = sizeof(void*);
+    return (size + a - 1) & ~(a - 1);
+}
 
 void init_slab_cache() {
     for (int i = 0; i < SLAB_SIZES_COUNT; i++) {
 
         struct slab_cache *cache = &caches[i];
-        cache->object_size = slab_sizes[i];
+
+        cache->object_size = (unsigned int)align_ptr_size(slab_sizes[i]);
 
         lst_init(&cache->slabs_full);
         lst_init(&cache->slabs_partial);
         lst_init(&cache->slabs_empty);
 
-        struct slab *s = alloc_slab(cache->object_size);
-        lst_init(&s->list);
+        init_spinlock(&cache->lock, "slab_cache_lock");
 
-        lst_push(&cache->slabs_empty, &s->list);
+        struct slab *s = alloc_slab(cache->object_size);
+        if (s) {
+            lst_init(&s->list);
+            lst_push(&cache->slabs_empty, &s->list);
+        }
     }
 }
 
@@ -114,6 +125,8 @@ void *kmalloc_slab(size_t size) {
     struct slab_cache *cache = get_cache(size);
     if (!cache) return NULL;
 
+    acquire_spinlock(&cache->lock);
+
     struct slab *slab = NULL;
     struct list *node;
 
@@ -128,12 +141,11 @@ void *kmalloc_slab(size_t size) {
         }
         else {
             slab = alloc_slab(cache->object_size);
-            if (!slab) return NULL;
+            if (!slab) {
+                release_spinlock(&cache->lock);
+                return NULL;
+            }
             lst_init(&slab->list);
-            lst_push(&cache->slabs_empty, &slab->list);
-
-            node = (struct list*)lst_pop(&cache->slabs_empty);
-            slab = (struct slab *)node;
         }
 
         if (slab->free_objects == NULL) {
@@ -157,7 +169,10 @@ void *kmalloc_slab(size_t size) {
         lst_push(&cache->slabs_partial, &slab->list);
     }
 
-    return (void*)obj->data;
+    void *ret = (void*)obj->data;
+
+    release_spinlock(&cache->lock);
+    return ret;
 }
 
 static struct slab_cache* find_cache_for_slab(struct slab *slab) {
@@ -188,6 +203,8 @@ void kfree_slab(void *ptr) {
     struct slab_cache *cache = find_cache_for_slab(slab);
     if (!cache) return;
 
+    acquire_spinlock(&cache->lock);
+
     slab_obj_list_remove(&slab->allocated_objects, obj);
 
     obj->list.next = (struct list*)slab->free_objects;
@@ -199,5 +216,6 @@ void kfree_slab(void *ptr) {
     } else {
         lst_push(&cache->slabs_partial, &slab->list);
     }
-}
 
+    release_spinlock(&cache->lock);
+}
