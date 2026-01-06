@@ -3,10 +3,21 @@
 // Copyright (c) 2023 SHIPOS. All rights reserved.
 //
 
-#ifndef UNTITLED_OS_MY_TYPES_H
-#define UNTITLED_OS_MY_TYPES_H
+#ifndef TYPES_H
+#define TYPES_H
 #include <stdint.h>
 #include <stddef.h>
 
 #define NULL 0
-#endif //UNTITLED_OS_MY_TYPES_H
+
+/**
+ * Gets the container structure from a pointer to its member.
+ * @param ptr Pointer to the member.
+ * @param type Type of the container structure.
+ * @param member Name of the member.
+ * @return Pointer to the container structure.
+ **/
+#define container_of(ptr, type, member) \
+    ((type *) ((char *) (ptr) - __builtin_offsetof(type, member)))
+
+#endif //TYPES_H
