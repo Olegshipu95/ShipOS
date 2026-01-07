@@ -27,6 +27,10 @@ static int tmpfs_unlink(struct inode *dir, const char *name);
 
 static struct inode *tmpfs_alloc_inode(struct superblock *sb);
 static void tmpfs_destroy_inode(struct inode *inode);
+static int tmpfs_create_child_inode(struct inode *dir, const char *name, struct inode **result);
+
+static int tmpfs_create_entry(struct inode *dir, const char *name, struct inode *child);
+static int tmpfs_remove_entry(struct inode *dir, const char *name);
 
 // File operations for regular files
 struct file_operations tmpfs_file_ops = {
@@ -284,163 +288,50 @@ static struct inode *tmpfs_lookup(struct inode *dir, const char *name)
  */
 static int tmpfs_create(struct inode *dir, const char *name, struct inode **result)
 {
-    if (!dir || dir->type != INODE_TYPE_DIR || !name || !result)
-    {
-        return VFS_EINVAL;
+    struct inode *child_inode;
+    int ret = tmpfs_create_child_inode(dir, name, &child_inode);
+    if (ret != VFS_OK) {
+        return ret;
     }
 
-    struct tmpfs_inode_info *dir_info = dir->fs_private;
-    if (!dir_info)
-    {
-        return VFS_EINVAL;
+    child_inode->type = INODE_TYPE_FILE;
+    child_inode->size = 0;
+    child_inode->i_op = &tmpfs_file_inode_ops;
+    child_inode->f_op = &tmpfs_file_ops;
+
+    ret = tmpfs_create_entry(dir, name, child_inode);
+    if (ret != VFS_OK) {
+        tmpfs_destroy_inode(child_inode);
+        vfs_free_inode(child_inode);
+        return ret;
     }
 
-    // Check if file already exists
-    struct inode *existing = tmpfs_lookup(dir, name);
-    if (existing)
-    {
-        vfs_put_inode(existing);
-        return VFS_EEXIST;
-    }
-
-    // Create new inode
-    struct inode *new_inode = tmpfs_alloc_inode(dir->sb);
-    if (!new_inode)
-    {
-        return VFS_ENOMEM;
-    }
-
-    new_inode->type = INODE_TYPE_FILE;
-    new_inode->size = 0;
-    new_inode->i_op = &tmpfs_file_inode_ops;
-    new_inode->f_op = &tmpfs_file_ops;
-
-    // Create directory entry
-    struct tmpfs_dir_entry *entry = kzalloc(sizeof(struct tmpfs_dir_entry));
-    if (!entry)
-    {
-        tmpfs_destroy_inode(new_inode);
-        return VFS_ENOMEM;
-    }
-
-    strncpy(entry->name, name, MAX_NAME_LEN - 1);
-    entry->name[MAX_NAME_LEN - 1] = '\0';
-    entry->inode = new_inode;
-    vfs_get_inode(new_inode);
-
-    // Add to directory hashmap and list (key is the name string stored in entry)
-    acquire_spinlock(&dir->lock);
-    if (hashmap_insert(&dir_info->entries, entry->name, entry) != 0)
-    {
-        release_spinlock(&dir->lock);
-        vfs_put_inode(new_inode);
-        kfree(entry);
-        tmpfs_destroy_inode(new_inode);
-        return VFS_ENOMEM;
-    }
-    lst_push(&dir_info->entries_list, &entry->list_node);
-    release_spinlock(&dir->lock);
-
-    *result = new_inode;
+    *result = child_inode;
     return VFS_OK;
 }
 
 // Create new directory
 static int tmpfs_mkdir(struct inode *dir, const char *name)
 {
-    if (!dir || dir->type != INODE_TYPE_DIR || !name)
-    {
-        return VFS_EINVAL;
+    struct inode *child_inode;
+    int ret = tmpfs_create_child_inode(dir, name, &child_inode);
+    if (ret != VFS_OK) {
+        return ret;
     }
 
-    struct tmpfs_inode_info *dir_info = dir->fs_private;
-    if (!dir_info)
-    {
-        return VFS_EINVAL;
+    child_inode->type = INODE_TYPE_DIR;
+    child_inode->size = 0;
+    child_inode->i_op = &tmpfs_dir_inode_ops;
+    child_inode->f_op = &tmpfs_dir_file_ops;
+
+    ret = tmpfs_create_entry(dir, name, child_inode);
+    if (ret != VFS_OK) {
+        tmpfs_destroy_inode(child_inode);
+        vfs_free_inode(child_inode);
+        return ret;
     }
-
-    // Check if directory already exists
-    struct inode *existing = tmpfs_lookup(dir, name);
-    if (existing)
-    {
-        vfs_put_inode(existing);
-        return VFS_EEXIST;
-    }
-
-    // Create new inode
-    struct inode *new_inode = tmpfs_alloc_inode(dir->sb);
-    if (!new_inode)
-    {
-        return VFS_ENOMEM;
-    }
-
-    new_inode->type = INODE_TYPE_DIR;
-    new_inode->size = 0;
-    new_inode->i_op = &tmpfs_dir_inode_ops;
-    new_inode->f_op = &tmpfs_dir_file_ops;
-
-    // Create directory entry
-    struct tmpfs_dir_entry *entry = kzalloc(sizeof(struct tmpfs_dir_entry));
-    if (!entry)
-    {
-        tmpfs_destroy_inode(new_inode);
-        return VFS_ENOMEM;
-    }
-
-    strncpy(entry->name, name, MAX_NAME_LEN - 1);
-    entry->name[MAX_NAME_LEN - 1] = '\0';
-    entry->inode = new_inode;
-    vfs_get_inode(new_inode);
-
-    // Add to parent directory hashmap and list (key is the name string stored in entry)
-    acquire_spinlock(&dir->lock);
-    if (hashmap_insert(&dir_info->entries, entry->name, entry) != 0)
-    {
-        release_spinlock(&dir->lock);
-        vfs_put_inode(new_inode);
-        kfree(entry);
-        tmpfs_destroy_inode(new_inode);
-        return VFS_ENOMEM;
-    }
-    lst_push(&dir_info->entries_list, &entry->list_node);
-    release_spinlock(&dir->lock);
 
     return VFS_OK;
-}
-
-// Remove entry (file or directory) from directory
-static int tmpfs_remove_entry(struct inode *dir, const char *name)
-{
-    if (!dir || dir->type != INODE_TYPE_DIR || !name)
-    {
-        return VFS_EINVAL;
-    }
-
-    struct tmpfs_inode_info *dir_info = dir->fs_private;
-    if (!dir_info)
-    {
-        return VFS_EINVAL;
-    }
-
-    acquire_spinlock(&dir->lock);
-
-    // Find and remove entry from hashmap and list
-    struct tmpfs_dir_entry *entry = (struct tmpfs_dir_entry *) hashmap_get(&dir_info->entries, (void *) name);
-    if (entry)
-    {
-        hashmap_remove(&dir_info->entries, entry->name);
-        lst_remove(&entry->list_node);
-
-        vfs_put_inode(entry->inode);
-
-        kfree(entry);
-
-        release_spinlock(&dir->lock);
-        return VFS_OK;
-    }
-
-    release_spinlock(&dir->lock);
-    return VFS_ENOENT;
 }
 
 // Unlink (delete) file or directory from directory
@@ -519,6 +410,112 @@ static void tmpfs_destroy_inode(struct inode *inode)
 
         kfree(info);
     }
+}
+
+// Create child inode in specified directory
+static int tmpfs_create_child_inode(struct inode *dir, const char *name, struct inode **result)
+{
+    if (!dir || dir->type != INODE_TYPE_DIR || !name)
+    {
+        return VFS_EINVAL;
+    }
+
+    struct tmpfs_inode_info *dir_info = dir->fs_private;
+    if (!dir_info)
+    {
+        return VFS_EINVAL;
+    }
+
+    // Check if file already exists
+    struct inode *existing = tmpfs_lookup(dir, name);
+    if (existing)
+    {
+        vfs_put_inode(existing);
+        return VFS_EEXIST;
+    }
+
+    // Create new inode
+    struct inode *new_inode = tmpfs_alloc_inode(dir->sb);
+    if (!new_inode)
+    {
+        return VFS_ENOMEM;
+    }
+
+    *result = new_inode;
+    return VFS_OK;
+}
+
+// Create entry in directory
+static int tmpfs_create_entry(struct inode *dir, const char *name, struct inode *child)
+{
+    struct tmpfs_inode_info *dir_info = dir->fs_private;
+    if (!dir_info)
+    {
+        return VFS_EINVAL;
+    }
+
+    // Create directory entry
+    struct tmpfs_dir_entry *entry = kzalloc(sizeof(struct tmpfs_dir_entry));
+    if (!entry)
+    {
+        tmpfs_destroy_inode(child);
+        return VFS_ENOMEM;
+    }
+
+    strncpy(entry->name, name, MAX_NAME_LEN - 1);
+    entry->name[MAX_NAME_LEN - 1] = '\0';
+    entry->inode = child;
+    vfs_get_inode(child);
+
+    // Add to parent directory hashmap and list (key is the name string stored in entry)
+    acquire_spinlock(&dir->lock);
+    if (hashmap_insert(&dir_info->entries, entry->name, entry) != 0)
+    {
+        release_spinlock(&dir->lock);
+        vfs_put_inode(child);
+        kfree(entry);
+        tmpfs_destroy_inode(child);
+        return VFS_ENOMEM;
+    }
+    lst_push(&dir_info->entries_list, &entry->list_node);
+    release_spinlock(&dir->lock);
+
+    return VFS_OK;
+}
+
+// Remove entry (file or directory) from directory
+static int tmpfs_remove_entry(struct inode *dir, const char *name)
+{
+    if (!dir || dir->type != INODE_TYPE_DIR || !name)
+    {
+        return VFS_EINVAL;
+    }
+
+    struct tmpfs_inode_info *dir_info = dir->fs_private;
+    if (!dir_info)
+    {
+        return VFS_EINVAL;
+    }
+
+    acquire_spinlock(&dir->lock);
+
+    // Find and remove entry from hashmap and list
+    struct tmpfs_dir_entry *entry = (struct tmpfs_dir_entry *) hashmap_get(&dir_info->entries, (void *) name);
+    if (entry)
+    {
+        hashmap_remove(&dir_info->entries, entry->name);
+        lst_remove(&entry->list_node);
+
+        vfs_put_inode(entry->inode);
+
+        kfree(entry);
+
+        release_spinlock(&dir->lock);
+        return VFS_OK;
+    }
+
+    release_spinlock(&dir->lock);
+    return VFS_ENOENT;
 }
 
 // Wrapper for tmpfs_mount that matches file_system_type signature
