@@ -101,7 +101,6 @@ int kernel_main(){
     LOG("Successfully allocated physical memory up to %p", PHYSTOP);
     LOG_SERIAL("MEMORY", "Physical memory initialized");
 
-    int pages = count_pages();
     struct proc_node *init_proc_node = procinit();
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
     setup_idt();
@@ -114,7 +113,7 @@ int kernel_main(){
 
     LOG("Entering idle loop...");
 
-    scheduler();
+    // scheduler();
 
     while(1) {};
     return 0;
