@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include "../lib/include/memset.h"
 #include "../tty/tty.h"
+#include "../lib/include/logging.h"
 
 struct run
 {
@@ -33,9 +34,8 @@ void kfree(void *pa)
     // TODO Race Cond.
     struct run *r;
 
-    if (((uint64_t) pa % PGSIZE) != 0 || (char *) pa < end || (uint64_t) pa >= PHYSTOP)
-    {
-        printf("Panic while trying to free memory\nPA: %p END: %p PHYSTOP: %p", pa, end, PHYSTOP);
+    if (((uint64_t) pa % PGSIZE) != 0 || (char *) pa < end || (uint64_t) pa >= PHYSTOP) {
+        LOG("Panic while trying to free memory\nPA: %p END: %p PHYSTOP: %p", pa, end, PHYSTOP);
         panic("kfree");
     }
 
@@ -88,5 +88,6 @@ uint64_t count_pages()
         r = r->next;
     }
 
+    LOG("%d pages available in allocator", res);
     return res;
 }

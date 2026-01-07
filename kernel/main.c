@@ -12,6 +12,9 @@
 #include "lib/include/string.h"
 #include "lib/include/x86_64.h"
 #include "memlayout.h"
+#include "lib/include/logging.h"
+#include "lib/include/test.h"
+#include "lib/include/shutdown.h"
 #include "paging/paging.h"
 #include "sched/proc.h"
 #include "sched/scheduler.h"
@@ -59,107 +62,87 @@ void thread_function(int argc, struct argument *args)
  * @brief Kernel entry point.
  *
  * Performs basic initialization:
- * 1. Sets up TTY terminals.
- * 2. Prints debug information about CR3 register and kernel memory layout.
- * 3. Initializes the physical memory allocator and page tables.
- * 4. Initializes the first process and its main thread.
- * 5. Initializes the virtual file system (VFS).
- * 5.1 Runs tests for the VFS. (TODO: remove from main)
- * 6. Sets up the Interrupt Descriptor Table (IDT).
- * 7. Starts the scheduler (currently commented out for testing).
- *
+ * 1. Initializes and sets up serial port
+ * 2. Sets up TTY terminals.
+ * 3. Prints debug information about CR3 register and kernel memory layout.
+ * 4. Initializes the physical memory allocator and page tables.
+ * 5. Initializes the first process and its main thread.
+ * 6. Initializes the virtual file system (VFS).
+ * 6.1 Runs tests for the VFS. (TODO: remove from main)
+ * 7. Sets up the Interrupt Descriptor Table (IDT).
+ * 8. Starts the scheduler (currently commented out for testing).
+ * 
  * @return int Always returns 0 (never reached).
  */
-int kernel_main()
-{
-    // Initialize serial port FIRST for early boot logging
-    init_serial();
-    serial_write("[BOOT] Kernel started\r\n");
+int kernel_main(){
+    // Initialize CPU state before anything else
+    current_cpu.ncli = 0;
+    current_cpu.intena = 0;
+    current_cpu.current_thread = 0;
+    
+    // Initialize serial ports
+    int serial_ports_count = init_serial_ports();
+    if (serial_ports_count == -1) {
+        LOG("No serial ports detected");
+    } else {
+        LOG("Found %d serial port(s)", serial_ports_count);
+        LOG("Using port 0x%p as default", get_default_serial_port());
+        LOG_SERIAL("SERIAL", "Serial ports initialized successfully");
+    }
+
+    LOG("Kernel started");
 
     init_tty();
-    serial_printf("[BOOT] TTY subsystem initialized\r\n");
-
-    for (uint8_t i = 0; i < TERMINALS_NUMBER; i++)
-    {
+    for (uint8_t i=0; i < TERMINALS_NUMBER; i++) {
         set_tty(i);
-        printf("TTY %d\n", i);
-        serial_printf("[BOOT] TTY %d initialized\r\n", i);
     }
     set_tty(0);
+    LOG_SERIAL("BOOT", "TTY subsystem initialized");
 
-    serial_printf("[BOOT] CR3 register: %x\r\n", rcr3());
-    printf(" CR3: %x\n", rcr3());
-
-    print("$ \r\n");
-
-    serial_printf("[BOOT] Kernel start: %p, end: %p\r\n", KSTART, KEND);
-    serial_printf("[BOOT] Kernel size: %d bytes\r\n", KEND - KSTART);
-    printf("Kernel end at address: %d\n", KEND);
-    printf("Kernel size: %d\n", KEND - KSTART);
-
-    serial_printf(
-        "[MEMORY] Initializing physical memory allocator (phase 1)...\r\n");
+    LOG(" CR3: %x", rcr3());
+    LOG("Kernel end at address: %d", KEND);
+    LOG("Kernel size: %d", KEND - KSTART);
     kinit(KEND, INIT_PHYSTOP);
 
-    serial_printf("[MEMORY] Setting up kernel page table...\r\n");
     pagetable_t kernel_table = kvminit(INIT_PHYSTOP, PHYSTOP);
-    printf("kernel table: %p\n", kernel_table);
-    serial_printf("[MEMORY] Kernel page table at: %p\r\n", kernel_table);
-
-    serial_printf(
-        "[MEMORY] Initializing physical memory allocator (phase 2)...\r\n");
+    LOG("kernel table: %p", kernel_table);
     kinit(INIT_PHYSTOP, PHYSTOP);
-    printf("Successfully allocated physical memory up to %p\n", PHYSTOP);
-    serial_printf("[MEMORY] Physical memory initialized up to: %p\r\n", PHYSTOP);
+    LOG("Successfully allocated physical memory up to %p", PHYSTOP);
+    LOG_SERIAL("MEMORY", "Physical memory initialized");
+
+    int pages = count_pages();
+    struct proc_node *init_proc_node = procinit();
+    struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
 
     // Initialize VFS
-    serial_printf("[FILESYSTEM] Initializing VFS...\r\n");
-    if (vfs_init() != VFS_OK)
-    {
-        panic("Failed to initialize VFS");
-    }
+    if (vfs_init() != VFS_OK) panic("Failed to initialize VFS");
+    LOG_SERIAL("FILESYSTEM", "VFS initialized");
 
     // Initialize and register filesystems
-    serial_printf("[FILESYSTEM] Initializing tmpfs...\r\n");
-    if (tmpfs_init() != VFS_OK)
-    {
-        panic("Failed to initialize tmpfs");
-    }
+    if (tmpfs_init() != VFS_OK) panic("Failed to initialize tmpfs");
+    LOG_SERIAL("FILESYSTEM", "tmpfs initialized");
     // ! NOTE: As number of implemented file systems will grow, register them here
 
     // Mount filesystems from configuration file
-    serial_printf("[FILESYSTEM] Mounting filesystems from configuration...\r\n");
-    if (vfs_mount_from_config() != VFS_OK)
-    {
-        panic("Failed to mount filesystems from configuration");
-    }
+    if (vfs_mount_from_config() != VFS_OK) panic("Failed to mount filesystems from configuration");
+    LOG_SERIAL("FILESYSTEM", "File systems are registered from configuration");
 
-    // Run VFS tests
-    serial_printf("[FILESYSTEM] Running VFS tests...\r\n");
+    setup_idt();
+    LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
+
+#ifdef TEST
+    // VFS tests
+    // TODO: make it compatible with new testing system
+    LOG_SERIAL("FILESYSTEM", "Running VFS tests...");
     run_vfs_tests();
 
-    int pages = count_pages();
-    printf("%d pages available in allocator\n", pages);
-    serial_printf("[MEMORY] Available pages: %d\r\n", pages);
+    run_tests();
+    shutdown();
+#endif
 
-    serial_printf("[PROCESS] Initializing first process...\r\n");
-    struct proc_node *init_proc_node = procinit();
-    printf("Init proc node %p\n", init_proc_node);
-    serial_printf("[PROCESS] Init process node created at: %p\r\n",
-                  init_proc_node);
+    LOG("Entering idle loop...");
 
-    struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
-    printf("Got init thread\n");
-    serial_printf("[PROCESS] Init thread retrieved successfully\r\n");
-
-    serial_printf("[INTERRUPT] Setting up IDT...\r\n");
-    setup_idt();
-    serial_printf("[INTERRUPT] IDT initialized\r\n");
-
-    serial_printf("[KERNEL] Boot sequence completed successfully\r\n");
-    serial_printf("[KERNEL] Entering idle loop...\r\n");
-
-    // scheduler();
+    scheduler();
 
     while (1)
     {

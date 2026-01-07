@@ -5,6 +5,7 @@
 
 #include "../../kalloc/kalloc.h"
 #include "../../lib/include/string.h"
+#include "../../lib/include/logging.h"
 #include "../../tty/tty.h"
 #include "../../serial/serial.h"
 #include "../vfs.h"
@@ -23,7 +24,7 @@ static int test_vfs_basic(void)
     ret = vfs_open("/test.txt", O_CREAT | O_RDWR, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_basic: FAIL vfs_open=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_basic: FAIL vfs_open=%d", ret);
         return -1;
     }
 
@@ -31,7 +32,7 @@ static int test_vfs_basic(void)
     written = vfs_write(f, data, strlen(data));
     if (written != (int64_t) strlen(data))
     {
-        serial_printf("vfs_basic: FAIL write=%d exp=%d\n", written, strlen(data));
+        LOG_SERIAL("VFS_TEST", "vfs_basic: FAIL write=%d exp=%d", written, strlen(data));
         vfs_close(f);
         return -1;
     }
@@ -41,24 +42,24 @@ static int test_vfs_basic(void)
     ret = vfs_open("/test.txt", O_RDONLY, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_basic: FAIL reopen=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_basic: FAIL reopen=%d", ret);
         return -1;
     }
 
     // Test 4: Read from file
     memset(buf, 0, TEST_BUFSIZE);
     read_bytes = vfs_read(f, buf, TEST_BUFSIZE);
-    serial_printf("[INFO] vfs_basic: read %d bytes: '%s'\n", (int) read_bytes, buf);
+    LOG_SERIAL("VFS_TEST", "[INFO] vfs_basic: read %d bytes: '%s'", (int) read_bytes, buf);
 
     if (read_bytes != (int64_t) strlen(data))
     {
-        serial_printf("vfs_basic: FAIL read=%d exp=%d\n", read_bytes, strlen(data));
+        LOG_SERIAL("VFS_TEST", "vfs_basic: FAIL read=%d exp=%d", read_bytes, strlen(data));
         vfs_close(f);
         return -1;
     }
     if (strcmp(buf, data) != 0)
     {
-        serial_printf("vfs_basic: FAIL data mismatch\n");
+        LOG_SERIAL("VFS_TEST", "vfs_basic: FAIL data mismatch");
         vfs_close(f);
         return -1;
     }
@@ -81,21 +82,21 @@ static int test_vfs_directories(void)
     root = vfs_get_root();
     if (!root)
     {
-        serial_printf("vfs_directories: FAIL no root\n");
+        LOG_SERIAL("VFS_TEST", "vfs_directories: FAIL no root");
         return -1;
     }
 
     root_inode = root->inode;
     if (!root_inode || !root_inode->i_op || !root_inode->i_op->mkdir)
     {
-        serial_printf("vfs_directories: FAIL no mkdir op\n");
+        LOG_SERIAL("VFS_TEST", "vfs_directories: FAIL no mkdir op");
         return -1;
     }
 
     ret = root_inode->i_op->mkdir(root_inode, "testdir");
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_directories: FAIL mkdir=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_directories: FAIL mkdir=%d", ret);
         return -1;
     }
 
@@ -103,7 +104,7 @@ static int test_vfs_directories(void)
     ret = vfs_open("/testdir/file.txt", O_CREAT | O_RDWR, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_directories: FAIL create=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_directories: FAIL create=%d", ret);
         return -1;
     }
 
@@ -111,7 +112,7 @@ static int test_vfs_directories(void)
     written = vfs_write(f, data, strlen(data));
     if (written != (int64_t) strlen(data))
     {
-        serial_printf("vfs_directories: FAIL write\n");
+        LOG_SERIAL("VFS_TEST", "vfs_directories: FAIL write");
         vfs_close(f);
         return -1;
     }
@@ -122,7 +123,7 @@ static int test_vfs_directories(void)
     ret = vfs_open("/testdir/file.txt", O_RDONLY, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_directories: FAIL reopen=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_directories: FAIL reopen=%d", ret);
         return -1;
     }
 
@@ -130,7 +131,7 @@ static int test_vfs_directories(void)
     read_bytes = vfs_read(f, buf, TEST_BUFSIZE);
     if (read_bytes != (int64_t) strlen(data) || strcmp(buf, data) != 0)
     {
-        serial_printf("vfs_directories: FAIL verify\n");
+        LOG_SERIAL("VFS_TEST", "vfs_directories: FAIL verify");
         vfs_close(f);
         return -1;
     }
@@ -151,7 +152,7 @@ static int test_vfs_seek(void)
     ret = vfs_open("/seektest.txt", O_CREAT | O_RDWR, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_seek: FAIL create=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_seek: FAIL create=%d", ret);
         return -1;
     }
     vfs_write(f, data, strlen(data));
@@ -160,7 +161,7 @@ static int test_vfs_seek(void)
     new_pos = vfs_lseek(f, 5, SEEK_SET);
     if (new_pos != 5)
     {
-        serial_printf("vfs_seek: FAIL SET pos=%d\n", new_pos);
+        LOG_SERIAL("VFS_TEST", "vfs_seek: FAIL SET pos=%d", new_pos);
         vfs_close(f);
         return -1;
     }
@@ -168,7 +169,7 @@ static int test_vfs_seek(void)
     vfs_read(f, buf, 5);
     if (strcmp(buf, "56789") != 0)
     {
-        serial_printf("vfs_seek: FAIL SET data='%s'\n", buf);
+        LOG_SERIAL("VFS_TEST", "vfs_seek: FAIL SET data='%s'", buf);
         vfs_close(f);
         return -1;
     }
@@ -179,7 +180,7 @@ static int test_vfs_seek(void)
     vfs_read(f, buf, 3);
     if (strcmp(buf, "789") != 0)
     {
-        serial_printf("vfs_seek: FAIL CUR data='%s'\n", buf);
+        LOG_SERIAL("VFS_TEST", "vfs_seek: FAIL CUR data='%s'", buf);
         vfs_close(f);
         return -1;
     }
@@ -190,7 +191,7 @@ static int test_vfs_seek(void)
     vfs_read(f, buf, 4);
     if (strcmp(buf, "CDEF") != 0)
     {
-        serial_printf("vfs_seek: FAIL END data='%s'\n", buf);
+        LOG_SERIAL("VFS_TEST", "vfs_seek: FAIL END data='%s'", buf);
         vfs_close(f);
         return -1;
     }
@@ -219,7 +220,7 @@ static int test_vfs_multiple_files(void)
         ret = vfs_open(path, O_CREAT | O_RDWR, &f);
         if (ret != VFS_OK)
         {
-            serial_printf("vfs_multiple_files: FAIL create %s=%d\n", path, ret);
+            LOG_SERIAL("VFS_TEST", "vfs_multiple_files: FAIL create %s=%d", path, ret);
             return -1;
         }
 
@@ -242,7 +243,7 @@ static int test_vfs_multiple_files(void)
         ret = vfs_open(path, O_RDONLY, &f);
         if (ret != VFS_OK)
         {
-            serial_printf("vfs_multiple_files: FAIL open %s=%d\n", path, ret);
+            LOG_SERIAL("VFS_TEST", "vfs_multiple_files: FAIL open %s=%d", path, ret);
             return -1;
         }
 
@@ -252,7 +253,7 @@ static int test_vfs_multiple_files(void)
 
         if (strcmp(buf, expected) != 0)
         {
-            serial_printf("vfs_multiple_files: FAIL %s='%s' exp='%s'\n", path, buf, expected);
+            LOG_SERIAL("VFS_TEST", "vfs_multiple_files: FAIL %s='%s' exp='%s'", path, buf, expected);
             return -1;
         }
     }
@@ -276,14 +277,14 @@ static int test_vfs_readdir(void)
     struct dentry *root = vfs_get_root();
     if (!root || !root->inode || !root->inode->i_op || !root->inode->i_op->mkdir)
     {
-        serial_printf("vfs_readdir: FAIL no mkdir op\n");
+        LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL no mkdir op");
         return -1;
     }
 
     ret = root->inode->i_op->mkdir(root->inode, "readdirtest");
     if (ret != VFS_OK && ret != VFS_EEXIST)
     {
-        serial_printf("vfs_readdir: FAIL mkdir=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL mkdir=%d", ret);
         return -1;
     }
 
@@ -296,7 +297,7 @@ static int test_vfs_readdir(void)
         ret = vfs_open(path, O_CREAT | O_RDWR, &f);
         if (ret != VFS_OK)
         {
-            serial_printf("vfs_readdir: FAIL create file %s=%d\n", path, ret);
+            LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL create file %s=%d", path, ret);
             return -1;
         }
         vfs_close(f);
@@ -306,7 +307,7 @@ static int test_vfs_readdir(void)
     struct dentry *testdir = vfs_path_lookup("/readdirtest");
     if (!testdir || !testdir->inode || !testdir->inode->i_op || !testdir->inode->i_op->mkdir)
     {
-        serial_printf("vfs_readdir: FAIL no testdir\n");
+        LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL no testdir");
         return -1;
     }
 
@@ -315,7 +316,7 @@ static int test_vfs_readdir(void)
         ret = testdir->inode->i_op->mkdir(testdir->inode, test_dirs[i]);
         if (ret != VFS_OK)
         {
-            serial_printf("vfs_readdir: FAIL mkdir %s=%d\n", test_dirs[i], ret);
+            LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL mkdir %s=%d", test_dirs[i], ret);
             return -1;
         }
     }
@@ -324,7 +325,7 @@ static int test_vfs_readdir(void)
     ret = vfs_opendir("/readdirtest", &dir_file);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_readdir: FAIL open dir=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL open dir=%d", ret);
         return -1;
     }
 
@@ -332,17 +333,17 @@ static int test_vfs_readdir(void)
     int entries_read = vfs_readdir(dir_file, dirents, 10);
     if (entries_read < 0)
     {
-        serial_printf("vfs_readdir: FAIL readdir=%d\n", entries_read);
+        LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL readdir=%d", entries_read);
         vfs_close(dir_file);
         return -1;
     }
 
-    serial_printf("[INFO] vfs_readdir: read %d entries\n", entries_read);
+    LOG_SERIAL("VFS_TEST", "[INFO] vfs_readdir: read %d entries", entries_read);
 
     // Check that we found all expected entries
     for (i = 0; i < entries_read; i++)
     {
-        serial_printf("[INFO] Found entry: '%s' (type=%d, ino=%d)\n",
+        LOG_SERIAL("VFS_TEST", "[INFO] Found entry: '%s' (type=%d, ino=%d)",
                       dirents[i].d_name, (int) dirents[i].d_type, (int) dirents[i].d_ino);
 
         // Check files
@@ -352,7 +353,7 @@ static int test_vfs_readdir(void)
             {
                 if (dirents[i].d_type != INODE_TYPE_FILE)
                 {
-                    serial_printf("vfs_readdir: FAIL %s wrong type (got %d, expected FILE)\n",
+                    LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL %s wrong type (got %d, expected FILE)",
                                   test_files[j], dirents[i].d_type);
                     vfs_close(dir_file);
                     return -1;
@@ -369,7 +370,7 @@ static int test_vfs_readdir(void)
             {
                 if (dirents[i].d_type != INODE_TYPE_DIR)
                 {
-                    serial_printf("vfs_readdir: FAIL %s wrong type (got %d, expected DIR)\n",
+                    LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL %s wrong type (got %d, expected DIR)",
                                   test_dirs[j], dirents[i].d_type);
                     vfs_close(dir_file);
                     return -1;
@@ -387,7 +388,7 @@ static int test_vfs_readdir(void)
     {
         if (!found_files[i])
         {
-            serial_printf("vfs_readdir: FAIL file %s not found\n", test_files[i]);
+            LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL file %s not found", test_files[i]);
             return -1;
         }
     }
@@ -397,7 +398,7 @@ static int test_vfs_readdir(void)
     {
         if (!found_dirs[i])
         {
-            serial_printf("vfs_readdir: FAIL dir %s not found\n", test_dirs[i]);
+            LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL dir %s not found", test_dirs[i]);
             return -1;
         }
     }
@@ -405,7 +406,7 @@ static int test_vfs_readdir(void)
     // Verify we have at least 7 entries (5 files + 2 dirs, possibly more like "." and "..")
     if (entries_read < 7)
     {
-        serial_printf("vfs_readdir: FAIL too few entries (got %d, expected at least 7)\n", entries_read);
+        LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL too few entries (got %d, expected at least 7)", entries_read);
         return -1;
     }
 
@@ -424,7 +425,7 @@ static int test_vfs_unlink(void)
     ret = vfs_open("/unlink_test_file.txt", O_CREAT | O_RDWR, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_unlink: FAIL create file=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL create file=%d", ret);
         return -1;
     }
     vfs_write(f, "test data", 9);
@@ -434,7 +435,7 @@ static int test_vfs_unlink(void)
     ret = vfs_open("/unlink_test_file.txt", O_RDONLY, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_unlink: FAIL file doesn't exist before unlink=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL file doesn't exist before unlink=%d", ret);
         return -1;
     }
     vfs_close(f);
@@ -443,7 +444,7 @@ static int test_vfs_unlink(void)
     ret = vfs_unlink("/unlink_test_file.txt");
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_unlink: FAIL unlink file=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL unlink file=%d", ret);
         return -1;
     }
 
@@ -451,13 +452,13 @@ static int test_vfs_unlink(void)
     ret = vfs_open("/unlink_test_file.txt", O_RDONLY, &f);
     if (ret == VFS_OK)
     {
-        serial_printf("vfs_unlink: FAIL file still exists after unlink\n");
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL file still exists after unlink");
         vfs_close(f);
         return -1;
     }
     if (ret != VFS_ENOENT)
     {
-        serial_printf("vfs_unlink: FAIL wrong error after unlink (got %d, expected VFS_ENOENT)\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL wrong error after unlink (got %d, expected VFS_ENOENT)", ret);
         return -1;
     }
 
@@ -465,7 +466,7 @@ static int test_vfs_unlink(void)
     root = vfs_get_root();
     if (!root || !root->inode || !root->inode->i_op || !root->inode->i_op->mkdir)
     {
-        serial_printf("vfs_unlink: FAIL no mkdir op\n");
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL no mkdir op");
         return -1;
     }
 
@@ -473,7 +474,7 @@ static int test_vfs_unlink(void)
     ret = root_inode->i_op->mkdir(root_inode, "unlink_test_dir");
     if (ret != VFS_OK && ret != VFS_EEXIST)
     {
-        serial_printf("vfs_unlink: FAIL mkdir=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL mkdir=%d", ret);
         return -1;
     }
 
@@ -481,7 +482,7 @@ static int test_vfs_unlink(void)
     struct dentry *testdir = vfs_path_lookup("/unlink_test_dir");
     if (!testdir)
     {
-        serial_printf("vfs_unlink: FAIL directory doesn't exist before unlink\n");
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL directory doesn't exist before unlink");
         return -1;
     }
     vfs_put_dentry(testdir);
@@ -490,7 +491,7 @@ static int test_vfs_unlink(void)
     ret = vfs_unlink("/unlink_test_dir");
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_unlink: FAIL unlink empty dir=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL unlink empty dir=%d", ret);
         return -1;
     }
 
@@ -498,7 +499,7 @@ static int test_vfs_unlink(void)
     testdir = vfs_path_lookup("/unlink_test_dir");
     if (testdir)
     {
-        serial_printf("vfs_unlink: FAIL directory still exists after unlink\n");
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL directory still exists after unlink");
         vfs_put_dentry(testdir);
         return -1;
     }
@@ -508,7 +509,7 @@ static int test_vfs_unlink(void)
     ret = root_inode->i_op->mkdir(root_inode, "unlink_test_dir2");
     if (ret != VFS_OK && ret != VFS_EEXIST)
     {
-        serial_printf("vfs_unlink: FAIL mkdir dir2=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL mkdir dir2=%d", ret);
         return -1;
     }
 
@@ -516,7 +517,7 @@ static int test_vfs_unlink(void)
     ret = vfs_open("/unlink_test_dir2/file.txt", O_CREAT | O_RDWR, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_unlink: FAIL create file in dir2=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL create file in dir2=%d", ret);
         return -1;
     }
     vfs_close(f);
@@ -525,7 +526,7 @@ static int test_vfs_unlink(void)
     ret = vfs_unlink("/unlink_test_dir2");
     if (ret != VFS_ENOTEMPTY)
     {
-        serial_printf("vfs_unlink: FAIL unlink non-empty dir (got %d, expected VFS_ENOTEMPTY)\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL unlink non-empty dir (got %d, expected VFS_ENOTEMPTY)", ret);
         return -1;
     }
 
@@ -533,7 +534,7 @@ static int test_vfs_unlink(void)
     testdir = vfs_path_lookup("/unlink_test_dir2");
     if (!testdir)
     {
-        serial_printf("vfs_unlink: FAIL directory was deleted when it shouldn't be\n");
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL directory was deleted when it shouldn't be");
         return -1;
     }
     vfs_put_dentry(testdir);
@@ -542,14 +543,14 @@ static int test_vfs_unlink(void)
     ret = vfs_unlink("/unlink_test_dir2/file.txt");
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_unlink: FAIL cleanup file=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL cleanup file=%d", ret);
         return -1;
     }
 
     ret = vfs_unlink("/unlink_test_dir2");
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_unlink: FAIL cleanup dir2=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL cleanup dir2=%d", ret);
         return -1;
     }
 
@@ -557,7 +558,7 @@ static int test_vfs_unlink(void)
     ret = vfs_unlink("/nonexistent_file.txt");
     if (ret != VFS_ENOENT)
     {
-        serial_printf("vfs_unlink: FAIL unlink nonexistent (got %d, expected VFS_ENOENT)\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: FAIL unlink nonexistent (got %d, expected VFS_ENOENT)", ret);
         return -1;
     }
 
@@ -579,13 +580,13 @@ static int test_vfs_mount_at(void)
     struct dentry *mount_point = vfs_path_lookup("/mnt/test");
     if (!mount_point)
     {
-        serial_printf("vfs_mount_at: FAIL mount point /mnt/test doesn't exist\n");
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL mount point /mnt/test doesn't exist");
         return -1;
     }
 
     if (!mount_point->inode || mount_point->inode->type != INODE_TYPE_DIR)
     {
-        serial_printf("vfs_mount_at: FAIL /mnt/test is not a directory\n");
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL /mnt/test is not a directory");
         vfs_put_dentry(mount_point);
         return -1;
     }
@@ -595,7 +596,7 @@ static int test_vfs_mount_at(void)
     ret = vfs_open("/mnt/test/testfile.txt", O_CREAT | O_RDWR, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_mount_at: FAIL create file=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL create file=%d", ret);
         return -1;
     }
 
@@ -603,7 +604,7 @@ static int test_vfs_mount_at(void)
     written = vfs_write(f, data, strlen(data));
     if (written != (int64_t) strlen(data))
     {
-        serial_printf("vfs_mount_at: FAIL write=%d exp=%d\n", (int) written, (int) strlen(data));
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL write=%d exp=%d", (int) written, (int) strlen(data));
         vfs_close(f);
         return -1;
     }
@@ -613,7 +614,7 @@ static int test_vfs_mount_at(void)
     ret = vfs_open("/mnt/test/testfile.txt", O_RDONLY, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_mount_at: FAIL reopen=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL reopen=%d", ret);
         return -1;
     }
 
@@ -621,13 +622,13 @@ static int test_vfs_mount_at(void)
     read_bytes = vfs_read(f, buf, TEST_BUFSIZE);
     if (read_bytes != (int64_t) strlen(data))
     {
-        serial_printf("vfs_mount_at: FAIL read=%d exp=%d\n", (int) read_bytes, (int) strlen(data));
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL read=%d exp=%d", (int) read_bytes, (int) strlen(data));
         vfs_close(f);
         return -1;
     }
     if (strcmp(buf, data) != 0)
     {
-        serial_printf("vfs_mount_at: FAIL data mismatch: got '%s', expected '%s'\n", buf, data);
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL data mismatch: got '%s', expected '%s'", buf, data);
         vfs_close(f);
         return -1;
     }
@@ -637,14 +638,14 @@ static int test_vfs_mount_at(void)
     mount_point = vfs_path_lookup("/mnt/test");
     if (!mount_point || !mount_point->inode || !mount_point->inode->i_op || !mount_point->inode->i_op->mkdir)
     {
-        serial_printf("vfs_mount_at: FAIL no mkdir op\n");
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL no mkdir op");
         return -1;
     }
 
     ret = mount_point->inode->i_op->mkdir(mount_point->inode, "subdir");
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_mount_at: FAIL mkdir subdir=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL mkdir subdir=%d", ret);
         vfs_put_dentry(mount_point);
         return -1;
     }
@@ -654,12 +655,12 @@ static int test_vfs_mount_at(void)
     struct dentry *subdir = vfs_path_lookup("/mnt/test/subdir");
     if (!subdir)
     {
-        serial_printf("vfs_mount_at: FAIL subdirectory doesn't exist\n");
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL subdirectory doesn't exist");
         return -1;
     }
     if (!subdir->inode || subdir->inode->type != INODE_TYPE_DIR)
     {
-        serial_printf("vfs_mount_at: FAIL subdirectory is not a directory\n");
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL subdirectory is not a directory");
         vfs_put_dentry(subdir);
         return -1;
     }
@@ -669,7 +670,7 @@ static int test_vfs_mount_at(void)
     ret = vfs_open("/mnt/test/subdir/subfile.txt", O_CREAT | O_RDWR, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_mount_at: FAIL create file in subdir=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL create file in subdir=%d", ret);
         return -1;
     }
 
@@ -677,7 +678,7 @@ static int test_vfs_mount_at(void)
     written = vfs_write(f, subdata, strlen(subdata));
     if (written != (int64_t) strlen(subdata))
     {
-        serial_printf("vfs_mount_at: FAIL write to subfile=%d exp=%d\n", (int) written, (int) strlen(subdata));
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL write to subfile=%d exp=%d", (int) written, (int) strlen(subdata));
         vfs_close(f);
         return -1;
     }
@@ -687,7 +688,7 @@ static int test_vfs_mount_at(void)
     ret = vfs_open("/mnt/test/subdir/subfile.txt", O_RDONLY, &f);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_mount_at: FAIL open subfile=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL open subfile=%d", ret);
         return -1;
     }
 
@@ -695,7 +696,7 @@ static int test_vfs_mount_at(void)
     read_bytes = vfs_read(f, buf, TEST_BUFSIZE);
     if (read_bytes != (int64_t) strlen(subdata) || strcmp(buf, subdata) != 0)
     {
-        serial_printf("vfs_mount_at: FAIL read subfile: got '%s', expected '%s'\n", buf, subdata);
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL read subfile: got '%s', expected '%s'", buf, subdata);
         vfs_close(f);
         return -1;
     }
@@ -705,14 +706,14 @@ static int test_vfs_mount_at(void)
     ret = vfs_opendir("/mnt/test", &dir_file);
     if (ret != VFS_OK)
     {
-        serial_printf("vfs_mount_at: FAIL opendir=%d\n", ret);
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL opendir=%d", ret);
         return -1;
     }
 
     entries_read = vfs_readdir(dir_file, dirent_buf, 10);
     if (entries_read < 2)
     {
-        serial_printf("vfs_mount_at: FAIL readdir returned %d entries, expected at least 2\n", entries_read);
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL readdir returned %d entries, expected at least 2", entries_read);
         vfs_close(dir_file);
         return -1;
     }
@@ -734,13 +735,13 @@ static int test_vfs_mount_at(void)
 
     if (!found_file)
     {
-        serial_printf("vfs_mount_at: FAIL testfile.txt not found in directory listing\n");
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL testfile.txt not found in directory listing");
         vfs_close(dir_file);
         return -1;
     }
     if (!found_subdir)
     {
-        serial_printf("vfs_mount_at: FAIL subdir not found in directory listing\n");
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: FAIL subdir not found in directory listing");
         vfs_close(dir_file);
         return -1;
     }
@@ -756,7 +757,7 @@ void run_vfs_tests(void)
 
     if (test_vfs_basic() == 0)
     {
-        serial_printf("vfs_basic: PASS\n");
+        LOG_SERIAL("VFS_TEST", "vfs_basic: PASS");
         passed++;
     }
     else
@@ -766,7 +767,7 @@ void run_vfs_tests(void)
 
     if (test_vfs_directories() == 0)
     {
-        serial_printf("vfs_directories: PASS\n");
+        LOG_SERIAL("VFS_TEST", "vfs_directories: PASS");
         passed++;
     }
     else
@@ -776,7 +777,7 @@ void run_vfs_tests(void)
 
     if (test_vfs_seek() == 0)
     {
-        serial_printf("vfs_seek: PASS\n");
+        LOG_SERIAL("VFS_TEST", "vfs_seek: PASS");
         passed++;
     }
     else
@@ -786,7 +787,7 @@ void run_vfs_tests(void)
 
     if (test_vfs_multiple_files() == 0)
     {
-        serial_printf("vfs_multiple_files: PASS\n");
+        LOG_SERIAL("VFS_TEST", "vfs_multiple_files: PASS");
         passed++;
     }
     else
@@ -796,7 +797,7 @@ void run_vfs_tests(void)
 
     if (test_vfs_readdir() == 0)
     {
-        serial_printf("vfs_readdir: PASS\n");
+        LOG_SERIAL("VFS_TEST", "vfs_readdir: PASS");
         passed++;
     }
     else
@@ -806,7 +807,7 @@ void run_vfs_tests(void)
 
     if (test_vfs_unlink() == 0)
     {
-        serial_printf("vfs_unlink: PASS\n");
+        LOG_SERIAL("VFS_TEST", "vfs_unlink: PASS");
         passed++;
     }
     else
@@ -816,7 +817,7 @@ void run_vfs_tests(void)
 
     if (test_vfs_mount_at() == 0)
     {
-        serial_printf("vfs_mount_at: PASS\n");
+        LOG_SERIAL("VFS_TEST", "vfs_mount_at: PASS");
         passed++;
     }
     else
@@ -824,5 +825,5 @@ void run_vfs_tests(void)
         failed++;
     }
 
-    serial_printf("VFS: %d/%d passed\n", passed, passed + failed);
+    LOG_SERIAL("VFS_TEST", "VFS: %d/%d passed", passed, passed + failed);
 }
