@@ -67,12 +67,12 @@ int vfs_mount_from_config(void)
             printf("Failed to mount filesystem '%s' at '%s'\n",
                    config->fs_type, config->mount_point);
             LOG_SERIAL("FILESYSTEM", "Warning: Failed to mount '%s' at '%s'",
-                          config->fs_type, config->mount_point);
+                       config->fs_type, config->mount_point);
         }
         else
         {
             LOG_SERIAL("FILESYSTEM", "Successfully mounted '%s' at '%s'",
-                          config->fs_type, config->mount_point);
+                       config->fs_type, config->mount_point);
         }
     }
 

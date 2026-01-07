@@ -344,7 +344,7 @@ static int test_vfs_readdir(void)
     for (i = 0; i < entries_read; i++)
     {
         LOG_SERIAL("VFS_TEST", "[INFO] Found entry: '%s' (type=%d, ino=%d)",
-                      dirents[i].d_name, (int) dirents[i].d_type, (int) dirents[i].d_ino);
+                   dirents[i].d_name, (int) dirents[i].d_type, (int) dirents[i].d_ino);
 
         // Check files
         for (int j = 0; j < 5; j++)
@@ -354,7 +354,7 @@ static int test_vfs_readdir(void)
                 if (dirents[i].d_type != INODE_TYPE_FILE)
                 {
                     LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL %s wrong type (got %d, expected FILE)",
-                                  test_files[j], dirents[i].d_type);
+                               test_files[j], dirents[i].d_type);
                     vfs_close(dir_file);
                     return -1;
                 }
@@ -371,7 +371,7 @@ static int test_vfs_readdir(void)
                 if (dirents[i].d_type != INODE_TYPE_DIR)
                 {
                     LOG_SERIAL("VFS_TEST", "vfs_readdir: FAIL %s wrong type (got %d, expected DIR)",
-                                  test_dirs[j], dirents[i].d_type);
+                               test_dirs[j], dirents[i].d_type);
                     vfs_close(dir_file);
                     return -1;
                 }
