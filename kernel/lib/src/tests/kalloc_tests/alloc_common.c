@@ -1,6 +1,5 @@
 #include "alloc_common.h"
 #include "../../../include/test.h"
-#include <string.h>
 
 int test_alloc_basic(struct allocator *a) {
     void *p = a->alloc(64);
