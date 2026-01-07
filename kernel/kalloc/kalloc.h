@@ -9,5 +9,6 @@ void *kalloc(void);
 void kfree(void*);
 void *kmalloc(uint64_t);
 void kmfree(void*);
+uint64_t count_pages(void);
 
 #endif

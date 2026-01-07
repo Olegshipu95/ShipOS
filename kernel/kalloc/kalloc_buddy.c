@@ -1,3 +1,4 @@
+#ifdef ALLOCATOR_BUDDY
 #include "../list/list.h"
 #include "../sync/spinlock.h"
 #include "../memlayout.h"
@@ -9,7 +10,7 @@
 
 static int nsizes;  // the number of entries in bd_sizes array
 
-#define LEAF_SIZE 128        // The smallest block size
+#define LEAF_SIZE 256        // The smallest block size
 #define MAXSIZE (nsizes - 1)  // Largest index in bd_sizes array
 #define BLK_SIZE(k) ((1L << (k)) * LEAF_SIZE)  // Size of block at size k
 #define HEAP_SIZE BLK_SIZE(MAXSIZE)
@@ -345,3 +346,10 @@ void *kalloc(){
 void kfree(void *p){
 	kmfree(p);
 }
+
+uint64_t count_pages() {
+    panic("count_pages not implemented for buddy allocator");
+    return 0;
+}
+
+#endif

@@ -37,19 +37,19 @@ x86_64_asm_objects := $(patsubst x86_64/%.asm,$(BUILD_DIR)/x86_64/%.o,$(x86_64_a
 # ==============================
 # Allocator: buddy | page
 ALLOCATOR ?= page
-ALLOCATORS := kernel/kalloc/kalloc_buddy.c kernel/kalloc/kalloc_page.c
 
 ifeq ($(ALLOCATOR),buddy)
-    ALLOCATOR_SRC := kernel/kalloc/kalloc_buddy.c
+    EXTRA_CFLAGS += -DALLOCATOR_BUDDY
+	EXTRA_ALLOCATOR_FLAG = -DALLOCATOR_BUDDY
 else ifeq ($(ALLOCATOR),page)
-    ALLOCATOR_SRC := kernel/kalloc/kalloc_page.c
+    EXTRA_CFLAGS += -DALLOCATOR_PAGE
+	EXTRA_ALLOCATOR_FLAG = -DALLOCATOR_PAGE
 else
     $(error Unsupported ALLOCATOR: $(ALLOCATOR). Use 'buddy' or 'page')
 endif
 
 # All C files in kernel/
-kernel_c_sources := $(filter-out $(ALLOCATORS),$(shell find kernel -name '*.c'))
-kernel_c_sources += $(ALLOCATOR_SRC)
+kernel_c_sources := $(shell find kernel -name '*.c')
 kernel_c_objects := $(patsubst kernel/%.c,$(BUILD_DIR)/kernel/%.o,$(kernel_c_sources))
 
 # All assembly files in kernel/
@@ -68,7 +68,6 @@ $(BUILD_DIR)/%.o: %.asm
 	@mkdir -p $(dir $@)
 	$(NASM) $(NASM_FLAGS) $< -o $@
 
-# Compile C files
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $< -o $@
@@ -99,7 +98,7 @@ qemu: $(ISO_DIR)/kernel.iso
 
 # Run QEMU in Headless mode with debug and tests (no GUI, logs to report.log)
 test: clean
-	@$(MAKE) EXTRA_CFLAGS="-DDEBUG -DTEST" $(ISO_DIR)/kernel.iso
+	@$(MAKE) EXTRA_CFLAGS="-DDEBUG -DTEST $(EXTRA_ALLOCATOR_FLAG)" $(ISO_DIR)/kernel.iso
 	$(QEMU) -serial stdio $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
 
 # Run QEMU in Headless mode with debug and tests (no GUI, logs to report.log)

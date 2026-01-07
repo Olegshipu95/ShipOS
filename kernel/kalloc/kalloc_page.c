@@ -1,3 +1,4 @@
+#ifdef ALLOCATOR_PAGE
 #include "../kalloc/kalloc.h"
 #include "../sync/spinlock.h"
 #include "../memlayout.h"
@@ -81,3 +82,5 @@ void *kmalloc(size_t) {
 void kmfree(void*) {
     panic("kmfree not implemented for page allocator");
 }
+
+#endif
