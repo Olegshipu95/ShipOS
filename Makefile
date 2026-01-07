@@ -33,7 +33,7 @@ EFI_DIR := EFI
 TMP_DIR := tmp
 
 # UEFI-specific linker
-LINKER_UEFI := x86_64/boot/linker_uefi.ld
+LINKER_UEFI := uefi/linker_uefi.ld
 LD_FLAGS_UEFI := --nmagic --script=$(LINKER_UEFI)
 
 # ==============================
@@ -65,7 +65,7 @@ EFI_LIBS := -lefi -lgnuefi
 OVMF := ovmf/OVMF_CODE.fd
 OVMF_VARS := ovmf/OVMF_VARS-1024x768.fd
 
-QEMU_UEFI_FLAGS := -m 128M \
+QEMU_UEFI_FLAGS := -m 256M \
 	-drive if=pflash,format=raw,unit=0,readonly=on,file=$(OVMF) \
 	-nographic
 
@@ -75,10 +75,6 @@ QEMU_UEFI_FLAGS := -m 128M \
 # BIOS boot assembly (32-bit entry point)
 bios_boot_sources := x86_64/boot/boot.asm x86_64/boot/header.asm x86_64/boot/check_functions.asm
 bios_boot_objects := $(patsubst x86_64/boot/%.asm,$(BUILD_DIR)/x86_64/boot/%.o,$(bios_boot_sources))
-
-# UEFI boot assembly (64-bit entry point)
-uefi_boot_sources := x86_64/boot/uefi_entry.asm
-uefi_boot_objects := $(patsubst x86_64/boot/%.asm,$(BUILD_DIR)/x86_64/boot/%.o,$(uefi_boot_sources))
 
 # All C files in kernel/
 kernel_c_sources := $(shell find kernel -name '*.c')
@@ -91,8 +87,8 @@ kernel_asm_objects := $(patsubst kernel/%.asm,$(BUILD_DIR)/kernel/%.o,$(kernel_a
 # Objects for BIOS boot (includes 32-bit bootstrap)
 bios_objects := $(bios_boot_objects) $(kernel_c_objects) $(kernel_asm_objects)
 
-# Objects for UEFI boot (includes 64-bit entry point, excludes 32-bit bootstrap)
-uefi_objects := $(uefi_boot_objects) $(kernel_c_objects) $(kernel_asm_objects)
+# Objects for UEFI boot - now only kernel code, bootloader handles entry
+uefi_objects := $(kernel_c_objects) $(kernel_asm_objects)
 
 # ==============================
 # Build rules
@@ -118,29 +114,23 @@ $(BUILD_DIR)/kernel_uefi.elf: $(uefi_objects)
 	@mkdir -p $(dir $@)
 	$(LD) $(LD_FLAGS_UEFI) --output=$@ $^
 
-# Convert ELF to flat binary (UEFI boot)
-$(BUILD_DIR)/kernel_uefi.bin: $(BUILD_DIR)/kernel_uefi.elf
-	$(OBJCOPY) -O binary $< $@
-	@readelf -h $< | grep "Entry point"
-
 # Create bootable ISO using GRUB
 $(ISO_DIR)/kernel.iso: $(ISO_BOOT_DIR)/kernel.bin
 	$(GRUB) $(GRUB_FLAGS) $@ $(ISO_DIR)
 
 # Create EFI app
-$(EFI_DIR)/BOOTX64.EFI: $(BUILD_DIR)/uefi/main.so
+$(EFI_DIR)/BOOTX64.EFI: $(BUILD_DIR)/uefi/bootloader.so
 	@mkdir -p $(dir $@)
 	$(OBJCOPY) $(OBJCOPY_FLAGS) $< $@
 
-# Build UEFI bootloader
-$(BUILD_DIR)/uefi/main.so: uefi/main.c
+# Build UEFI bootloader (C-based, no asm entry point needed)
+$(BUILD_DIR)/uefi/bootloader.so: uefi/bootloader.c
 	@mkdir -p $(dir $@)
-	$(EFI_CC) $(EFI_CFLAGS) $< -c -o $(BUILD_DIR)/uefi/main.o
-	$(EFI_LD) $(EFI_LDFLAGS) $(BUILD_DIR)/uefi/main.o -o $@ $(EFI_LIBS)
+	$(EFI_CC) $(EFI_CFLAGS) $< -c -o $(BUILD_DIR)/uefi/bootloader.o
+	$(EFI_LD) $(EFI_LDFLAGS) $(BUILD_DIR)/uefi/bootloader.o -o $@ $(EFI_LIBS)
 
-# Create IMG disk file for UEFI start
-$(TMP_DIR)/disk.img: $(BUILD_DIR)/kernel_uefi.bin $(EFI_DIR)/BOOTX64.EFI
-	cp $(BUILD_DIR)/kernel_uefi.bin isofiles/boot/kernel.bin
+# Create IMG disk file for UEFI start (use ELF, not flat binary)
+$(TMP_DIR)/disk.img: $(BUILD_DIR)/kernel_uefi.elf $(EFI_DIR)/BOOTX64.EFI
 	uefi/create_disk_image.sh
 
 # ==============================
