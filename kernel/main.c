@@ -5,31 +5,38 @@
 // Main kernel entry point and thread utilities
 //
 
-#include "vga/vga.h"
+#include "fs/tmpfs/tmpfs.h"
 #include "idt/idt.h"
 #include "kalloc/kalloc.h"
 #include "lib/include/panic.h"
-#include "memlayout.h"
+#include "lib/include/string.h"
 #include "lib/include/x86_64.h"
+#include "memlayout.h"
 #include "lib/include/logging.h"
 #include "lib/include/test.h"
 #include "lib/include/shutdown.h"
 #include "paging/paging.h"
 #include "sched/proc.h"
-#include "sched/threads.h"
 #include "sched/scheduler.h"
-
+#include "sched/threads.h"
+#include "serial/serial.h"
+#include "tty/tty.h"
+#include "vfs/tests/vfs_test.h"
+#include "vfs/vfs.h"
+#include "vga/vga.h"
 
 /**
  * @brief Example function to repeatedly print a number from a thread.
- * 
- * This is a simple demo of how threads can output information. 
+ *
+ * This is a simple demo of how threads can output information.
  * Currently, it loops infinitely printing "Hello from thread N".
- * 
+ *
  * @param num Thread identifier number
  */
-void print_num(uint32_t num) {
-    while (1) {
+void print_num(uint32_t num)
+{
+    while (1)
+    {
         printf("Hello from thread %d\r\n", num);
         // yield();
     }
@@ -37,31 +44,33 @@ void print_num(uint32_t num) {
 
 /**
  * @brief Entry point for a created thread.
- * 
- * Extracts the integer argument from the provided arguments array 
+ *
+ * Extracts the integer argument from the provided arguments array
  * and calls print_num with that value.
  * Made for testing functionality
- * 
+ *
  * @param argc Number of arguments
  * @param args Array of thread arguments
  */
-void thread_function(int argc, struct argument *args) {
-    uint32_t num = *((uint32_t*) args[0].value);
+void thread_function(int argc, struct argument *args)
+{
+    uint32_t num = *((uint32_t *) args[0].value);
     print_num(num);
 }
 
-
 /**
  * @brief Kernel entry point.
- * 
+ *
  * Performs basic initialization:
  * 1. Initializes and sets up serial port
  * 2. Sets up TTY terminals.
  * 3. Prints debug information about CR3 register and kernel memory layout.
  * 4. Initializes the physical memory allocator and page tables.
  * 5. Initializes the first process and its main thread.
- * 6. Sets up the Interrupt Descriptor Table (IDT).
- * 7. Starts the scheduler (currently commented out for testing).
+ * 6. Initializes the virtual file system (VFS).
+ * 6.1 Runs tests for the VFS. (TODO: remove from main)
+ * 7. Sets up the Interrupt Descriptor Table (IDT).
+ * 8. Starts the scheduler (currently commented out for testing).
  * 
  * @return int Always returns 0 (never reached).
  */
@@ -104,10 +113,29 @@ int kernel_main(){
     int pages = count_pages();
     struct proc_node *init_proc_node = procinit();
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
+
+    // Initialize VFS
+    if (vfs_init() != VFS_OK) panic("Failed to initialize VFS");
+    LOG_SERIAL("FILESYSTEM", "VFS initialized");
+
+    // Initialize and register filesystems
+    if (tmpfs_init() != VFS_OK) panic("Failed to initialize tmpfs");
+    LOG_SERIAL("FILESYSTEM", "tmpfs initialized");
+    // ! NOTE: As number of implemented file systems will grow, register them here
+
+    // Mount filesystems from configuration file
+    if (vfs_mount_from_config() != VFS_OK) panic("Failed to mount filesystems from configuration");
+    LOG_SERIAL("FILESYSTEM", "File systems are registered from configuration");
+
     setup_idt();
     LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
 
 #ifdef TEST
+    // VFS tests
+    // TODO: make it compatible with new testing system
+    LOG_SERIAL("FILESYSTEM", "Running VFS tests...");
+    run_vfs_tests();
+
     run_tests();
     shutdown();
 #endif
@@ -116,6 +144,8 @@ int kernel_main(){
 
     scheduler();
 
-    while(1) {};
+    while (1)
+    {
+    };
     return 0;
 }

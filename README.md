@@ -56,12 +56,16 @@ ShipOS currently implements the following core subsystems:
 - **Spinlocks**: Low-level synchronization primitives
 - **Mutexes**: Mutual exclusion locks for thread synchronization
 
+#### File System
+- **Virtual File System**: Virtual file system with basic file operations
+- **tmpfs**: Temporary file system for in-memory storage
+
 ### 🚧 Planned Features (Roadmap)
 
 - **Userspace**: Process isolation with separate memory spaces
 - **IOPL Switching**: I/O privilege level switching for user processes
 - **System Calls**: Complete syscall mechanism for userspace interaction
-- **File System**: Persistent storage and file management
+- **File Descriptors**: Support for file descriptors
 - **Network Stack**: Network protocol implementation
 - **Device Drivers**: Additional hardware driver support
 
@@ -98,6 +102,8 @@ For detailed development instructions, debugging, and advanced usage, see [DEVEL
 ```
 ShipOS/
 ├── kernel/          # Kernel source code
+│   ├── fs/          # File systems
+│   │   └── tmpfs/   # In-memory file system
 │   ├── idt/         # Interrupt Descriptor Table
 │   ├── kalloc/      # Physical memory allocator
 │   ├── paging/      # Virtual memory management
@@ -105,6 +111,7 @@ ShipOS/
 │   ├── serial/      # Serial port driver
 │   ├── sync/        # Synchronization primitives
 │   ├── tty/         # Terminal subsystem
+│   ├── vfs/         # Virtual file system
 │   └── vga/         # VGA text mode driver
 ├── x86_64/          # Bootloader and low-level code
 ├── scripts/         # Development utilities

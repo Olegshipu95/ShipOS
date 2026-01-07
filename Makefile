@@ -26,15 +26,25 @@ ISO_BOOT_DIR := $(ISO_DIR)/boot
 BUILD_DIR := build
 
 # ==============================
+# VFS Configuration
+# ==============================
+VFS_CONFIG := configs/fs.conf
+VFS_CONFIG_GEN := $(BUILD_DIR)/kernel/vfs/configs/vfs_config.c
+VFS_CONFIG_H := kernel/vfs/configs/vfs_config.h
+VFS_GEN_SCRIPT := scripts/kernel/generate_vfs_config.sh
+
+# ==============================
 # Source files
 # ==============================
 # All 64-bit assembly in x86_64/
 x86_64_asm_sources := $(shell find x86_64 -name '*.asm')
 x86_64_asm_objects := $(patsubst x86_64/%.asm,$(BUILD_DIR)/x86_64/%.o,$(x86_64_asm_sources))
 
-# All C files in kernel/
-kernel_c_sources := $(shell find kernel -name '*.c')
+# All C files in kernel/ (excluding generated vfs_config.c to avoid duplicates)
+kernel_c_sources := $(shell find kernel -name '*.c' ! -path '*/vfs/vfs_config.c')
 kernel_c_objects := $(patsubst kernel/%.c,$(BUILD_DIR)/kernel/%.o,$(kernel_c_sources))
+# Add generated vfs_config object (handled by special rule below)
+kernel_c_objects += $(BUILD_DIR)/kernel/vfs/vfs_config.o
 
 # All assembly files in kernel/
 kernel_asm_sources := $(shell find kernel -name '*.asm')
@@ -47,6 +57,16 @@ objects := $(x86_64_asm_objects) $(kernel_c_objects) $(kernel_asm_objects)
 # Build rules
 # ==============================
 
+# Generate VFS configuration C file from config file
+$(VFS_CONFIG_GEN): $(VFS_CONFIG) $(VFS_GEN_SCRIPT)
+	@mkdir -p $(dir $@)
+	@$(VFS_GEN_SCRIPT) $(VFS_CONFIG) $@
+
+# Compile generated VFS config file
+$(BUILD_DIR)/kernel/vfs/vfs_config.o: $(VFS_CONFIG_GEN) $(VFS_CONFIG_H)
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -I. $(VFS_CONFIG_GEN) -o $@
+
 # Compile assembly files
 $(BUILD_DIR)/%.o: %.asm
 	@mkdir -p $(dir $@)
@@ -58,7 +78,7 @@ $(BUILD_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $< -o $@
 
 # Link all object files into kernel binary
-$(ISO_BOOT_DIR)/kernel.bin: $(objects)
+$(ISO_BOOT_DIR)/kernel.bin: $(objects) | $(VFS_CONFIG_GEN)
 	@mkdir -p $(ISO_BOOT_DIR)
 	$(LD) $(LD_FLAGS) --output=$@ $^
 
@@ -118,6 +138,7 @@ clean:
 	rm -f $(ISO_DIR)/kernel.*
 	rm -f $(ISO_DIR)/**/kernel.*
 	rm -f serial.log
+	rm -f $(VFS_CONFIG_GEN)
 
 # ==============================
 # Install dependencies (Linux/Debian)
