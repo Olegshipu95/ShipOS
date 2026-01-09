@@ -8,23 +8,12 @@
 #ifndef SHIP_OS_RSDT_H
 #define SHIP_OS_RSDT_H
 
-#include <inttypes.h>
-#include <stddef.h>
-#include <stdbool.h>
+#include "acpi.h"
 #include "rsdp.h"
 
-struct ACPISDTHeader
-{
-    char Signature[4];
-    uint32_t Length;
-    uint8_t Revision;
-    uint8_t Checksum;
-    char OEMID[6];
-    char OEMTableID[8];
-    uint32_t OEMRevision;
-    uint32_t CreatorID;
-    uint32_t CreatorRevision;
-};
+#include <stddef.h>
+#include <stdbool.h>
+#include <inttypes.h>
 
 struct RSDT_t
 {

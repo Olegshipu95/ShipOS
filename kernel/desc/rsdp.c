@@ -28,22 +28,6 @@ bool is_xsdp()
 }
 
 /**
- * @brief Checks if RSDP checksum is valid for the table
- *
- * @param p Pointer to RSDP table
- * @param len Length of RSDP table in bytes
- *
- * @return `true` if checksums match `false` otherwise
- */
-bool rsdp_checksum_ok(void *p, uint32_t len)
-{
-    uint8_t sum = 0;
-    for (uint32_t i = 0; i < len; i++)
-        sum += ((uint8_t *) p)[i];
-    return sum == 0;
-}
-
-/**
  * @brief Scans memory region and tries to find RSDP table inside it via
  * signature and checksum match
  *
@@ -61,10 +45,10 @@ struct RSDP_t *scan_rsdp(uintptr_t start, uintptr_t end)
         if (memcmp(r->Signature, "RSD PTR ", 8) != 0)
             continue;
 
-        if (!rsdp_checksum_ok(r, 20))
+        if (!acpi_checksum_ok(r, 20))
             continue;
 
-        if (r->Revision >= 2 && !rsdp_checksum_ok(r, ((struct XSDP_t *) r)->Length))
+        if (r->Revision >= 2 && !acpi_checksum_ok(r, ((struct XSDP_t *) r)->Length))
             continue;
 
         return r;

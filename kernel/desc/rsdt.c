@@ -6,25 +6,6 @@ static void *rsdt_root_ptr = NULL;
 static bool extended = false;
 
 /**
- * @brief Checks if RSDT checksum is valid for the table
- *
- * @param header Pointer to ACPI system description table header
- *
- * @return `true` if checksums match `false` otherwise
- */
-bool rsdt_checksum_ok(struct ACPISDTHeader *header)
-{
-    unsigned char sum = 0;
-
-    for (int i = 0; i < header->Length; i++)
-    {
-        sum += ((char *) header)[i];
-    }
-
-    return sum == 0;
-}
-
-/**
  * @brief Getter function to get rsdt table root pointer
  */
 void *get_rsdt_root()
@@ -64,7 +45,7 @@ void init_rsdt(struct RSDP_t *rsdp_ptr)
         is_xsdt = false;
     }
 
-    if (!rsdt_checksum_ok(&rsdt_ptr->header))
+    if (!acpi_checksum_ok(&rsdt_ptr->header, rsdt_ptr->header.Length))
     {
         rsdt_ptr = NULL;
         is_xsdt = false;
