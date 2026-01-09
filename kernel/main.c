@@ -18,6 +18,9 @@
 #include "sched/proc.h"
 #include "sched/threads.h"
 #include "sched/scheduler.h"
+#include "desc/rsdp.h"
+#include "desc/rsdt.h"
+#include "desc/madt.h"
 
 
 /**
@@ -97,11 +100,22 @@ int kernel_main(){
 
     pagetable_t kernel_table = kvminit(INIT_PHYSTOP, PHYSTOP);
     LOG("kernel table: %p", kernel_table);
+    
+    init_rsdp();
+    if (get_rsdp() != NULL) {
+        init_rsdt(get_rsdp());
+        init_madt();
+        log_cpu_info();
+    } else {
+        LOG_SERIAL("ACPI", "RSDP not found - ACPI unavailable");
+    }
+    
     kinit(INIT_PHYSTOP, PHYSTOP);
     LOG("Successfully allocated physical memory up to %p", PHYSTOP);
     LOG_SERIAL("MEMORY", "Physical memory initialized");
 
     int pages = count_pages();
+    
     struct proc_node *init_proc_node = procinit();
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
     setup_idt();
