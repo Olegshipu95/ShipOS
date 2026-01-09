@@ -1,6 +1,6 @@
 //
 // Created by ShipOS developers on 09.01.26.
-// Copyright (c) 2025 SHIPOS. All rights reserved.
+// Copyright (c) 2026 SHIPOS. All rights reserved.
 //
 // Utility file to work with Root System Description Pointer (RSDP)
 //

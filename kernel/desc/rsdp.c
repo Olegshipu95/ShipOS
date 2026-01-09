@@ -1,4 +1,5 @@
 #include "rsdp.h"
+#include "acpi.h"
 
 #include "../lib/include/memcmp.h"
 #include "../lib/include/logging.h"
@@ -71,16 +72,11 @@ void init_rsdp()
 
     if (found_rsdp)
     {
-        LOG_SERIAL(
-            "DESCRIPTORS",
-            "RSDP found at 0x%p, rev=%d, xsdp=%s",
-            found_rsdp,
-            found_rsdp->Revision,
-            found_rsdp->Revision >= 2 ? "true" : "false");
+        LOG_SERIAL("RSDP", "Found at 0x%p (rev=%d)", found_rsdp, found_rsdp->Revision);
     }
     else
     {
-        LOG_SERIAL("DESCRIPTORS", "RSDP not found");
+        LOG_SERIAL("RSDP", "Not found");
     }
 
     rsdp_ptr = found_rsdp;
