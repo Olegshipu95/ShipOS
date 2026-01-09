@@ -8,25 +8,34 @@
 #define BIOS_MEM_END (0x00100000)
 #define ONE_KB 1024
 
-static struct RSDP_t *rsdp_ptr = NULL;
+static void *rsdp_ptr = NULL;
+static bool extended = false;
 
 /**
- * @brief Getter function to access RSDP pointer (should call `init_rsdp` first) 
+ * @brief Getter function to access RSDP pointer (should call `init_rsdp` first)
  */
-struct RSDP_t* get_rsdp()
+void *get_rsdp()
 {
     return rsdp_ptr;
 }
 
 /**
+ * @brief Getter function to check if RSDP pointer is extendable to XSDP
+ */
+bool is_xsdp()
+{
+    return extended;
+}
+
+/**
  * @brief Checks if RSDP checksum is valid for the table
- * 
+ *
  * @param p Pointer to RSDP table
  * @param len Length of RSDP table in bytes
- * 
+ *
  * @return `true` if checksums match `false` otherwise
  */
-bool checksum_ok(void *p, uint32_t len)
+bool rsdp_checksum_ok(void *p, uint32_t len)
 {
     uint8_t sum = 0;
     for (uint32_t i = 0; i < len; i++)
@@ -37,10 +46,10 @@ bool checksum_ok(void *p, uint32_t len)
 /**
  * @brief Scans memory region and tries to find RSDP table inside it via
  * signature and checksum match
- * 
+ *
  * @param start Memory address to start search from
  * @param end Memory address till which to search
- * 
+ *
  * @return address of RSDP table if found, 0 otherwise
  */
 struct RSDP_t *scan_rsdp(uintptr_t start, uintptr_t end)
@@ -52,10 +61,10 @@ struct RSDP_t *scan_rsdp(uintptr_t start, uintptr_t end)
         if (memcmp(r->Signature, "RSD PTR ", 8) != 0)
             continue;
 
-        if (!checksum_ok(r, 20))
+        if (!rsdp_checksum_ok(r, 20))
             continue;
 
-        if (r->Revision >= 2 && !checksum_ok(r, ((struct XSDP_t *) r)->Length))
+        if (r->Revision >= 2 && !rsdp_checksum_ok(r, ((struct XSDP_t *) r)->Length))
             continue;
 
         return r;

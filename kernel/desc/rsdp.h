@@ -38,6 +38,8 @@ struct XSDP_t
 
 void init_rsdp();
 
-struct RSDP_t *get_rsdp();
+void *get_rsdp();
+
+bool is_xsdp();
 
 #endif
