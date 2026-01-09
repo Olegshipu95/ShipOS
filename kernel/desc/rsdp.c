@@ -1,0 +1,94 @@
+#include "rsdp.h"
+
+#include "../lib/include/memcmp.h"
+#include "../lib/include/logging.h"
+
+#define EBDA_SEG ((uint16_t *) 0x40E)
+#define BIOS_MEM_START (0x000E0000)
+#define BIOS_MEM_END (0x00100000)
+#define ONE_KB 1024
+
+static struct RSDP_t *rsdp_ptr = NULL;
+
+/**
+ * @brief Getter function to access RSDP pointer (should call `init_rsdp` first) 
+ */
+struct RSDP_t* get_rsdp()
+{
+    return rsdp_ptr;
+}
+
+/**
+ * @brief Checks if RSDP checksum is valid for the table
+ * 
+ * @param p Pointer to RSDP table
+ * @param len Length of RSDP table in bytes
+ * 
+ * @return `true` if checksums match `false` otherwise
+ */
+bool checksum_ok(void *p, uint32_t len)
+{
+    uint8_t sum = 0;
+    for (uint32_t i = 0; i < len; i++)
+        sum += ((uint8_t *) p)[i];
+    return sum == 0;
+}
+
+/**
+ * @brief Scans memory region and tries to find RSDP table inside it via
+ * signature and checksum match
+ * 
+ * @param start Memory address to start search from
+ * @param end Memory address till which to search
+ * 
+ * @return address of RSDP table if found, 0 otherwise
+ */
+struct RSDP_t *scan_rsdp(uintptr_t start, uintptr_t end)
+{
+    for (uintptr_t p = start; p < end; p += 16)
+    {
+        struct RSDP_t *r = (struct RSDP_t *) p;
+
+        if (memcmp(r->Signature, "RSD PTR ", 8) != 0)
+            continue;
+
+        if (!checksum_ok(r, 20))
+            continue;
+
+        if (r->Revision >= 2 && !checksum_ok(r, ((struct XSDP_t *) r)->Length))
+            continue;
+
+        return r;
+    }
+    return NULL;
+}
+
+/**
+ * @brief Utility function that tries to find and set RSDP table pointer
+ */
+void init_rsdp()
+{
+    uintptr_t ebda_addr = ((uintptr_t) (*EBDA_SEG)) << 4;
+    struct RSDP_t *found_rsdp = scan_rsdp(ebda_addr, ebda_addr + ONE_KB);
+
+    if (found_rsdp == NULL)
+    {
+        found_rsdp = scan_rsdp(BIOS_MEM_START, BIOS_MEM_END);
+    }
+
+    if (found_rsdp)
+    {
+        LOG_SERIAL(
+            "DESCRIPTORS",
+            "RSDP found at 0x%p, rev=%d, xsdp=%s",
+            found_rsdp,
+            found_rsdp->Revision,
+            found_rsdp->Revision >= 2 ? "true" : "false");
+    }
+    else
+    {
+        LOG_SERIAL("DESCRIPTORS", "RSDP not found");
+    }
+
+    rsdp_ptr = found_rsdp;
+}
