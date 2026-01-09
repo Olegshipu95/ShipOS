@@ -221,6 +221,15 @@ void serial_printf(uint16_t port, const char *format, ...) {
         switch (*format) {
             case '%':
                 format++;
+                int precision = -1;
+                if (*format == '.') {
+                    format++;
+                    precision = 0;
+                    while (*format >= '0' && *format <= '9') {
+                        precision = precision * 10 + (*format - '0');
+                        format++;
+                    }
+                }
                 switch (*format) {
                     case 'd':
                         if (itoa(va_arg(varargs, int), digits_buf, 10) == 0) {
@@ -257,9 +266,19 @@ void serial_printf(uint16_t port, const char *format, ...) {
                             serial_putchar(port, '#');
                         }
                         break;
-                    case 's':
-                        serial_write(port, va_arg(varargs, char*));
+                    case 's': {
+                        char *str = va_arg(varargs, char*);
+                        if (str == NULL) {
+                            serial_write(port, "(null)");
+                        } else if (precision >= 0) {
+                            for (int i = 0; i < precision && str[i] != '\0'; i++) {
+                                serial_putchar(port, str[i]);
+                            }
+                        } else {
+                            serial_write(port, str);
+                        }
                         break;
+                    }
                     case '%':
                         serial_putchar(port, '%');
                         break;
