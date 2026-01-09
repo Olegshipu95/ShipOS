@@ -141,6 +141,125 @@ pagetable_t kvminit(uint64_t start, uint64_t end) {
     return tbl4;
 }
 
+void invlpg(uint64_t va) {
+    asm volatile("invlpg (%0)" : : "r"(va) : "memory");
+}
+
+int map_page(pagetable_t tbl, uint64_t va, uint64_t pa, int flags) {
+    va = PGROUNDDOWN(va);
+    pa = PGROUNDDOWN(pa);
+    
+    page_entry_raw *pte = (page_entry_raw *)walk(tbl, va, 1);
+    if (pte == 0) {
+        return -1;  // Failed to allocate page table
+    }
+    
+    struct page_entry entry = decode_page_entry(*pte);
+    
+    // Check if already mapped to a different physical address
+    if (entry.p && (entry.address << 12) != pa) {
+        LOG("map_page: va %p already mapped to %p, trying to map to %p",
+            va, entry.address << 12, pa);
+        return -1;
+    }
+    
+    // Set up the page entry
+    entry.p = 1;
+    entry.rw = (flags & PTE_W) ? 1 : 0;
+    entry.us = (flags & PTE_U) ? 1 : 0;
+    entry.pwt = (flags & PTE_PWT) ? 1 : 0;
+    entry.pcd = (flags & PTE_PCD) ? 1 : 0;
+    entry.a = 0;
+    entry.d = 0;
+    entry.rsvd = 0;
+    entry.ign1 = 0;
+    entry.address = (pa >> 12) & 0xFFFFFFFFF;
+    entry.ign2 = 0;
+    entry.xd = 0;
+    
+    *pte = encode_page_entry(entry);
+    
+    // Invalidate TLB for this address
+    invlpg(va);
+    
+    return 0;
+}
+
+int map_pages(pagetable_t tbl, uint64_t va, uint64_t pa, uint64_t size, int flags) {
+    uint64_t va_start = PGROUNDDOWN(va);
+    uint64_t va_end = PGROUNDUP(va + size);
+    uint64_t pa_cur = PGROUNDDOWN(pa);
+    
+    for (uint64_t addr = va_start; addr < va_end; addr += PGSIZE) {
+        if (map_page(tbl, addr, pa_cur, flags) != 0) {
+            // Rollback: unmap pages we've already mapped
+            for (uint64_t rollback = va_start; rollback < addr; rollback += PGSIZE) {
+                unmap_page(tbl, rollback);
+            }
+            return -1;
+        }
+        pa_cur += PGSIZE;
+    }
+    
+    return 0;
+}
+
+void *map_mmio(uint64_t pa, uint64_t size) {
+    pagetable_t tbl = (pagetable_t)rcr3();
+    
+    // Identity map: virtual address == physical address
+    // Use PTE_W for read/write and PTE_PCD to disable caching for MMIO
+    if (map_pages(tbl, pa, pa, size, PTE_W | PTE_PCD) != 0) {
+        return 0;
+    }
+    
+    return (void *)pa;
+}
+
+void unmap_page(pagetable_t tbl, uint64_t va) {
+    va = PGROUNDDOWN(va);
+    
+    page_entry_raw *pte = (page_entry_raw *)walk(tbl, va, 0);
+    if (pte == 0) {
+        return;  // Not mapped
+    }
+    
+    struct page_entry entry = decode_page_entry(*pte);
+    if (!entry.p) {
+        return;  // Already not present
+    }
+    
+    // Clear the entry
+    *pte = 0;
+    
+    // Invalidate TLB
+    invlpg(va);
+}
+
+void unmap_pages(pagetable_t tbl, uint64_t va, uint64_t size) {
+    uint64_t va_start = PGROUNDDOWN(va);
+    uint64_t va_end = PGROUNDUP(va + size);
+    
+    for (uint64_t addr = va_start; addr < va_end; addr += PGSIZE) {
+        unmap_page(tbl, addr);
+    }
+}
+
+uint64_t va_to_pa(pagetable_t tbl, uint64_t va) {
+    page_entry_raw *pte = (page_entry_raw *)walk(tbl, va, 0);
+    if (pte == 0) {
+        return 0;
+    }
+    
+    struct page_entry entry = decode_page_entry(*pte);
+    if (!entry.p) {
+        return 0;
+    }
+    
+    // Return physical address with page offset preserved
+    return (entry.address << 12) | (va & (PGSIZE - 1));
+}
+
 // Legacy hack
 // pagetable_t kvminit(uint64_t start, uint64_t end){
 
