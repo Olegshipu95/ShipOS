@@ -21,6 +21,7 @@
 #include "desc/rsdp.h"
 #include "desc/rsdt.h"
 #include "desc/madt.h"
+#include "apic/ap_startup.h"
 
 /**
  * @brief Initialize ACPI subsystem and map APIC memory regions
@@ -143,7 +144,7 @@ int kernel_main()
     else
     {
         LOG("Found %d serial port(s)", serial_ports_count);
-        LOG("Using port 0x%p as default", get_default_serial_port());
+        LOG("Using port %#x as default", get_default_serial_port());
         LOG_SERIAL("SERIAL", "Serial ports initialized successfully");
     }
 
@@ -184,6 +185,10 @@ int kernel_main()
 
     setup_idt();
     LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
+
+    // Start Application Processors
+    uint32_t ap_count = start_all_aps(kernel_table);
+    LOG_SERIAL("KERNEL", "Started %d Application Processors", ap_count);
 
 #ifdef TEST
     run_tests();

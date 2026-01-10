@@ -72,7 +72,7 @@ void init_rsdp()
 
     if (found_rsdp)
     {
-        LOG_SERIAL("RSDP", "Found at 0x%p (rev=%d)", found_rsdp, found_rsdp->Revision);
+        LOG_SERIAL("RSDP", "Found at %p (rev=%d)", found_rsdp, found_rsdp->Revision);
     }
     else
     {

@@ -133,4 +133,27 @@ uint32_t lapic_read(uint32_t reg);
  */
 bool lapic_is_available(void);
 
+/**
+ * @brief Send an Interprocessor Interrupt (IPI) to a specific APIC
+ * 
+ * @param apic_id Target APIC ID
+ * @param vector Interrupt vector (for SIPI, this is the page number)
+ */
+void lapic_send_ipi(uint8_t apic_id, uint32_t vector);
+
+/**
+ * @brief Send INIT IPI to a specific APIC to initialize it
+ * 
+ * @param apic_id Target APIC ID
+ */
+void lapic_send_init(uint8_t apic_id);
+
+/**
+ * @brief Send STARTUP IPI (SIPI) to a specific APIC
+ * 
+ * @param apic_id Target APIC ID
+ * @param vector Startup vector (page number where AP code starts)
+ */
+void lapic_send_sipi(uint8_t apic_id, uint8_t vector);
+
 #endif // SHIP_OS_LAPIC_H

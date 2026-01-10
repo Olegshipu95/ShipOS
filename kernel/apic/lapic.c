@@ -151,3 +151,67 @@ void lapic_timer_stop(void)
     // Set initial count to 0 to stop the timer
     lapic_write(LAPIC_TIMER_ICR, 0);
 }
+
+/**
+ * @brief Wait for IPI to be delivered
+ */
+static void lapic_ipi_wait(void)
+{
+    // Wait until delivery status bit is clear
+    while (lapic_read(LAPIC_ICRLO) & LAPIC_ICR_DELIVS)
+    {
+        asm volatile("pause");
+    }
+}
+
+/**
+ * @brief Send an Interprocessor Interrupt (IPI)
+ */
+void lapic_send_ipi(uint8_t apic_id, uint32_t vector)
+{
+    if (lapic == NULL) return;
+
+    // Write destination APIC ID to high part of ICR
+    lapic_write(LAPIC_ICRHI, ((uint32_t)apic_id) << 24);
+    
+    // Write vector and flags to low part of ICR
+    lapic_write(LAPIC_ICRLO, vector);
+    
+    // Wait for delivery
+    lapic_ipi_wait();
+}
+
+/**
+ * @brief Send INIT IPI to initialize an Application Processor
+ */
+void lapic_send_init(uint8_t apic_id)
+{
+    if (lapic == NULL) return;
+
+    // Write destination APIC ID
+    lapic_write(LAPIC_ICRHI, ((uint32_t)apic_id) << 24);
+    
+    // Send INIT IPI (level-triggered, assert)
+    lapic_write(LAPIC_ICRLO, LAPIC_ICR_INIT | LAPIC_ICR_LEVEL | LAPIC_ICR_ASSERT);
+    lapic_ipi_wait();
+    
+    // Deassert INIT
+    lapic_write(LAPIC_ICRHI, ((uint32_t)apic_id) << 24);
+    lapic_write(LAPIC_ICRLO, LAPIC_ICR_INIT | LAPIC_ICR_LEVEL | LAPIC_ICR_DEASSERT);
+    lapic_ipi_wait();
+}
+
+/**
+ * @brief Send STARTUP IPI (SIPI) to start an Application Processor
+ */
+void lapic_send_sipi(uint8_t apic_id, uint8_t vector)
+{
+    if (lapic == NULL) return;
+
+    // Write destination APIC ID
+    lapic_write(LAPIC_ICRHI, ((uint32_t)apic_id) << 24);
+    
+    // Send SIPI with startup vector (page number)
+    lapic_write(LAPIC_ICRLO, LAPIC_ICR_STARTUP | vector);
+    lapic_ipi_wait();
+}

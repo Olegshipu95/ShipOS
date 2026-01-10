@@ -164,6 +164,42 @@ void map_apic_region(pagetable_t tbl, uint64_t apic_base, uint32_t size) {
     }
 }
 
+void map_low_memory(pagetable_t tbl, uint64_t start, uint64_t size)
+{
+    for (uint64_t addr = start; addr < start + size; addr += PGSIZE)
+    {
+        page_entry_raw *entry_raw = walk(tbl, addr, 1);
+        if (entry_raw == NULL)
+        {
+            LOG_SERIAL("PAGING", "Failed to map low memory at 0x%llx", addr);
+            continue;
+        }
+        
+        // Set up identity mapping with proper flags
+        struct page_entry entry;
+        entry.p = 1;     // Present
+        entry.rw = 1;    // Read/Write
+        entry.us = 0;    // Supervisor
+        entry.pwt = 0;   // Write-back
+        entry.pcd = 0;   // Cache enabled
+        entry.a = 0;     // Accessed
+        entry.d = 0;     // Dirty
+        entry.rsvd = 0;  // Not reserved
+        entry.ign1 = 0;
+        entry.address = (addr >> 12) & 0xFFFFFFFFF;
+        entry.ign2 = 0;
+        entry.xd = 0;    // Execute disable OFF (allow execution)
+        
+        *entry_raw = encode_page_entry(entry);
+    }
+    
+    // Flush TLB
+    for (uint64_t addr = start; addr < start + size; addr += PGSIZE)
+    {
+        invlpg(addr);
+    }
+}
+
 pagetable_t kvminit(uint64_t start, uint64_t end) {
     LOG("Setting up kernel page table...");
     pagetable_t tbl4 = rcr3();

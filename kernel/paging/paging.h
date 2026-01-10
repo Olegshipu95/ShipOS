@@ -146,6 +146,15 @@ void invlpg(uint64_t va);
  */
 void map_apic_region(pagetable_t tbl, uint64_t apic_base, uint32_t size);
 
+/**
+ * @brief Map low memory region for AP trampoline code
+ * 
+ * @param tbl Page table to map into
+ * @param start Start physical address
+ * @param size Size of region to map in bytes
+ */
+void map_low_memory(pagetable_t tbl, uint64_t start, uint64_t size);
+
 // Page table entry flags
 #define PTE_P   0x001   // Present
 #define PTE_W   0x002   // Writable
