@@ -11,9 +11,14 @@
 #include "interrupt_handlers.h"
 #include "../lib/include/memset.h"
 #include "../pic/pic.h"
-#include "../pit/pit.h"
+#include "../apic/lapic.h"
+#include "../apic/ioapic.h"
 
 #define MAX_INTERRUPTS 256 // Total number of interrupt vectors
+
+// APIC interrupt vectors
+#define APIC_TIMER_VECTOR    32  // Timer interrupt
+#define APIC_KEYBOARD_VECTOR 33  // Keyboard interrupt (IRQ1)
 
 /**
  * @brief Fill a single IDT entry with the handler information
@@ -53,9 +58,9 @@ void setup_idt(){
         make_interrupt(idt, i, (uintptr_t)default_handler);
     }
 
-    // Setup specific hardware interrupt handlers
-    make_interrupt(idt, PIC_MASTER_OFFSET, (uintptr_t)timer_interrupt);
-    make_interrupt(idt, PIC_MASTER_OFFSET+1, (uintptr_t)keyboard_handler);
+    // Setup specific hardware interrupt handlers for APIC
+    make_interrupt(idt, APIC_TIMER_VECTOR, (uintptr_t)timer_interrupt);
+    make_interrupt(idt, APIC_KEYBOARD_VECTOR, (uintptr_t)keyboard_handler);
 
     // Setup CPU exception handlers (vectors 0-31)
     make_interrupt(idt, 0, (uintptr_t)interrupt_handler_0);
@@ -94,15 +99,20 @@ void setup_idt(){
     // Load IDTR register
     asm volatile ("lidt %0" : : "m"(idtr));
 
-    pic_init();
-    init_pit();
+    // Disable legacy PIC by masking all interrupts
+    outb(PIC1_DATA, 0xff);
+    outb(PIC2_DATA, 0xff);
 
-    // Mask all IRQs initially
-    outb(PIC1_DATA,0xff);
-    outb(PIC2_DATA,0xff);
+    // Initialize APIC
+    lapic_init();
+    ioapic_init();
 
-    // Unmask timer and keyboard IRQs
-    outb(PIC1_DATA, ~(1<<0 | 1<<1));
+    // Enable keyboard IRQ (IRQ1) through I/O APIC
+    // Map IRQ1 to vector 33, destination is current APIC
+    ioapic_enable_irq(1, APIC_KEYBOARD_VECTOR, lapic_get_id());
+
+    // Start APIC timer (10000000 initial count for periodic interrupts)
+    lapic_timer_start(APIC_TIMER_VECTOR, 10000000);
 
     // Enable interrupts
     asm("sti");

@@ -10,7 +10,7 @@
 #include "interrupt_handlers.h"
 
 #include "../lib/include/x86_64.h"
-#include "../pic/pic.h"
+#include "../apic/lapic.h"
 #include "../vga/vga.h"
 #include "../tty/tty.h"
 #include "../sched/scheduler.h"
@@ -43,7 +43,7 @@ __attribute__((interrupt)) void keyboard_handler(struct interrupt_frame* frame) 
 
     print("\n");
 
-    outb(PIC1_COMMAND, PIC_EOI);
+    lapic_eoi();
     // printf("Flags: %b\n", get_flags());
 }
 
@@ -55,7 +55,7 @@ __attribute__((interrupt)) void timer_interrupt(struct interrupt_frame* frame) {
 //     print("clock\n");
 
     send_values_to_sched();
-    outb(PIC1_COMMAND, PIC_EOI);
+    lapic_eoi();
 
     // Only do context switching if scheduler is active (current_thread is set)
     if (current_cpu.current_thread != 0) {

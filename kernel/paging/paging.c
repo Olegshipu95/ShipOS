@@ -122,6 +122,48 @@ struct page_entry_raw *walk(pagetable_t tbl, uint64_t va, bool alloc) {
     return tbl + ((va >> 12) & 0x1FF);
 }
 
+/**
+ * @brief Map APIC memory regions into kernel page table
+ * 
+ * Maps Local APIC and I/O APIC addresses for MMIO access.
+ * APIC addresses are typically in high memory (~4GB range).
+ */
+void map_apic_region(pagetable_t tbl, uint64_t apic_base, uint32_t size) {
+    LOG("Mapping APIC region at 0x%x (size: %d bytes)", apic_base, size);
+    
+    // Map each page in the APIC region
+    for (uint64_t addr = apic_base; addr < apic_base + size; addr += PGSIZE) {
+        page_entry_raw *entry_raw = walk(tbl, addr, 1);
+        if (entry_raw == 0) {
+            LOG("ERROR: Failed to walk page table for APIC at 0x%x", addr);
+            continue;
+        }
+        
+        // Initialize entry with identity mapping (virtual = physical)
+        // Mark as uncacheable (PCD=1) for MMIO regions
+        struct page_entry entry;
+        entry.p = 1;     // Present
+        entry.rw = 1;    // Read/Write
+        entry.us = 0;    // Supervisor only
+        entry.pwt = 0;   // Write-through
+        entry.pcd = 1;   // Cache disable (important for MMIO!)
+        entry.a = 0;     // Accessed
+        entry.d = 0;     // Dirty
+        entry.rsvd = 0;  // Not reserved
+        entry.ign1 = 0;
+        entry.address = (addr >> 12) & 0xFFFFFFFFF;
+        entry.ign2 = 0;
+        entry.xd = 0;    // Execute disable
+        
+        *entry_raw = encode_page_entry(entry);
+    }
+    
+    // Flush TLB for the mapped region
+    for (uint64_t addr = apic_base; addr < apic_base + size; addr += PGSIZE) {
+        invlpg(addr);
+    }
+}
+
 pagetable_t kvminit(uint64_t start, uint64_t end) {
     LOG("Setting up kernel page table...");
     pagetable_t tbl4 = rcr3();

@@ -137,6 +137,15 @@ uint64_t va_to_pa(pagetable_t tbl, uint64_t va);
  */
 void invlpg(uint64_t va);
 
+/**
+ * @brief Map APIC memory regions into kernel page table
+ * 
+ * @param tbl Page table to map into
+ * @param apic_base Physical base address of APIC region
+ * @param size Size of region to map in bytes
+ */
+void map_apic_region(pagetable_t tbl, uint64_t apic_base, uint32_t size);
+
 // Page table entry flags
 #define PTE_P   0x001   // Present
 #define PTE_W   0x002   // Writable
