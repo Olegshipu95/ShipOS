@@ -18,6 +18,7 @@
 #include "sched/proc.h"
 #include "sched/threads.h"
 #include "sched/scheduler.h"
+#include "sched/percpu.h"
 #include "desc/rsdp.h"
 #include "desc/rsdt.h"
 #include "desc/madt.h"
@@ -130,12 +131,7 @@ void thread_function(int argc, struct argument *args)
  */
 int kernel_main()
 {
-    // Initialize CPU state before anything else
-    current_cpu.ncli = 0;
-    current_cpu.intena = 0;
-    current_cpu.current_thread = 0;
-
-    // Initialize serial ports
+    // Initialize serial ports first for early debugging
     int serial_ports_count = init_serial_ports();
     if (serial_ports_count == -1)
     {
@@ -178,6 +174,14 @@ int kernel_main()
     LOG("Successfully allocated physical memory up to %p", PHYSTOP);
     LOG_SERIAL("MEMORY", "Physical memory initialized");
 
+    // Initialize per-CPU data structures for BSP
+    uint32_t cpu_count = get_cpu_count();
+    percpu_init_bsp(cpu_count);
+    
+    // Allocate per-CPU stacks (requires kalloc to be initialized)
+    percpu_alloc_stacks();
+    LOG_SERIAL("PERCPU", "Per-CPU data structures initialized for %d CPUs", cpu_count);
+
     int pages = count_pages();
 
     struct proc_node *init_proc_node = procinit();
@@ -189,6 +193,9 @@ int kernel_main()
     // Start Application Processors
     uint32_t ap_count = start_all_aps(kernel_table);
     LOG_SERIAL("KERNEL", "Started %d Application Processors", ap_count);
+
+    // Log per-CPU data after all CPUs are initialized
+    percpu_log_cpu_info();
 
 #ifdef TEST
     run_tests();

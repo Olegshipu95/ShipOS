@@ -14,6 +14,7 @@
 #include "../kalloc/kalloc.h"
 #include "../paging/paging.h"
 #include "../memlayout.h"
+#include "../sched/percpu.h"
 
 // External symbols from trampoline assembly
 extern uint8_t ap_trampoline_start[];
@@ -31,6 +32,9 @@ struct ap_trampoline_data {
 // Counter for number of APs that have started
 static volatile uint32_t ap_started_count = 0;
 
+// CPU index counter for AP initialization
+static volatile uint32_t next_cpu_index = 1;  // 0 is BSP
+
 /**
  * @brief Microsecond delay using LAPIC timer
  */
@@ -45,25 +49,66 @@ static void microdelay(uint32_t us)
 
 /**
  * @brief Entry point for Application Processors
+ * 
+ * Called from the trampoline after switching to long mode.
+ * Initializes per-CPU data, loads GDT/TSS, and enters idle loop.
  */
 void ap_entry(void)
 {
-    // Increment counter first
+    // Get our assigned CPU index atomically
+    uint32_t my_index = __sync_fetch_and_add(&next_cpu_index, 1);
+    
+    // Initialize per-CPU data for this AP
+    percpu_init_ap(my_index);
+    
+    // Initialize LAPIC for this AP
+    lapic_init();
+    
+    // Increment started counter
     __sync_fetch_and_add(&ap_started_count, 1);
     
-    // Write a simple message to serial port directly (port 0x3F8)
-    const char *msg = "[AP] Started\n";
-    for (const char *p = msg; *p; p++)
-    {
-        // Wait for transmit buffer to be empty
+    // Get our percpu structure
+    struct percpu *cpu = mycpu();
+    
+    // Write a message to serial port directly (port 0x3F8)
+    // Using direct I/O since serial_printf may not be safe yet
+    char msg[64];
+    const char *base = "[AP] CPU ";
+    int pos = 0;
+    for (const char *p = base; *p; p++) {
+        msg[pos++] = *p;
+    }
+    // Add CPU index
+    if (my_index >= 10) {
+        msg[pos++] = '0' + (my_index / 10);
+    }
+    msg[pos++] = '0' + (my_index % 10);
+    const char *suffix = " started (APIC ID ";
+    for (const char *p = suffix; *p; p++) {
+        msg[pos++] = *p;
+    }
+    // Add APIC ID
+    uint32_t apic = cpu->apic_id;
+    if (apic >= 10) {
+        msg[pos++] = '0' + (apic / 10);
+    }
+    msg[pos++] = '0' + (apic % 10);
+    msg[pos++] = ')';
+    msg[pos++] = '\n';
+    msg[pos] = '\0';
+    
+    for (const char *p = msg; *p; p++) {
         while (!(inb(0x3F8 + 5) & 0x20));
         outb(0x3F8, *p);
     }
     
-    // Halt forever
+    // Enable interrupts on this AP
+    sti();
+    
+    // Enter idle loop - will be replaced with scheduler entry later
     while (1)
     {
-        asm volatile("cli; hlt");
+        asm volatile("hlt");
     }
 }
 

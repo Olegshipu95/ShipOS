@@ -9,7 +9,6 @@
 #include "../lib/include/logging.h"
 #include "sched_states.h"
 
-struct cpu current_cpu;
 struct spinlock pid_lock;
 struct spinlock proc_lock;
 struct proc_node *proc_list;
