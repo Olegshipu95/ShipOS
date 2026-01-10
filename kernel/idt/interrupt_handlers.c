@@ -34,10 +34,12 @@ struct interrupt_frame;
  */
 __attribute__((interrupt)) void keyboard_handler(struct interrupt_frame *frame)
 {
-    // printf("Flags: %b\n", get_flags());
-    while (inb(0x64) & 1)
+    uint8_t status = inb(0x64);
+    
+    while (status & 1)
     {
         uint8_t res = inb(0x60);
+        LOG_SERIAL("KEYBOARD", "Scancode: 0x%x on CPU %d", res, mycpu()->cpu_index);
 
         if (res >= F1 && res < F1 + TERMINALS_NUMBER)
         {
@@ -47,12 +49,13 @@ __attribute__((interrupt)) void keyboard_handler(struct interrupt_frame *frame)
         {
             printf("%x ", res);
         }
+        
+        status = inb(0x64);
     }
 
     print("\n");
 
     lapic_eoi();
-    // printf("Flags: %b\n", get_flags());
 }
 
 __attribute__((interrupt)) void default_handler(struct interrupt_frame *frame)
@@ -129,6 +132,8 @@ char *error_messages[] = {
  */
 void interrupt_handler(uint64_t error_code, uint64_t interrupt_number)
 {
+    LOG_SERIAL("EXCEPTION", "Interrupt %d (%s), error_code: 0x%lx, CR2: 0x%lx",
+               interrupt_number, error_messages[interrupt_number], error_code, rcr2());
     printf("Interrupt number %d (%s), error_code: %b\n", interrupt_number, error_messages[interrupt_number], error_code);
     printf("CR2: %x\n", rcr2());
     while (1)

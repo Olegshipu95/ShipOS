@@ -26,10 +26,26 @@ bool sched_initialized = false;
 // ============================================================================
 
 /**
+ * @brief Yield from idle thread to check for work
+ * 
+ * Similar to sched_yield but specifically for idle thread.
+ * Returns to scheduler context which will check for real work.
+ */
+static void idle_yield(void)
+{
+    struct percpu *cpu = mycpu();
+    struct thread *idle = cpu->idle_thread;
+    
+    // Switch back to scheduler context
+    switch_context(&idle->context, cpu->scheduler_ctx);
+}
+
+/**
  * @brief Idle thread function
  *
  * Runs when no other threads are available.
  * Uses HLT instruction to save power while waiting for interrupts.
+ * After each interrupt (like timer), yields to scheduler to check for work.
  */
 static void idle_thread_func(void *arg)
 {
@@ -38,6 +54,10 @@ static void idle_thread_func(void *arg)
     {
         sti();               // Enable interrupts
         asm volatile("hlt"); // Wait for interrupt
+        
+        // After waking from hlt (e.g., timer interrupt), yield to 
+        // let scheduler check if there's real work to do
+        idle_yield();
     }
 }
 
@@ -284,6 +304,38 @@ void sched_yield(void)
     switch_context(&current->context, cpu->scheduler_ctx);
 }
 
+/**
+ * @brief Exit the current thread
+ * 
+ * Removes the current thread from the run queue and switches
+ * to the scheduler. The thread will never run again.
+ */
+void sched_exit(void)
+{
+    struct percpu *cpu = mycpu();
+    struct thread *current = cpu->current_thread;
+
+    if (current == 0 || current == cpu->idle_thread)
+    {
+        return; // Can't exit idle thread
+    }
+
+    // Mark as exited
+    current->state = EXIT;
+    
+    // Remove from run queue
+    runqueue_remove_unlocked(cpu, current);
+    cpu->current_thread = 0;
+
+    LOG_SERIAL("SCHED", "Thread %p exited on CPU %d", current, cpu->cpu_index);
+
+    // Switch to scheduler - never returns
+    switch_context(&current->context, cpu->scheduler_ctx);
+    
+    // Should never reach here
+    panic("sched_exit returned");
+}
+
 void sched_run(void)
 {
     struct percpu *cpu = mycpu();
@@ -299,6 +351,9 @@ void sched_run(void)
 
         if (next != 0)
         {
+            // LOG_SERIAL("SCHED", "CPU %d switching to thread %p, context=%p, rip=%p", 
+            //            cpu->cpu_index, next, next->context, 
+            //            next->context ? next->context->rip : 0);
             cpu->current_thread = next;
             next->state = ON_CPU;
             switch_context(&cpu->scheduler_ctx, next->context);
@@ -308,6 +363,15 @@ void sched_run(void)
 
 void sched_tick(void)
 {
+    // NOTE: Context switching from interrupt handlers is unsafe because
+    // switch_context uses 'ret' instead of 'iret', leaving the interrupt
+    // frame on the stack and corrupting CPU state.
+    //
+    // This function only handles waking up from idle when new work is available.
+    // Preemption must happen via cooperative sched_yield() from thread context.
+    //
+    // TODO: Implement proper trap-frame based preemption if needed.
+    
     struct percpu *cpu = mycpu();
 
     if (!cpu->scheduler_ready)
@@ -315,36 +379,8 @@ void sched_tick(void)
         return;
     }
 
-    struct thread *current = cpu->current_thread;
-
-    // If idle is running, check if we have real work to do
-    if (current == 0 || current == cpu->idle_thread)
-    {
-        struct thread *next = sched_get_next();
-        if (next != 0 && next != cpu->idle_thread)
-        {
-            cpu->current_thread = next;
-            next->state = ON_CPU;
-            // Switch from idle to real thread
-            switch_context(&cpu->idle_thread->context, next->context);
-        }
-        return;
-    }
-
-    // Preempt current thread
-    current->state = RUNNABLE;
-
-    // Get next thread
-    struct thread *next = sched_get_next();
-
-    if (next != current)
-    {
-        cpu->current_thread = next;
-        next->state = ON_CPU;
-
-        // Context switch
-        switch_context(&current->context, next->context);
-    }
+    // For now, just track that timer is firing - no preemption from interrupt
+    // The idle thread loop handles checking for new work after each HLT
 }
 
 // ============================================================================

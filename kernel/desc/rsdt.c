@@ -31,6 +31,7 @@ bool is_xsdt()
  */
 void init_rsdt(struct RSDP_t *rsdp_ptr)
 {
+    LOG_SERIAL("RSDT", "init_rsdt called");
     if (rsdp_ptr == NULL)
     {
         LOG_SERIAL("RSDT", "RSDP pointer is NULL");
@@ -40,27 +41,45 @@ void init_rsdt(struct RSDP_t *rsdp_ptr)
     uint64_t rsdt_phys;
     bool is_xsdt_table;
 
+    LOG_SERIAL("RSDT", "RSDP revision=%d", rsdp_ptr->Revision);
     if (rsdp_ptr->Revision >= 2)
     {
         rsdt_phys = ((struct XSDP_t *) rsdp_ptr)->XsdtAddress;
         is_xsdt_table = true;
+        LOG_SERIAL("RSDT", "Using XSDT at 0x%lx", rsdt_phys);
     }
     else
     {
         rsdt_phys = (uint64_t) rsdp_ptr->RsdtAddress;
         is_xsdt_table = false;
+        LOG_SERIAL("RSDT", "Using RSDT at 0x%lx", rsdt_phys);
     }
 
-    struct RSDT_t *rsdt_ptr_mapped = (struct RSDT_t *) (uintptr_t) rsdt_phys;
-    uint32_t table_length = rsdt_ptr_mapped->header.Length;
-
-    void *mapped = map_mmio(rsdt_phys, table_length);
-    if (mapped == NULL)
+    // First, map one page to read the header length
+    LOG_SERIAL("RSDT", "Mapping first page to read header");
+    void *header_mapped = map_mmio(rsdt_phys, PGSIZE);
+    if (header_mapped == NULL)
     {
-        LOG_SERIAL("RSDT", "Failed to map full RSDT (size=%d)", table_length);
+        LOG_SERIAL("RSDT", "Failed to map RSDT header page");
         return;
     }
-    rsdt_ptr_mapped = (struct RSDT_t *) mapped;
+    
+    struct RSDT_t *rsdt_ptr_mapped = (struct RSDT_t *) header_mapped;
+    uint32_t table_length = rsdt_ptr_mapped->header.Length;
+    LOG_SERIAL("RSDT", "table_length = %d", table_length);
+
+    // If table is larger than one page, map the full table
+    if (table_length > PGSIZE)
+    {
+        LOG_SERIAL("RSDT", "Table larger than one page, remapping %d bytes", table_length);
+        void *mapped = map_mmio(rsdt_phys, table_length);
+        if (mapped == NULL)
+        {
+            LOG_SERIAL("RSDT", "Failed to map full RSDT (size=%d)", table_length);
+            return;
+        }
+        rsdt_ptr_mapped = (struct RSDT_t *) mapped;
+    }
 
     if (!acpi_checksum_ok(&rsdt_ptr_mapped->header, table_length))
     {

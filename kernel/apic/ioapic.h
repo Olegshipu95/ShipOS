@@ -76,6 +76,13 @@ void ioapic_enable_irq(uint8_t irq, uint8_t vector, uint8_t dest);
 void ioapic_disable_irq(uint8_t irq);
 
 /**
+ * @brief Debug: Print the current state of an IRQ in the I/O APIC
+ *
+ * @param irq IRQ number (0-23)
+ */
+void ioapic_debug_irq(uint8_t irq);
+
+/**
  * @brief Set a redirection entry in the I/O APIC
  *
  * @param irq IRQ number

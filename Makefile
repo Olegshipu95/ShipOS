@@ -15,7 +15,7 @@ GRUB := grub-mkrescue
 GRUB_FLAGS := -o
 
 QEMU := qemu-system-x86_64
-QEMU_FLAGS := -machine q35 -smp 4 -m 128M -cdrom
+QEMU_FLAGS := -machine q35 -smp 4 -m 512M -serial file:serial.log -cdrom
 QEMU_HEADLESS_FLAGS := -nographic -serial null -serial file:report.log -device isa-debug-exit,iobase=0xf4,iosize=0x04
 
 # ==============================

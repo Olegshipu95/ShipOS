@@ -104,7 +104,10 @@ static void demo_thread_func(void *arg)
     
     LOG_SERIAL("THREAD", "Thread %d finished", thread_id);
     
-    // Thread done - just loop (in real OS would exit)
+    // Thread done - exit properly
+    sched_exit();
+    
+    // Should never reach here
     while (1) {
         asm volatile("hlt");
     }
@@ -221,9 +224,13 @@ int kernel_main()
     LOG(" CR3: %x", rcr3());
     LOG("Kernel end at address: %d", KEND);
     LOG("Kernel size: %d", KEND - KSTART);
+    LOG_SERIAL("MEMORY", "Calling kinit(%p, %p)", KEND, INIT_PHYSTOP);
     kinit(KEND, INIT_PHYSTOP);
+    LOG_SERIAL("MEMORY", "kinit complete");
 
+    LOG_SERIAL("MEMORY", "Calling kvminit(%p, %p)", INIT_PHYSTOP, PHYSTOP);
     pagetable_t kernel_table = kvminit(INIT_PHYSTOP, PHYSTOP);
+    LOG_SERIAL("MEMORY", "kvminit complete, kernel_table=%p", kernel_table);
     LOG("kernel table: %p", kernel_table);
 
     // Initialize ACPI and map APIC regions

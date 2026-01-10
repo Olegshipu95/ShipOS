@@ -159,9 +159,16 @@ void ioapic_set_entry(uint8_t irq, uint8_t vector, uint8_t dest, uint32_t flags)
     uint32_t low = vector | flags;
     uint32_t high = ((uint32_t) dest) << 24;
 
+    LOG_SERIAL("IOAPIC", "Setting entry %d: low=0x%x high=0x%x", idx, low, high);
+
     // Write to the redirection table entry (each entry is 64 bits: low 32, high 32)
     ioapic_write(ioapic->regs, IOAPIC_REG_TABLE + 2 * idx, low);
     ioapic_write(ioapic->regs, IOAPIC_REG_TABLE + 2 * idx + 1, high);
+    
+    // Verify by reading back
+    uint32_t read_low = ioapic_read(ioapic->regs, IOAPIC_REG_TABLE + 2 * idx);
+    uint32_t read_high = ioapic_read(ioapic->regs, IOAPIC_REG_TABLE + 2 * idx + 1);
+    LOG_SERIAL("IOAPIC", "Verified entry %d: low=0x%x high=0x%x", idx, read_low, read_high);
 }
 
 /**
@@ -173,7 +180,28 @@ void ioapic_enable_irq(uint8_t irq, uint8_t vector, uint8_t dest)
     uint32_t flags = IOAPIC_DELMOD_FIXED | IOAPIC_DESTMOD_PHYSICAL |
                      IOAPIC_INTPOL_HIGH | IOAPIC_TRIGGER_EDGE;
 
+    LOG_SERIAL("IOAPIC", "Enabling IRQ %d -> vector %d, dest %d, flags 0x%x",
+               irq, vector, dest, flags);
     ioapic_set_entry(irq, vector, dest, flags);
+}
+
+/**
+ * @brief Read the current state of an IRQ in the I/O APIC
+ */
+void ioapic_debug_irq(uint8_t irq)
+{
+    struct IOAPICInfo *ioapic = ioapic_for_gsi(irq);
+    if (ioapic == NULL)
+    {
+        LOG_SERIAL("IOAPIC", "DEBUG: No I/O APIC for GSI %d", irq);
+        return;
+    }
+
+    uint8_t idx = irq - ioapic->gsi_base;
+    uint32_t low = ioapic_read(ioapic->regs, IOAPIC_REG_TABLE + 2 * idx);
+    uint32_t high = ioapic_read(ioapic->regs, IOAPIC_REG_TABLE + 2 * idx + 1);
+    LOG_SERIAL("IOAPIC", "DEBUG IRQ %d: low=0x%x high=0x%x masked=%d", 
+               irq, low, high, (low & IOAPIC_MASKED) ? 1 : 0);
 }
 
 /**

@@ -10,6 +10,7 @@
 #include "idt.h"
 #include "interrupt_handlers.h"
 #include "../lib/include/memset.h"
+#include "../lib/include/logging.h"
 #include "../pic/pic.h"
 #include "../apic/lapic.h"
 #include "../apic/ioapic.h"
@@ -117,7 +118,27 @@ void setup_idt()
 
     // Enable keyboard IRQ (IRQ1) through I/O APIC
     // Map IRQ1 to vector 33, destination is current APIC
+    LOG_SERIAL("IDT", "Enabling keyboard IRQ1 -> vector %d, dest APIC %d", 
+               APIC_KEYBOARD_VECTOR, lapic_get_id());
     ioapic_enable_irq(1, APIC_KEYBOARD_VECTOR, lapic_get_id());
+    
+    // Enable PS/2 keyboard interface
+    // Wait for keyboard controller input buffer to be empty
+    while (inb(0x64) & 0x02);
+    outb(0x64, 0xAE);  // Enable first PS/2 port (keyboard)
+    
+    // Enable keyboard interrupts in the controller
+    while (inb(0x64) & 0x02);
+    outb(0x64, 0x20);  // Read command byte
+    while (!(inb(0x64) & 0x01));
+    uint8_t config = inb(0x60);
+    config |= 0x01;    // Enable IRQ1
+    while (inb(0x64) & 0x02);
+    outb(0x64, 0x60);  // Write command byte
+    while (inb(0x64) & 0x02);
+    outb(0x60, config);
+    
+    LOG_SERIAL("IDT", "PS/2 keyboard enabled, config=0x%x", config);
 
     // Start APIC timer (10000000 initial count for periodic interrupts)
     lapic_timer_start(APIC_TIMER_VECTOR, 10000000);

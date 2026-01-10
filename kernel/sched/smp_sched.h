@@ -89,6 +89,14 @@ void sched_remove_thread(struct thread *thread);
 void sched_yield(void);
 
 /**
+ * @brief Exit the current thread
+ *
+ * Removes thread from run queue and switches to scheduler.
+ * The thread will never run again.
+ */
+void sched_exit(void);
+
+/**
  * @brief Main scheduler loop for a CPU
  *
  * Never returns. Continuously picks threads and runs them.
