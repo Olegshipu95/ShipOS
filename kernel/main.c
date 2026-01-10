@@ -273,15 +273,15 @@ int kernel_main()
     // Log per-CPU data after all CPUs are initialized
     percpu_log_cpu_info();
 
+    // Wait for all APs to initialize their schedulers
+    for (volatile int i = 0; i < 10000000; i++);
+
 #ifdef TEST
     run_tests();
     shutdown();
 #endif
 
     LOG("Entering idle loop...");
-    
-    // Wait for all APs to initialize their schedulers
-    for (volatile int i = 0; i < 10000000; i++);
     
     // Create demo threads: 2 per CPU
     create_demo_threads();

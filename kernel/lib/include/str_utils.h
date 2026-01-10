@@ -8,7 +8,7 @@
 #ifndef STR_UTILS_H
 #define STR_UTILS_H
 
-#define MAX_DIGIT_BUFFER_SIZE 68  // Enough for 64-bit binary + sign + null
+#define MAX_DIGIT_BUFFER_SIZE 255
 
 #include "x86_64.h"
 #include <stddef.h>

@@ -145,7 +145,7 @@ struct percpu
 // Global Variables
 // ============================================================================
 
-// Array of all per-CPU data structures (named 'percpus' to avoid conflict with madt.c)
+// Array of all per-CPU data structures
 extern struct percpu percpus[MAX_CPUS];
 
 // Number of CPUs detected and initialized
