@@ -32,6 +32,25 @@ BUILD_DIR := build
 x86_64_asm_sources := $(shell find x86_64 -name '*.asm')
 x86_64_asm_objects := $(patsubst x86_64/%.asm,$(BUILD_DIR)/x86_64/%.o,$(x86_64_asm_sources))
 
+# ==============================
+# Scheduler Configuration
+# ==============================
+# Shedulers: rr_thread | rr_proc | fifo
+SCHEDULER ?= rr_proc
+
+ifeq ($(SCHEDULER), rr_thread)
+    EXTRA_CFLAGS += -DSCHED_RR_THREAD
+	EXTRA_SCHEDULER_TEST_FLAG = -DSCHED_RR_THREAD
+else ifeq ($(SCHEDULER), rr_proc)
+    EXTRA_CFLAGS += -DSCHED_RR_PROC
+	EXTRA_SCHEDULER_TEST_FLAG = -DSCHED_RR_PROC
+else ifeq ($(SCHEDULER), fifo)
+	EXTRA_CFLAGS += -DSCHED_FIFO
+	EXTRA_SCHEDULER_TEST_FLAG = -DSCHED_FIFO
+else
+    $(error Unsupported SCHEDULER: $(SCHEDULER). Use 'rr_thread', 'rr_proc' or fifo)
+endif
+
 # All C files in kernel/
 kernel_c_sources := $(shell find kernel -name '*.c')
 kernel_c_objects := $(patsubst kernel/%.c,$(BUILD_DIR)/kernel/%.o,$(kernel_c_sources))
@@ -83,7 +102,7 @@ qemu: $(ISO_DIR)/kernel.iso
 
 # Run QEMU in Headless mode with debug and tests (no GUI, logs to report.log)
 test: clean
-	@$(MAKE) EXTRA_CFLAGS="-DDEBUG -DTEST" $(ISO_DIR)/kernel.iso
+	@$(MAKE) EXTRA_CFLAGS="-DDEBUG -DTEST ${EXTRA_SCHEDULER_TEST_FLAG}" $(ISO_DIR)/kernel.iso
 	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
 
 # Run QEMU in Headless mode with debug and tests (no GUI, logs to report.log)
