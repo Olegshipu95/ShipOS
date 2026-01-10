@@ -15,6 +15,7 @@
 #include "../paging/paging.h"
 #include "../memlayout.h"
 #include "../sched/percpu.h"
+#include "../idt/idt.h"
 
 // External symbols from trampoline assembly
 extern uint8_t ap_trampoline_start[];
@@ -101,6 +102,9 @@ void ap_entry(void)
         while (!(inb(0x3F8 + 5) & 0x20));
         outb(0x3F8, *p);
     }
+    
+    // Load IDT and start APIC timer on this AP
+    setup_idt_ap();
     
     // Enable interrupts on this AP
     sti();

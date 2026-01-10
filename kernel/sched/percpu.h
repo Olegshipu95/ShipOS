@@ -111,6 +111,9 @@ struct percpu {
     struct thread *current_thread;  // Currently running thread on this CPU
     struct thread *idle_thread;     // Idle thread for this CPU
     
+    // Timer interrupt counter for debugging
+    volatile uint64_t timer_ticks;  // Number of timer interrupts received
+    
     // TSS for this CPU
     struct tss64 tss;
     
@@ -270,6 +273,14 @@ void pushcli(void);
  * interrupts were enabled before the first pushcli.
  */
 void popcli(void);
+
+/**
+ * @brief Log timer tick counts for all CPUs
+ * 
+ * Prints a summary of timer interrupts received by each CPU.
+ * Useful for verifying SMP timer interrupt distribution.
+ */
+void percpu_log_timer_ticks(void);
 
 // ============================================================================
 // Convenience Macros

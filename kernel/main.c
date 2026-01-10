@@ -203,6 +203,12 @@ int kernel_main()
 #endif
 
     LOG("Entering idle loop...");
+    
+    for (volatile int i = 0; i < 50000000; i++);  // Simple delay
+    percpu_log_timer_ticks();
+
+    for (volatile int i = 0; i < 50000000; i++);  // Simple delay
+    percpu_log_timer_ticks();
 
     // scheduler();
 

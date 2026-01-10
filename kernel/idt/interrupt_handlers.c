@@ -15,6 +15,7 @@
 #include "../vga/vga.h"
 #include "../tty/tty.h"
 #include "../sched/scheduler.h"
+#include "../sched/percpu.h"
 #include "../pit/pit.h"
 
 #define F1 0x3B
@@ -53,13 +54,19 @@ __attribute__((interrupt)) void default_handler(struct interrupt_frame* frame) {
 }
 
 __attribute__((interrupt)) void timer_interrupt(struct interrupt_frame* frame) {
-//     print("clock\n");
-
-    send_values_to_sched();
+    // Increment per-CPU timer tick counter
+    mycpu()->timer_ticks++;
+    
+    // Send EOI first to acknowledge the interrupt
     lapic_eoi();
 
-    // Only do context switching if scheduler is active (current_thread is set)
+    // LOG_SERIAL("TIMER", "CPU %d TIMER FIRES", mycpu()->cpu_index);
+
+    // Only do scheduling if this CPU has an active thread
+    // APs without threads assigned will just return
     if (current_cpu.current_thread != 0) {
+        send_values_to_sched();
+        
         struct thread *next_thread = get_next_thread();
         struct thread *prev_thread = current_cpu.current_thread;
         current_cpu.current_thread = next_thread;

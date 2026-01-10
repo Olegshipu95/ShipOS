@@ -338,6 +338,18 @@ void percpu_log_cpu_info(void) {
     LOG_SERIAL("PERCPU", "============================");
 }
 
+void percpu_log_timer_ticks(void) {
+    LOG_SERIAL("PERCPU", "=== Timer Interrupt Counts ===");
+    for (uint32_t i = 0; i < ncpu; i++) {
+        struct percpu *cpu = &percpus[i];
+        LOG_SERIAL("PERCPU", "CPU %d (APIC %d): %llu ticks",
+                   cpu->cpu_index,
+                   cpu->apic_id,
+                   cpu->timer_ticks);
+    }
+    LOG_SERIAL("PERCPU", "==============================");
+}
+
 // ============================================================================
 // Interrupt State Management (moved from spinlock.c)
 // ============================================================================

@@ -47,5 +47,13 @@ struct InterruptDescriptor64 {
  */
 void setup_idt();
 
+/**
+ * @brief Load the IDT on an Application Processor
+ * 
+ * APs share the same IDT as the BSP, but each must load it via LIDT.
+ * Also starts the local APIC timer for scheduling.
+ */
+void setup_idt_ap();
+
 #endif //UNTITLED_OS_IDT_H
 

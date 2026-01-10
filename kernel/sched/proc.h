@@ -25,21 +25,15 @@ struct proc {
     struct thread_node *threads;
 };
 
-// Legacy struct cpu for backward compatibility
-// New code should use struct percpu from percpu.h
-struct cpu {
-    int ncli;                        // Depth of pushcli nesting.
-    int intena;                      // Were interrupts enabled before pushcli?
-    struct thread *current_thread;   // The thread running on this cpu or null
-};
-
 struct proc_node {
     struct proc *data;
     struct proc_node *next;
     struct proc_node *prev;
 };
 
-#define current_cpu (*((struct cpu *)mycpu()))
+// current_cpu provides access to the current CPU's per-CPU data
+// Uses struct percpu from percpu.h
+#define current_cpu (*mycpu())
 
 extern struct proc_node *proc_list;
 

@@ -20,6 +20,9 @@
 #define APIC_TIMER_VECTOR    32  // Timer interrupt
 #define APIC_KEYBOARD_VECTOR 33  // Keyboard interrupt (IRQ1)
 
+// Shared IDT - used by all CPUs
+struct InterruptDescriptor64 shared_idt[MAX_INTERRUPTS];
+
 /**
  * @brief Fill a single IDT entry with the handler information
  * 
@@ -43,15 +46,16 @@ void make_interrupt(struct InterruptDescriptor64* idt, int array_index, uintptr_
  * (timer, keyboard, CPU exceptions), and enables interrupts.
  */
 void setup_idt(){
-    static struct InterruptDescriptor64 idt[MAX_INTERRUPTS]; // Array for 256 IDT entries (must be static!)
+    // Use the shared IDT array
+    struct InterruptDescriptor64 *idt = shared_idt;
 
     // Configure IDTR (IDT register)
     struct IDTR idtr;
     idtr.limit = sizeof(struct InterruptDescriptor64) * MAX_INTERRUPTS - 1;
-    idtr.base = (uint64_t)&idt;
+    idtr.base = (uint64_t)idt;
 
     // Clear the IDT
-    memset(&idt, 0, sizeof(struct InterruptDescriptor64) * MAX_INTERRUPTS);
+    memset(idt, 0, sizeof(struct InterruptDescriptor64) * MAX_INTERRUPTS);
 
     // Set all entries to default_handler initially
     for (int i = 0; i < MAX_INTERRUPTS; ++i) {
@@ -116,4 +120,27 @@ void setup_idt(){
 
     // Enable interrupts
     asm("sti");
+}
+
+/**
+ * @brief Load the IDT on an Application Processor
+ * 
+ * APs share the same IDT as the BSP. This function loads the IDTR
+ * and starts the local APIC timer for this AP.
+ */
+void setup_idt_ap() {
+    // IDT is shared - we need to reference the same IDT as BSP
+    extern struct InterruptDescriptor64 shared_idt[MAX_INTERRUPTS];
+    
+    // Configure IDTR to point to the shared IDT
+    struct IDTR idtr;
+    idtr.limit = sizeof(struct InterruptDescriptor64) * MAX_INTERRUPTS - 1;
+    idtr.base = (uint64_t)&shared_idt;
+    
+    // Load IDTR register
+    asm volatile ("lidt %0" : : "m"(idtr));
+    
+    // Initialize this AP's LAPIC (already done in ap_entry, but ensure it)
+    // Start APIC timer for this AP
+    lapic_timer_start(APIC_TIMER_VECTOR, 10000000);
 }
