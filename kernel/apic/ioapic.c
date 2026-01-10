@@ -12,7 +12,7 @@
 
 #define MAX_IOAPICS 8
 
-// I/O APIC register access offsets
+// I/O APIC register access offsets (in bytes)
 #define IOAPIC_REGSEL   0x00  // Register Select (index)
 #define IOAPIC_REGWIN   0x10  // Register Window (data)
 
@@ -24,8 +24,9 @@ static uint32_t ioapic_count = 0;
  */
 static void ioapic_write(volatile uint32_t *ioapic_base, uint8_t reg, uint32_t value)
 {
-    ioapic_base[IOAPIC_REGSEL] = reg;
-    ioapic_base[IOAPIC_REGWIN] = value;
+    volatile uint8_t *base = (volatile uint8_t *)ioapic_base;
+    *((volatile uint32_t *)(base + IOAPIC_REGSEL)) = reg;
+    *((volatile uint32_t *)(base + IOAPIC_REGWIN)) = value;
 }
 
 /**
@@ -33,8 +34,9 @@ static void ioapic_write(volatile uint32_t *ioapic_base, uint8_t reg, uint32_t v
  */
 static uint32_t ioapic_read(volatile uint32_t *ioapic_base, uint8_t reg)
 {
-    ioapic_base[IOAPIC_REGSEL] = reg;
-    return ioapic_base[IOAPIC_REGWIN];
+    volatile uint8_t *base = (volatile uint8_t *)ioapic_base;
+    *((volatile uint32_t *)(base + IOAPIC_REGSEL)) = reg;
+    return *((volatile uint32_t *)(base + IOAPIC_REGWIN));
 }
 
 /**
@@ -105,7 +107,10 @@ void ioapic_init(void)
 
             // Read the version register to get max redirection entries
             uint32_t ver = ioapic_read(ioapics[ioapic_count].regs, IOAPIC_REG_VER);
-            ioapics[ioapic_count].max_redirect = (ver >> 16) & 0xFF;
+            uint8_t max_entries = (ver >> 16) & 0xFF;
+            
+            // Set I/O APIC entries
+            ioapics[ioapic_count].max_redirect = max_entries;
 
             LOG_SERIAL("IOAPIC", "Found I/O APIC %d at 0x%x, GSI base %d, max entries %d",
                       ioapics[ioapic_count].id,

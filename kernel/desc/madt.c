@@ -11,12 +11,15 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "../lib/include/logging.h"
+#include "../lib/include/memset.h"
+#include "../kalloc/kalloc.h"
 
 // Static storage for MADT and CPU info
 static struct MADT_t *madt_ptr = NULL;
 static uint32_t lapic_address = 0;
 static struct CPUInfo cpus[MAX_CPUS];
 static uint32_t cpu_count = 0;
+static struct IOAPICEntry ioapics[MAX_IOAPICS];
 static uint32_t ioapic_count = 0;
 
 struct MADT_t *get_madt(void)
@@ -41,6 +44,20 @@ struct CPUInfo *get_cpu_info(uint32_t index)
         return NULL;
     }
     return &cpus[index];
+}
+
+uint32_t get_ioapic_count(void)
+{
+    return ioapic_count;
+}
+
+struct IOAPICEntry *get_ioapic_info(uint32_t index)
+{
+    if (index >= ioapic_count)
+    {
+        return NULL;
+    }
+    return &ioapics[index];
 }
 
 static void parse_madt_entries(struct MADT_t *madt)
@@ -82,7 +99,18 @@ static void parse_madt_entries(struct MADT_t *madt)
 
         case MADT_ENTRY_IOAPIC:
         {
-            ioapic_count++;
+            struct MADTEntryIOAPIC *ioapic_entry = (struct MADTEntryIOAPIC *) entry;
+
+            if (ioapic_count < MAX_IOAPICS)
+            {
+                ioapics[ioapic_count].id = ioapic_entry->IOAPICID;
+                ioapics[ioapic_count].address = ioapic_entry->IOAPICAddr;
+                ioapics[ioapic_count].gsi_base = ioapic_entry->GSIBase;
+                LOG_SERIAL("D", "1 %d", ioapic_entry->IOAPICID);
+                LOG_SERIAL("D", "2 %x", ioapic_entry->IOAPICAddr);
+                LOG_SERIAL("D", "3 %x", ioapic_entry->GSIBase);
+                ioapic_count++;
+            }
             break;
         }
 
@@ -159,6 +187,35 @@ void log_cpu_info(void)
             enabled_count++;
         }
     }
-    LOG_SERIAL("CPU", "Detected %d CPUs (%d enabled), LAPIC at 0x%x", 
+    LOG_SERIAL("CPU", "Detected %d CPUs (%d enabled), LAPIC at 0x%x",
                cpu_count, enabled_count, lapic_address);
+}
+
+void madt_copy_to_safe_memory(void)
+{
+    if (madt_ptr == NULL)
+    {
+        return;
+    }
+
+    struct MADT_t *old_madt = madt_ptr;
+    uint32_t table_size = old_madt->header.Length;
+
+    // Allocate new memory from kalloc (safe region)
+    void *new_madt = kalloc();
+    if (new_madt == NULL)
+    {
+        LOG_SERIAL("MADT", "Failed to allocate memory for MADT copy");
+        return;
+    }
+
+    // Copy the entire MADT table
+    memset(new_madt, 0, 4096);
+    for (uint32_t i = 0; i < table_size; i++)
+    {
+        ((uint8_t *)new_madt)[i] = ((uint8_t *)old_madt)[i];
+    }
+
+    madt_ptr = (struct MADT_t *)new_madt;
+    LOG_SERIAL("MADT", "Copied to safe memory at %p (size=%d bytes)", new_madt, table_size);
 }

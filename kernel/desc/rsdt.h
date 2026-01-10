@@ -48,4 +48,11 @@ struct ACPISDTHeader *rsdt_find_table(const char *signature);
  */
 uint32_t rsdt_get_entry_count();
 
+/**
+ * @brief Copy RSDT table to safe memory allocated with kalloc
+ * 
+ * Call this before freeing the memory region where ACPI tables reside.
+ */
+void rsdt_copy_to_safe_memory();
+
 #endif

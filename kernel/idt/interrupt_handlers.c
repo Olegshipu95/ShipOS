@@ -10,6 +10,7 @@
 #include "interrupt_handlers.h"
 
 #include "../lib/include/x86_64.h"
+#include "../lib/include/logging.h"
 #include "../apic/lapic.h"
 #include "../vga/vga.h"
 #include "../tty/tty.h"

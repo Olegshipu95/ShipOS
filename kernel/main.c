@@ -168,6 +168,11 @@ int kernel_main()
     // Initialize ACPI and map APIC regions
     init_acpi_and_map_apic(kernel_table);
 
+    // Copy ACPI tables to safe memory before freeing upper memory region
+    rsdt_copy_to_safe_memory();
+    madt_copy_to_safe_memory();
+
+    // Free upper memory region (INIT_PHYSTOP to PHYSTOP)
     kinit(INIT_PHYSTOP, PHYSTOP);
     LOG("Successfully allocated physical memory up to %p", PHYSTOP);
     LOG_SERIAL("MEMORY", "Physical memory initialized");
@@ -187,7 +192,7 @@ int kernel_main()
 
     LOG("Entering idle loop...");
 
-    scheduler();
+    // scheduler();
 
     while (1)
     {

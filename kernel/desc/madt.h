@@ -28,6 +28,7 @@
 #define LAPIC_FLAG_ONLINE_CAPABLE   (1 << 1)  // Processor can be enabled
 
 #define MAX_CPUS 64
+#define MAX_IOAPICS 8
 
 struct MADT_t
 {
@@ -109,6 +110,14 @@ struct CPUInfo
     bool     enabled;           // Is this CPU enabled?
 };
 
+// I/O APIC information structure (from MADT parsing)
+struct IOAPICEntry
+{
+    uint8_t  id;                // I/O APIC ID
+    uint32_t address;           // Physical address
+    uint32_t gsi_base;          // Global System Interrupt base
+};
+
 void init_madt(void);
 
 struct MADT_t *get_madt(void);
@@ -119,6 +128,17 @@ uint32_t get_cpu_count(void);
 
 struct CPUInfo *get_cpu_info(uint32_t index);
 
+uint32_t get_ioapic_count(void);
+
+struct IOAPICEntry *get_ioapic_info(uint32_t index);
+
 void log_cpu_info(void);
+
+/**
+ * @brief Copy MADT table to safe memory allocated with kalloc
+ * 
+ * Call this before freeing the memory region where ACPI tables reside.
+ */
+void madt_copy_to_safe_memory(void);
 
 #endif

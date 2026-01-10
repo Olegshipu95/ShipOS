@@ -2,7 +2,9 @@
 
 #include "../lib/include/logging.h"
 #include "../lib/include/memcmp.h"
+#include "../lib/include/memset.h"
 #include "../paging/paging.h"
+#include "../kalloc/kalloc.h"
 #include "../memlayout.h"
 
 static void *rsdt_root_ptr = NULL;
@@ -151,4 +153,33 @@ struct ACPISDTHeader *rsdt_find_table(const char *signature)
 
     LOG_SERIAL("RSDT", "Table '%.4s' not found", signature);
     return NULL;
+}
+
+void rsdt_copy_to_safe_memory()
+{
+    if (rsdt_root_ptr == NULL)
+    {
+        return;
+    }
+
+    struct RSDT_t *old_rsdt = (struct RSDT_t *)rsdt_root_ptr;
+    uint32_t table_size = old_rsdt->header.Length;
+
+    // Allocate new memory from kalloc (safe region)
+    void *new_rsdt = kalloc();
+    if (new_rsdt == NULL)
+    {
+        LOG_SERIAL("RSDT", "Failed to allocate memory for RSDT copy");
+        return;
+    }
+
+    // Copy the entire RSDT table
+    memset(new_rsdt, 0, 4096);
+    for (uint32_t i = 0; i < table_size; i++)
+    {
+        ((uint8_t *)new_rsdt)[i] = ((uint8_t *)old_rsdt)[i];
+    }
+
+    rsdt_root_ptr = new_rsdt;
+    LOG_SERIAL("RSDT", "Copied to safe memory at %p (size=%d bytes)", new_rsdt, table_size);
 }
