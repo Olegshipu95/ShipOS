@@ -106,9 +106,6 @@ static void parse_madt_entries(struct MADT_t *madt)
                 ioapics[ioapic_count].id = ioapic_entry->IOAPICID;
                 ioapics[ioapic_count].address = ioapic_entry->IOAPICAddr;
                 ioapics[ioapic_count].gsi_base = ioapic_entry->GSIBase;
-                LOG_SERIAL("D", "1 %d", ioapic_entry->IOAPICID);
-                LOG_SERIAL("D", "2 %x", ioapic_entry->IOAPICAddr);
-                LOG_SERIAL("D", "3 %x", ioapic_entry->GSIBase);
                 ioapic_count++;
             }
             break;
@@ -213,9 +210,9 @@ void madt_copy_to_safe_memory(void)
     memset(new_madt, 0, 4096);
     for (uint32_t i = 0; i < table_size; i++)
     {
-        ((uint8_t *)new_madt)[i] = ((uint8_t *)old_madt)[i];
+        ((uint8_t *) new_madt)[i] = ((uint8_t *) old_madt)[i];
     }
 
-    madt_ptr = (struct MADT_t *)new_madt;
+    madt_ptr = (struct MADT_t *) new_madt;
     LOG_SERIAL("MADT", "Copied to safe memory at %p (size=%d bytes)", new_madt, table_size);
 }

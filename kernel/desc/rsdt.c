@@ -162,7 +162,7 @@ void rsdt_copy_to_safe_memory()
         return;
     }
 
-    struct RSDT_t *old_rsdt = (struct RSDT_t *)rsdt_root_ptr;
+    struct RSDT_t *old_rsdt = (struct RSDT_t *) rsdt_root_ptr;
     uint32_t table_size = old_rsdt->header.Length;
 
     // Allocate new memory from kalloc (safe region)
@@ -177,7 +177,7 @@ void rsdt_copy_to_safe_memory()
     memset(new_rsdt, 0, 4096);
     for (uint32_t i = 0; i < table_size; i++)
     {
-        ((uint8_t *)new_rsdt)[i] = ((uint8_t *)old_rsdt)[i];
+        ((uint8_t *) new_rsdt)[i] = ((uint8_t *) old_rsdt)[i];
     }
 
     rsdt_root_ptr = new_rsdt;

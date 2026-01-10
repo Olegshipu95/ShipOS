@@ -19,10 +19,10 @@
 
 /**
  * @brief Initialize and start all Application Processors
- * 
+ *
  * Copies trampoline code to low memory, sends INIT-SIPI-SIPI sequence
  * to wake up each AP, and waits for them to initialize.
- * 
+ *
  * @param page_table Page table to use for APs
  * @return Number of APs successfully started
  */
@@ -30,7 +30,7 @@ uint32_t start_all_aps(void *page_table);
 
 /**
  * @brief Entry point for Application Processors
- * 
+ *
  * This function is called by each AP after it boots up.
  * It initializes the AP's Local APIC and other per-CPU structures.
  */

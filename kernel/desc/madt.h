@@ -12,20 +12,20 @@
 #include <stdbool.h>
 
 // MADT Entry Types
-#define MADT_ENTRY_LAPIC            0   // Processor Local APIC
-#define MADT_ENTRY_IOAPIC           1   // I/O APIC
-#define MADT_ENTRY_ISO              2   // Interrupt Source Override
-#define MADT_ENTRY_NMI_SOURCE       3   // NMI Source
-#define MADT_ENTRY_LAPIC_NMI        4   // Local APIC NMI
-#define MADT_ENTRY_LAPIC_OVERRIDE   5   // Local APIC Address Override
-#define MADT_ENTRY_X2APIC           9   // Processor Local x2APIC
+#define MADT_ENTRY_LAPIC 0          // Processor Local APIC
+#define MADT_ENTRY_IOAPIC 1         // I/O APIC
+#define MADT_ENTRY_ISO 2            // Interrupt Source Override
+#define MADT_ENTRY_NMI_SOURCE 3     // NMI Source
+#define MADT_ENTRY_LAPIC_NMI 4      // Local APIC NMI
+#define MADT_ENTRY_LAPIC_OVERRIDE 5 // Local APIC Address Override
+#define MADT_ENTRY_X2APIC 9         // Processor Local x2APIC
 
 // MADT Flags
-#define MADT_FLAG_PCAT_COMPAT       (1 << 0)  // PC-AT compatible dual 8259 setup
+#define MADT_FLAG_PCAT_COMPAT (1 << 0) // PC-AT compatible dual 8259 setup
 
 // Local APIC flags
-#define LAPIC_FLAG_ENABLED          (1 << 0)  // Processor is usable
-#define LAPIC_FLAG_ONLINE_CAPABLE   (1 << 1)  // Processor can be enabled
+#define LAPIC_FLAG_ENABLED (1 << 0)        // Processor is usable
+#define LAPIC_FLAG_ONLINE_CAPABLE (1 << 1) // Processor can be enabled
 
 #define MAX_CPUS 64
 #define MAX_IOAPICS 8
@@ -33,8 +33,8 @@
 struct MADT_t
 {
     struct ACPISDTHeader header;
-    uint32_t LAPICAddr;     // Physical address of Local APIC
-    uint32_t Flags;         // MADT flags
+    uint32_t LAPICAddr; // Physical address of Local APIC
+    uint32_t Flags;     // MADT flags
     // Variable length array of entries follows
 } __attribute__((packed));
 
@@ -48,9 +48,9 @@ struct MADTEntryHeader
 struct MADTEntryLAPIC
 {
     struct MADTEntryHeader header;
-    uint8_t ACPIProcessorID;    // ACPI Processor UID
-    uint8_t APICID;             // Local APIC ID
-    uint32_t Flags;             // LAPIC flags
+    uint8_t ACPIProcessorID; // ACPI Processor UID
+    uint8_t APICID;          // Local APIC ID
+    uint32_t Flags;          // LAPIC flags
 } __attribute__((packed));
 
 // Type 1: I/O APIC
@@ -59,8 +59,8 @@ struct MADTEntryIOAPIC
     struct MADTEntryHeader header;
     uint8_t IOAPICID;
     uint8_t Reserved;
-    uint32_t IOAPICAddr;        // Physical address of I/O APIC
-    uint32_t GSIBase;           // Global System Interrupt base
+    uint32_t IOAPICAddr; // Physical address of I/O APIC
+    uint32_t GSIBase;    // Global System Interrupt base
 } __attribute__((packed));
 
 // Type 2: Interrupt Source Override
@@ -69,7 +69,7 @@ struct MADTEntryISO
     struct MADTEntryHeader header;
     uint8_t BusSource;
     uint8_t IRQSource;
-    uint32_t GSI;               // Global System Interrupt
+    uint32_t GSI; // Global System Interrupt
     uint16_t Flags;
 } __attribute__((packed));
 
@@ -77,9 +77,9 @@ struct MADTEntryISO
 struct MADTEntryLAPICNMI
 {
     struct MADTEntryHeader header;
-    uint8_t ACPIProcessorID;    // 0xFF means all processors
+    uint8_t ACPIProcessorID; // 0xFF means all processors
     uint16_t Flags;
-    uint8_t LINT;               // LINT# (0 or 1)
+    uint8_t LINT; // LINT# (0 or 1)
 } __attribute__((packed));
 
 // Type 5: Local APIC Address Override (64-bit)
@@ -87,7 +87,7 @@ struct MADTEntryLAPICOverride
 {
     struct MADTEntryHeader header;
     uint16_t Reserved;
-    uint64_t LAPICAddr;         // 64-bit physical address of Local APIC
+    uint64_t LAPICAddr; // 64-bit physical address of Local APIC
 } __attribute__((packed));
 
 // Type 9: Processor Local x2APIC
@@ -103,19 +103,19 @@ struct MADTEntryX2APIC
 // CPU information structure
 struct CPUInfo
 {
-    uint8_t  apic_id;           // Local APIC ID
-    uint8_t  acpi_id;           // ACPI Processor ID
-    uint32_t flags;             // LAPIC flags
-    bool     is_bsp;            // Is this the bootstrap processor?
-    bool     enabled;           // Is this CPU enabled?
+    uint8_t apic_id; // Local APIC ID
+    uint8_t acpi_id; // ACPI Processor ID
+    uint32_t flags;  // LAPIC flags
+    bool is_bsp;     // Is this the bootstrap processor?
+    bool enabled;    // Is this CPU enabled?
 };
 
 // I/O APIC information structure (from MADT parsing)
 struct IOAPICEntry
 {
-    uint8_t  id;                // I/O APIC ID
-    uint32_t address;           // Physical address
-    uint32_t gsi_base;          // Global System Interrupt base
+    uint8_t id;        // I/O APIC ID
+    uint32_t address;  // Physical address
+    uint32_t gsi_base; // Global System Interrupt base
 };
 
 void init_madt(void);
@@ -136,7 +136,7 @@ void log_cpu_info(void);
 
 /**
  * @brief Copy MADT table to safe memory allocated with kalloc
- * 
+ *
  * Call this before freeing the memory region where ACPI tables reside.
  */
 void madt_copy_to_safe_memory(void);

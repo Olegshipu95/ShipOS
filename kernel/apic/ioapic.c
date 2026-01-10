@@ -13,8 +13,8 @@
 #define MAX_IOAPICS 8
 
 // I/O APIC register access offsets (in bytes)
-#define IOAPIC_REGSEL   0x00  // Register Select (index)
-#define IOAPIC_REGWIN   0x10  // Register Window (data)
+#define IOAPIC_REGSEL 0x00 // Register Select (index)
+#define IOAPIC_REGWIN 0x10 // Register Window (data)
 
 static struct IOAPICInfo ioapics[MAX_IOAPICS];
 static uint32_t ioapic_count = 0;
@@ -24,9 +24,9 @@ static uint32_t ioapic_count = 0;
  */
 static void ioapic_write(volatile uint32_t *ioapic_base, uint8_t reg, uint32_t value)
 {
-    volatile uint8_t *base = (volatile uint8_t *)ioapic_base;
-    *((volatile uint32_t *)(base + IOAPIC_REGSEL)) = reg;
-    *((volatile uint32_t *)(base + IOAPIC_REGWIN)) = value;
+    volatile uint8_t *base = (volatile uint8_t *) ioapic_base;
+    *((volatile uint32_t *) (base + IOAPIC_REGSEL)) = reg;
+    *((volatile uint32_t *) (base + IOAPIC_REGWIN)) = value;
 }
 
 /**
@@ -34,9 +34,9 @@ static void ioapic_write(volatile uint32_t *ioapic_base, uint8_t reg, uint32_t v
  */
 static uint32_t ioapic_read(volatile uint32_t *ioapic_base, uint8_t reg)
 {
-    volatile uint8_t *base = (volatile uint8_t *)ioapic_base;
-    *((volatile uint32_t *)(base + IOAPIC_REGSEL)) = reg;
-    return *((volatile uint32_t *)(base + IOAPIC_REGWIN));
+    volatile uint8_t *base = (volatile uint8_t *) ioapic_base;
+    *((volatile uint32_t *) (base + IOAPIC_REGSEL)) = reg;
+    return *((volatile uint32_t *) (base + IOAPIC_REGWIN));
 }
 
 /**
@@ -84,39 +84,39 @@ void ioapic_init(void)
     }
 
     // Parse MADT entries to find I/O APICs
-    uint8_t *entry_ptr = (uint8_t *)madt + sizeof(struct MADT_t);
-    uint8_t *end_ptr = (uint8_t *)madt + madt->header.Length;
+    uint8_t *entry_ptr = (uint8_t *) madt + sizeof(struct MADT_t);
+    uint8_t *end_ptr = (uint8_t *) madt + madt->header.Length;
 
     ioapic_count = 0;
 
     while (entry_ptr < end_ptr && ioapic_count < MAX_IOAPICS)
     {
-        struct MADTEntryHeader *header = (struct MADTEntryHeader *)entry_ptr;
+        struct MADTEntryHeader *header = (struct MADTEntryHeader *) entry_ptr;
 
         if (header->Type == MADT_ENTRY_IOAPIC)
         {
-            struct MADTEntryIOAPIC *entry = (struct MADTEntryIOAPIC *)entry_ptr;
-            
+            struct MADTEntryIOAPIC *entry = (struct MADTEntryIOAPIC *) entry_ptr;
+
             // Store I/O APIC information
             ioapics[ioapic_count].id = entry->IOAPICID;
             ioapics[ioapic_count].address = entry->IOAPICAddr;
             ioapics[ioapic_count].gsi_base = entry->GSIBase;
-            
+
             // Map the I/O APIC registers (identity mapping assumed for now)
-            ioapics[ioapic_count].regs = (volatile uint32_t *)(uintptr_t)entry->IOAPICAddr;
+            ioapics[ioapic_count].regs = (volatile uint32_t *) (uintptr_t) entry->IOAPICAddr;
 
             // Read the version register to get max redirection entries
             uint32_t ver = ioapic_read(ioapics[ioapic_count].regs, IOAPIC_REG_VER);
             uint8_t max_entries = (ver >> 16) & 0xFF;
-            
+
             // Set I/O APIC entries
             ioapics[ioapic_count].max_redirect = max_entries;
 
             LOG_SERIAL("IOAPIC", "Found I/O APIC %d at 0x%x, GSI base %d, max entries %d",
-                      ioapics[ioapic_count].id,
-                      ioapics[ioapic_count].address,
-                      ioapics[ioapic_count].gsi_base,
-                      ioapics[ioapic_count].max_redirect);
+                       ioapics[ioapic_count].id,
+                       ioapics[ioapic_count].address,
+                       ioapics[ioapic_count].gsi_base,
+                       ioapics[ioapic_count].max_redirect);
 
             ioapic_count++;
         }
@@ -157,7 +157,7 @@ void ioapic_set_entry(uint8_t irq, uint8_t vector, uint8_t dest, uint32_t flags)
 
     uint8_t idx = irq - ioapic->gsi_base;
     uint32_t low = vector | flags;
-    uint32_t high = ((uint32_t)dest) << 24;
+    uint32_t high = ((uint32_t) dest) << 24;
 
     // Write to the redirection table entry (each entry is 64 bits: low 32, high 32)
     ioapic_write(ioapic->regs, IOAPIC_REG_TABLE + 2 * idx, low);
@@ -170,9 +170,9 @@ void ioapic_set_entry(uint8_t irq, uint8_t vector, uint8_t dest, uint32_t flags)
 void ioapic_enable_irq(uint8_t irq, uint8_t vector, uint8_t dest)
 {
     // Default flags: Fixed delivery, physical destination, active high, edge triggered, not masked
-    uint32_t flags = IOAPIC_DELMOD_FIXED | IOAPIC_DESTMOD_PHYSICAL | 
+    uint32_t flags = IOAPIC_DELMOD_FIXED | IOAPIC_DESTMOD_PHYSICAL |
                      IOAPIC_INTPOL_HIGH | IOAPIC_TRIGGER_EDGE;
-    
+
     ioapic_set_entry(irq, vector, dest, flags);
 }
 
@@ -188,7 +188,7 @@ void ioapic_disable_irq(uint8_t irq)
     }
 
     uint8_t idx = irq - ioapic->gsi_base;
-    
+
     // Read current entry and set the mask bit
     uint32_t low = ioapic_read(ioapic->regs, IOAPIC_REG_TABLE + 2 * idx);
     low |= IOAPIC_MASKED;

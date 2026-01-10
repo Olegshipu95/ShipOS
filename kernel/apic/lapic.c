@@ -19,7 +19,8 @@ static volatile uint32_t *lapic = NULL;
  */
 void lapic_write(uint32_t reg, uint32_t value)
 {
-    if (lapic == NULL) return;
+    if (lapic == NULL)
+        return;
     lapic[reg >> 2] = value;
 }
 
@@ -28,7 +29,8 @@ void lapic_write(uint32_t reg, uint32_t value)
  */
 uint32_t lapic_read(uint32_t reg)
 {
-    if (lapic == NULL) return 0;
+    if (lapic == NULL)
+        return 0;
     return lapic[reg >> 2];
 }
 
@@ -45,8 +47,9 @@ bool lapic_is_available(void)
  */
 uint8_t lapic_get_id(void)
 {
-    if (lapic == NULL) return 0;
-    return (uint8_t)(lapic_read(LAPIC_ID) >> 24);
+    if (lapic == NULL)
+        return 0;
+    return (uint8_t) (lapic_read(LAPIC_ID) >> 24);
 }
 
 /**
@@ -56,7 +59,7 @@ void lapic_init(void)
 {
     // Get LAPIC base address from MADT
     uint32_t lapic_phys = get_lapic_address();
-    
+
     if (lapic_phys == 0)
     {
         LOG_SERIAL("LAPIC", "ERROR: No LAPIC address found in MADT");
@@ -65,7 +68,7 @@ void lapic_init(void)
 
     // For now, directly map the physical address (identity mapping assumed)
     // In a more complete system, you'd use proper virtual memory mapping
-    lapic = (volatile uint32_t *)(uintptr_t)lapic_phys;
+    lapic = (volatile uint32_t *) (uintptr_t) lapic_phys;
 
     LOG_SERIAL("LAPIC", "Physical address: 0x%x", lapic_phys);
 
@@ -115,7 +118,8 @@ void lapic_init(void)
  */
 void lapic_eoi(void)
 {
-    if (lapic == NULL) return;
+    if (lapic == NULL)
+        return;
     lapic_write(LAPIC_EOI, 0);
 }
 
@@ -124,7 +128,8 @@ void lapic_eoi(void)
  */
 void lapic_timer_start(uint8_t vector, uint32_t initial_count)
 {
-    if (lapic == NULL) return;
+    if (lapic == NULL)
+        return;
 
     // Set the divide configuration to divide by 1
     lapic_write(LAPIC_TIMER_DCR, LAPIC_TIMER_DIV_16);
@@ -143,11 +148,12 @@ void lapic_timer_start(uint8_t vector, uint32_t initial_count)
  */
 void lapic_timer_stop(void)
 {
-    if (lapic == NULL) return;
+    if (lapic == NULL)
+        return;
 
     // Mask the timer interrupt
     lapic_write(LAPIC_TIMER, LAPIC_TIMER_MASKED);
-    
+
     // Set initial count to 0 to stop the timer
     lapic_write(LAPIC_TIMER_ICR, 0);
 }
@@ -169,14 +175,15 @@ static void lapic_ipi_wait(void)
  */
 void lapic_send_ipi(uint8_t apic_id, uint32_t vector)
 {
-    if (lapic == NULL) return;
+    if (lapic == NULL)
+        return;
 
     // Write destination APIC ID to high part of ICR
-    lapic_write(LAPIC_ICRHI, ((uint32_t)apic_id) << 24);
-    
+    lapic_write(LAPIC_ICRHI, ((uint32_t) apic_id) << 24);
+
     // Write vector and flags to low part of ICR
     lapic_write(LAPIC_ICRLO, vector);
-    
+
     // Wait for delivery
     lapic_ipi_wait();
 }
@@ -186,17 +193,18 @@ void lapic_send_ipi(uint8_t apic_id, uint32_t vector)
  */
 void lapic_send_init(uint8_t apic_id)
 {
-    if (lapic == NULL) return;
+    if (lapic == NULL)
+        return;
 
     // Write destination APIC ID
-    lapic_write(LAPIC_ICRHI, ((uint32_t)apic_id) << 24);
-    
+    lapic_write(LAPIC_ICRHI, ((uint32_t) apic_id) << 24);
+
     // Send INIT IPI (level-triggered, assert)
     lapic_write(LAPIC_ICRLO, LAPIC_ICR_INIT | LAPIC_ICR_LEVEL | LAPIC_ICR_ASSERT);
     lapic_ipi_wait();
-    
+
     // Deassert INIT
-    lapic_write(LAPIC_ICRHI, ((uint32_t)apic_id) << 24);
+    lapic_write(LAPIC_ICRHI, ((uint32_t) apic_id) << 24);
     lapic_write(LAPIC_ICRLO, LAPIC_ICR_INIT | LAPIC_ICR_LEVEL | LAPIC_ICR_DEASSERT);
     lapic_ipi_wait();
 }
@@ -206,11 +214,12 @@ void lapic_send_init(uint8_t apic_id)
  */
 void lapic_send_sipi(uint8_t apic_id, uint8_t vector)
 {
-    if (lapic == NULL) return;
+    if (lapic == NULL)
+        return;
 
     // Write destination APIC ID
-    lapic_write(LAPIC_ICRHI, ((uint32_t)apic_id) << 24);
-    
+    lapic_write(LAPIC_ICRHI, ((uint32_t) apic_id) << 24);
+
     // Send SIPI with startup vector (page number)
     lapic_write(LAPIC_ICRLO, LAPIC_ICR_STARTUP | vector);
     lapic_ipi_wait();

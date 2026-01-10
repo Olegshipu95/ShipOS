@@ -11,25 +11,27 @@
 
 #include <inttypes.h>
 
-#define NUM_IDT_ENTRIES 256  // Total number of entries in the IDT
+#define NUM_IDT_ENTRIES 256 // Total number of entries in the IDT
 
 /**
  * @brief IDTR structure used by lidt instruction
- * 
+ *
  * The IDTR points to the IDT and defines its size.
  */
-struct IDTR {
-    uint16_t limit;   // IDT size in bytes minus 1
-    uint64_t base;    // Base address of the IDT
+struct IDTR
+{
+    uint16_t limit; // IDT size in bytes minus 1
+    uint64_t base;  // Base address of the IDT
 } __attribute__((packed));
 
 /**
  * @brief 64-bit Interrupt Descriptor Table (IDT) entry
- * 
+ *
  * Represents a single gate descriptor in the IDT.
  * Each interrupt vector has one entry.
  */
-struct InterruptDescriptor64 {
+struct InterruptDescriptor64
+{
     uint16_t offset_1;       // Offset bits 0..15 of handler function
     uint16_t selector;       // Code segment selector in GDT or LDT
     uint8_t ist;             // Bits 0..2: Interrupt Stack Table index, rest must be zero
@@ -41,7 +43,7 @@ struct InterruptDescriptor64 {
 
 /**
  * @brief Set up the IDT, initialize entries, and load the IDTR
- * 
+ *
  * Initializes all 256 interrupt descriptors, assigns default and specific handlers
  * (timer, keyboard, CPU exceptions), and enables interrupts.
  */
@@ -49,11 +51,10 @@ void setup_idt();
 
 /**
  * @brief Load the IDT on an Application Processor
- * 
+ *
  * APs share the same IDT as the BSP, but each must load it via LIDT.
  * Also starts the local APIC timer for scheduling.
  */
 void setup_idt_ap();
 
-#endif //UNTITLED_OS_IDT_H
-
+#endif // UNTITLED_OS_IDT_H

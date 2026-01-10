@@ -19,6 +19,7 @@
 #include "sched/threads.h"
 #include "sched/scheduler.h"
 #include "sched/percpu.h"
+#include "sched/smp_sched.h"
 #include "desc/rsdp.h"
 #include "desc/rsdt.h"
 #include "desc/madt.h"
@@ -78,6 +79,69 @@ static void init_acpi_and_map_apic(pagetable_t kernel_table)
 // ============================================================================
 // Test/Demo Thread Functions
 // ============================================================================
+
+/**
+ * @brief Demo thread function for SMP scheduler testing
+ * 
+ * Each thread prints its ID and which CPU it's running on.
+ * Uses yield() to allow other threads to run.
+ */
+static void demo_thread_func(void *arg)
+{
+    uint32_t thread_id = (uint32_t)(uint64_t)arg;
+    
+    for (int i = 0; i < 5; i++) {
+        struct percpu *cpu = mycpu();
+        LOG_SERIAL("THREAD", "Thread %d running on CPU %d (tick %d)", 
+                   thread_id, cpu->cpu_index, i);
+        
+        // Busy wait to simulate work
+        for (volatile int j = 0; j < 5000000; j++);
+        
+        // Yield to let other threads run
+        sched_yield();
+    }
+    
+    LOG_SERIAL("THREAD", "Thread %d finished", thread_id);
+    
+    // Thread done - just loop (in real OS would exit)
+    while (1) {
+        asm volatile("hlt");
+    }
+}
+
+/**
+ * @brief Create demo threads for SMP scheduler testing
+ * 
+ * Creates 2 threads per CPU to demonstrate concurrent execution.
+ */
+static void create_demo_threads(void)
+{
+    LOG_SERIAL("DEMO", "Creating 2 threads per CPU (%d CPUs)", ncpu);
+    
+    uint32_t thread_id = 0;
+    
+    for (uint32_t cpu = 0; cpu < ncpu; cpu++) {
+        for (int t = 0; t < 2; t++) {
+            struct thread *thread = create_thread(demo_thread_func, 0, 0);
+            if (thread == 0) {
+                LOG_SERIAL("DEMO", "Failed to create thread %d", thread_id);
+                continue;
+            }
+            
+            // Pass thread_id as the argument (stored in context->rdi)
+            thread->context->rdi = thread_id;
+            
+            // Add to specific CPU
+            sched_add_thread(thread, cpu);
+            
+            LOG_SERIAL("DEMO", "Created thread %d for CPU %d", thread_id, cpu);
+            thread_id++;
+        }
+    }
+    
+    LOG_SERIAL("DEMO", "Created %d demo threads total", thread_id);
+}
 
 /**
  * @brief Example function to repeatedly print a number from a thread.
@@ -178,9 +242,14 @@ int kernel_main()
     uint32_t cpu_count = get_cpu_count();
     percpu_init_bsp(cpu_count);
     
-    // Allocate per-CPU stacks (requires kalloc to be initialized)
+    // Allocate per-CPU stacks
     percpu_alloc_stacks();
     LOG_SERIAL("PERCPU", "Per-CPU data structures initialized for %d CPUs", cpu_count);
+
+    // Initialize SMP scheduler
+    sched_init();
+    // Initialize scheduler for bootstrap processor
+    sched_init_cpu();
 
     int pages = count_pages();
 
@@ -204,16 +273,27 @@ int kernel_main()
 
     LOG("Entering idle loop...");
     
-    for (volatile int i = 0; i < 50000000; i++);  // Simple delay
-    percpu_log_timer_ticks();
+    // Wait for all APs to initialize their schedulers
+    for (volatile int i = 0; i < 10000000; i++);
+    
+    // Create demo threads: 2 per CPU
+    create_demo_threads();
+    
+    // Log initial scheduler state
+    sched_log_state();
+    
+    // Mark BSP scheduler as ready and start scheduling
+    mycpu()->scheduler_ready = true;
+    LOG_SERIAL("KERNEL", "Starting SMP scheduler on BSP");
+    
+    // Run the scheduler (never returns)
+    sched_run();
 
-    for (volatile int i = 0; i < 50000000; i++);  // Simple delay
-    percpu_log_timer_ticks();
-
-    // scheduler();
-
+    // Should never reach here
     while (1)
     {
+        sti();
+        asm volatile("hlt");
     };
     return 0;
 }

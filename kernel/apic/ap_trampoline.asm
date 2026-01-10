@@ -4,8 +4,8 @@
 [BITS 16]
 section .ap_trampoline
 
-global ap_trampoline_start
-global ap_trampoline_end
+global  ap_trampoline_start
+global  ap_trampoline_end
 
 ap_trampoline_start:
     cli
@@ -17,18 +17,18 @@ ap_trampoline_start:
     
     ; Load our own GDT with 32-bit code segment
     ; lgdt [0x80A0] - manually encoded for 16-bit mode
-    db 0x0F, 0x01, 0x16          ; lgdt [disp16]
-    dw 0x80A0                    ; address of ap_gdt_ptr
+    db 0x0F, 0x01, 0x16 ; lgdt [disp16]
+    dw 0x80A0           ; address of ap_gdt_ptr
     
     ; Enable protected mode
     mov eax, cr0
-    or al, 1
+    or  al,  1
     mov cr0, eax
     
     ; Far jump to 32-bit code using selector 0x08 (32-bit code segment)
     db 0xEA
-    dw 0x8030                    ; offset
-    dw 0x0008                    ; segment selector
+    dw 0x8030 ; offset
+    dw 0x0008 ; segment selector
 
 ; Padding to align 32-bit section at 0x30
 times 0x30-($-$$) db 0x90
@@ -50,24 +50,24 @@ ap_trampoline_32:
     
     ; Enable PAE
     mov eax, cr4
-    or eax, 0x20
+    or  eax, 0x20
     mov cr4, eax
     
     ; Enable long mode (EFER.LME)
     mov ecx, 0xC0000080
     rdmsr
-    or eax, 0x100
+    or  eax, 0x100
     wrmsr
     
     ; Enable paging
     mov eax, cr0
-    or eax, 0x80000000
+    or  eax, 0x80000000
     mov cr0, eax
     
     ; Far jump to 64-bit code using selector 0x18 (64-bit code segment)
     db 0xEA
-    dd 0x8070                    ; offset (32-bit)
-    dw 0x0018                    ; segment selector (64-bit code)
+    dd 0x8070 ; offset (32-bit)
+    dw 0x0018 ; segment selector (64-bit code)
 
 ; Padding to align 64-bit section at 0x70
 times 0x70-($-$$) db 0x90
@@ -104,9 +104,9 @@ times 0xA0-($-$$) db 0x90
 
 ; GDT pointer at 0x80A0
 ap_gdt_ptr:
-    dw ap_gdt_end - ap_gdt - 1  ; limit
-    dd 0x80B0                    ; base address (will point to ap_gdt)
-    dd 0                         ; padding for 64-bit
+    dw ap_gdt_end - ap_gdt - 1 ; limit
+    dd 0x80B0                  ; base address (will point to ap_gdt)
+    dd 0                       ; padding for 64-bit
 
 ; Align GDT to 0xB0
 times 0xB0-($-$$) db 0
@@ -117,28 +117,28 @@ ap_gdt:
     dq 0
     
     ; 32-bit Code segment (selector 0x08)
-    dw 0xFFFF       ; Limit low
-    dw 0x0000       ; Base low
-    db 0x00         ; Base middle
-    db 0x9A         ; Access: P=1, DPL=0, S=1, Type=1010 (exec/read)
-    db 0xCF         ; Flags: G=1, D=1, Limit high=0xF
-    db 0x00         ; Base high
+    dw 0xFFFF ; Limit low
+    dw 0x0000 ; Base low
+    db 0x00   ; Base middle
+    db 0x9A   ; Access: P=1, DPL=0, S=1, Type=1010 (exec/read)
+    db 0xCF   ; Flags: G=1, D=1, Limit high=0xF
+    db 0x00   ; Base high
     
     ; Data segment (selector 0x10)
-    dw 0xFFFF       ; Limit low
-    dw 0x0000       ; Base low
-    db 0x00         ; Base middle
-    db 0x92         ; Access: P=1, DPL=0, S=1, Type=0010 (read/write)
-    db 0xCF         ; Flags: G=1, B=1, Limit high=0xF
-    db 0x00         ; Base high
+    dw 0xFFFF ; Limit low
+    dw 0x0000 ; Base low
+    db 0x00   ; Base middle
+    db 0x92   ; Access: P=1, DPL=0, S=1, Type=0010 (read/write)
+    db 0xCF   ; Flags: G=1, B=1, Limit high=0xF
+    db 0x00   ; Base high
     
     ; 64-bit Code segment (selector 0x18)
-    dw 0x0000       ; Limit low
-    dw 0x0000       ; Base low
-    db 0x00         ; Base middle
-    db 0x9A         ; Access: P=1, DPL=0, S=1, Type=1010 (exec/read)
-    db 0x20         ; Flags: G=0, L=1, D=0
-    db 0x00         ; Base high
+    dw 0x0000 ; Limit low
+    dw 0x0000 ; Base low
+    db 0x00   ; Base middle
+    db 0x9A   ; Access: P=1, DPL=0, S=1, Type=1010 (exec/read)
+    db 0x20   ; Flags: G=0, L=1, D=0
+    db 0x00   ; Base high
 ap_gdt_end:
 
 ; Align to 0xE0

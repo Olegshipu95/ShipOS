@@ -35,7 +35,7 @@ bool is_xsdt();
 
 /**
  * @brief Find an ACPI table by signature in RSDT/XSDT
- * 
+ *
  * @param signature 4-character signature (e.g., "APIC", "FACP")
  * @return Pointer to the table header, or NULL if not found
  */
@@ -43,14 +43,14 @@ struct ACPISDTHeader *rsdt_find_table(const char *signature);
 
 /**
  * @brief Get the number of entries in the RSDT/XSDT
- * 
+ *
  * @return Number of table entries
  */
 uint32_t rsdt_get_entry_count();
 
 /**
  * @brief Copy RSDT table to safe memory allocated with kalloc
- * 
+ *
  * Call this before freeing the memory region where ACPI tables reside.
  */
 void rsdt_copy_to_safe_memory();
