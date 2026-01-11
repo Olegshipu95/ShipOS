@@ -1,7 +1,6 @@
 ENTRY(kernel_main)
 
 SECTIONS {
-    /* Load at 1MB - standard location for kernels */
     . = 0x100000;
 
     .text : ALIGN(4096) {

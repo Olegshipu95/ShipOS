@@ -1,15 +1,14 @@
 #include <efi.h>
 #include <efilib.h>
+#include <elf.h>
 
 #define PAGE_SIZE 4096
-#define KERNEL_STACK_SIZE (64 * 1024)
+#define HUGE_PAGE_SIZE 0x200000
+#define KERNEL_STACK_SIZE (4 * 1024)
 
 #define PTE_PRESENT (1ULL << 0)
 #define PTE_WRITABLE (1ULL << 1)
 #define PTE_PAGE_SIZE (1ULL << 7)
-
-#define ELF_MAGIC 0x464C457F
-#define PT_LOAD 1
 
 typedef void (*kernel_entry_t)(void);
 typedef UINT64 pte_t;
@@ -19,36 +18,6 @@ struct gdt_descriptor
     UINT16 limit;
     UINT64 base;
 } __attribute__((packed));
-
-typedef struct
-{
-    UINT8 e_ident[16];
-    UINT16 e_type;
-    UINT16 e_machine;
-    UINT32 e_version;
-    UINT64 e_entry;
-    UINT64 e_phoff;
-    UINT64 e_shoff;
-    UINT32 e_flags;
-    UINT16 e_ehsize;
-    UINT16 e_phentsize;
-    UINT16 e_phnum;
-    UINT16 e_shentsize;
-    UINT16 e_shnum;
-    UINT16 e_shstrndx;
-} Elf64_Ehdr;
-
-typedef struct
-{
-    UINT32 p_type;
-    UINT32 p_flags;
-    UINT64 p_offset;
-    UINT64 p_vaddr;
-    UINT64 p_paddr;
-    UINT64 p_filesz;
-    UINT64 p_memsz;
-    UINT64 p_align;
-} Elf64_Phdr;
 
 static pte_t *pml4_table;
 static pte_t *pdpt_table;
@@ -61,7 +30,7 @@ static inline void load_cr3(UINT64 addr) { __asm__ volatile("mov %0, %%cr3" : : 
 static inline void load_gdt(struct gdt_descriptor *gdtr) { __asm__ volatile("lgdt %0" : : "m"(*gdtr)); }
 
 static inline void jump_to_kernel(kernel_entry_t entry, UINT64 stack_top)
-{
+{   
     __asm__ volatile(
         "mov $0x10, %%ax\n"
         "mov %%ax, %%ds\n"
@@ -70,10 +39,9 @@ static inline void jump_to_kernel(kernel_entry_t entry, UINT64 stack_top)
         "mov %%ax, %%gs\n"
         "mov %%ax, %%ss\n"
         "mov %1, %%rsp\n"
-        "pushq $0x08\n"
-        "pushq %0\n"
-        "retfq\n"
-        : : "r"((UINT64)entry), "r"(stack_top) : "memory", "rax");
+        : : "r"(entry), "r"(stack_top) : "rax");
+
+    ((void (*)(void))entry)();
 }
 
 static EFI_STATUS alloc_pages(UINTN num_pages, EFI_PHYSICAL_ADDRESS *addr)
@@ -113,7 +81,7 @@ static EFI_STATUS setup_page_tables(void)
     for (int pd = 0; pd < 4; pd++)
     {
         pte_t *table = (pte_t *)((UINT64)pd_tables + pd * PAGE_SIZE);
-        for (int e = 0; e < 512; e++, phys += 0x200000)
+        for (int e = 0; e < 512; e++, phys += HUGE_PAGE_SIZE)
             table[e] = phys | PTE_PRESENT | PTE_WRITABLE | PTE_PAGE_SIZE;
     }
     return EFI_SUCCESS;
@@ -170,7 +138,11 @@ static EFI_STATUS load_kernel_elf(EFI_HANDLE ImageHandle, UINT64 *entry_out)
     uefi_call_wrapper(volume->Close, 1, volume);
 
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *)elf;
-    if (*(UINT32 *)ehdr->e_ident != ELF_MAGIC || ehdr->e_ident[4] != 2)
+    if (ehdr->e_ident[EI_MAG0] != ELFMAG0 || 
+        ehdr->e_ident[EI_MAG1] != ELFMAG1 ||
+        ehdr->e_ident[EI_MAG2] != ELFMAG2 || 
+        ehdr->e_ident[EI_MAG3] != ELFMAG3 ||
+        ehdr->e_ident[EI_CLASS] != ELFCLASS64)
         return EFI_LOAD_ERROR;
 
     Elf64_Phdr *phdr = (Elf64_Phdr *)(elf + ehdr->e_phoff);
@@ -262,10 +234,6 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
     }
     stack_top = stack_addr + KERNEL_STACK_SIZE;
 
-    // Allocate kernel heap (2MB - 128MB range)
-    EFI_PHYSICAL_ADDRESS heap = 0x8000000 - 1;
-    uefi_call_wrapper(BS->AllocatePages, 4, AllocateMaxAddress, EfiLoaderData, (120 * 1024 * 1024) / PAGE_SIZE, &heap);
-
     status = exit_boot_services(ImageHandle);
     if (EFI_ERROR(status))
     {
@@ -278,6 +246,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
     gdtr.limit = 23;
     gdtr.base = (UINT64)gdt;
     load_gdt(&gdtr);
+    
     jump_to_kernel((kernel_entry_t)kernel_entry, stack_top);
 
     while (1)
