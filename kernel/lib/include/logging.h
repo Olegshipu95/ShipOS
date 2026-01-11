@@ -82,8 +82,3 @@ else \
   TEST_REPORT(name, status)
 
 #endif
-
-#define assert(exp) \
-  if (!exp) \
-    return -1
-  

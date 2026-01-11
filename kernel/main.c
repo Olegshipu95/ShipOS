@@ -20,34 +20,6 @@
 #include "sched/scheduler.h"
 
 
-typedef void* (*alloc_func_t)(size_t size);
-
-typedef void (*free_func_t)(void* ptr);
-
-void test_allocator(alloc_func_t alloc, free_func_t free_mem, const char* name) {
-    printf("=== Testing allocator: %s ===\n", name);
-
-    void *b1 = alloc(8);
-    void *b2 = alloc(16);
-    void *b3 = alloc(32);
-    void *b4 = alloc(64);
-
-    printf("Allocating 8-byte, 16-byte, 32-byte and 64-byte objects\n");
-    printf("Allocated blocks: %p %p %p %p\n", b1, b2, b3, b4);
-
-    printf("Freeing 16-byte and 64-byte objects\n");
-    free_mem(b2);
-    free_mem(b4);
-
-    void *b5 = alloc(16);
-    printf("Allocated another 16-byte object: %p\n", b5);
-
-    void *b6 = alloc(13);
-    printf("Allocated 13-byte object: %p\n", b6);
-
-    printf("=== Finished testing %s ===\n\n", name);
-}
-
 /**
  * @brief Example function to repeatedly print a number from a thread.
  * 
@@ -58,6 +30,7 @@ void test_allocator(alloc_func_t alloc, free_func_t free_mem, const char* name) 
  */
 void print_num(uint32_t num) {
     while (1) {
+        printf("Hello from thread %d\r\n", num);
         // yield();
     }
 }
@@ -131,8 +104,6 @@ int kernel_main(){
     int pages = count_pages();
     struct proc_node *init_proc_node = procinit();
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
-    printf("Got init thread\n");
-    
     setup_idt();
     LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
 
