@@ -1,3 +1,4 @@
+#ifdef ALLOCATOR_PAGE
 #include "../kalloc/kalloc.h"
 #include "../sync/spinlock.h"
 #include "../memlayout.h"
@@ -73,3 +74,13 @@ uint64_t count_pages() {
     LOG("%d pages available in allocator", res);
     return res;
 }
+
+void *kmalloc(size_t) {
+    panic("kmalloc not implemented for page allocator");
+}
+
+void kmfree(void*) {
+    panic("kmfree not implemented for page allocator");
+}
+
+#endif

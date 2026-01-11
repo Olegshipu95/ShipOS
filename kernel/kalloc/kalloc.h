@@ -7,6 +7,8 @@
 void kinit(uint64_t, uint64_t);
 void *kalloc(void);
 void kfree(void*);
-uint64_t count_pages();
+void *kmalloc(uint64_t);
+void kmfree(void*);
+uint64_t count_pages(void);
 
 #endif

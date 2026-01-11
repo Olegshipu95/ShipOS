@@ -5,6 +5,8 @@
 
 #include "../include/test.h"
 #include "../include/logging.h"
+#include "tests/kalloc_tests/buddy_tests.h"
+#include "tests/kalloc_tests/page_tests.h"
 
 int test_addition() {
     int a = 1;
@@ -22,7 +24,12 @@ void run_tests() {
     // TEST_REPORT_TIMED("TIMEOUT OK", 1, 5000, 10000);
     // TEST_REPORT_TIMED("TIMEOUT FAIL", 1, 5000, 1000);
 
-    TEST_REPORT("Addition", CHECK(test_addition));
+    #ifdef ALLOCATOR_PAGE
+    run_page_tests();
+    #endif
+    #ifdef ALLOCATOR_BUDDY
+    run_buddy_tests();
+    #endif
 
     LOG("No tests yet :(");
 }
