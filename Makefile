@@ -18,19 +18,63 @@ QEMU := qemu-system-x86_64
 QEMU_FLAGS := -m 128M -cdrom
 QEMU_HEADLESS_FLAGS := -nographic -serial null -serial file:report.log -device isa-debug-exit,iobase=0xf4,iosize=0x04
 
+OBJCOPY := objcopy
+OBJCOPY_FLAGS := -j .text -j .sdata -j .data -j .rodata -j .dynamic -j .dynsym \
+				 -j .rel -j .rela -j .rel.* -j .rela.* -j .reloc \
+				 --target=efi-app-x86_64
+
 # ==============================
 # Directories
 # ==============================
 ISO_DIR := isofiles
 ISO_BOOT_DIR := $(ISO_DIR)/boot
 BUILD_DIR := build
+EFI_DIR := EFI
+TMP_DIR := tmp
+
+# UEFI-specific linker
+LINKER_UEFI := uefi/linker_uefi.ld
+LD_FLAGS_UEFI := --nmagic --script=$(LINKER_UEFI)
+
+# ==============================
+# UEFI Toolchain
+# ==============================
+EFI_CC := gcc
+EFI_CFLAGS := -I/usr/include/efi \
+			  -I/usr/include/efi/x86_64 \
+			  -I/usr/include/efi/protocol \
+			  -fpic \
+			  -ffreestanding \
+			  -fno-stack-protector \
+			  -fno-stack-check \
+			  -fshort-wchar \
+			  -mno-red-zone \
+			  -maccumulate-outgoing-args \
+			  -DEFI_FUNCTION_WRAPPER \
+			  -Wall
+EFI_LD := ld
+EFI_LDFLAGS := -nostdlib \
+			   -znocombreloc \
+			   -shared \
+			   -Bsymbolic \
+			   -L /usr/lib/ \
+			   -T /usr/lib/elf_x86_64_efi.lds /usr/lib//crt0-efi-x86_64.o
+
+EFI_LIBS := -lefi -lgnuefi
+
+OVMF := ovmf/OVMF_CODE.fd
+OVMF_VARS := ovmf/OVMF_VARS-1024x768.fd
+
+QEMU_UEFI_FLAGS := -m 256M \
+	-drive if=pflash,format=raw,unit=0,readonly=on,file=$(OVMF) \
+	-nographic
 
 # ==============================
 # Source files
 # ==============================
-# All 64-bit assembly in x86_64/
-x86_64_asm_sources := $(shell find x86_64 -name '*.asm')
-x86_64_asm_objects := $(patsubst x86_64/%.asm,$(BUILD_DIR)/x86_64/%.o,$(x86_64_asm_sources))
+# BIOS boot assembly (32-bit entry point)
+bios_boot_sources := x86_64/boot/boot.asm x86_64/boot/header.asm x86_64/boot/check_functions.asm
+bios_boot_objects := $(patsubst x86_64/boot/%.asm,$(BUILD_DIR)/x86_64/boot/%.o,$(bios_boot_sources))
 
 # All C files in kernel/
 kernel_c_sources := $(shell find kernel -name '*.c')
@@ -40,8 +84,11 @@ kernel_c_objects := $(patsubst kernel/%.c,$(BUILD_DIR)/kernel/%.o,$(kernel_c_sou
 kernel_asm_sources := $(shell find kernel -name '*.asm')
 kernel_asm_objects := $(patsubst kernel/%.asm,$(BUILD_DIR)/kernel/%.o,$(kernel_asm_sources))
 
-# All object files
-objects := $(x86_64_asm_objects) $(kernel_c_objects) $(kernel_asm_objects)
+# Objects for BIOS boot (includes 32-bit bootstrap)
+bios_objects := $(bios_boot_objects) $(kernel_c_objects) $(kernel_asm_objects)
+
+# Objects for UEFI boot - now only kernel code, bootloader handles entry
+uefi_objects := $(kernel_c_objects) $(kernel_asm_objects)
 
 # ==============================
 # Build rules
@@ -57,19 +104,39 @@ $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $< -o $@
 
-# Link all object files into kernel binary
-$(ISO_BOOT_DIR)/kernel.bin: $(objects)
+# Link all object files into kernel binary (BIOS boot)
+$(ISO_BOOT_DIR)/kernel.bin: $(bios_objects)
 	@mkdir -p $(ISO_BOOT_DIR)
 	$(LD) $(LD_FLAGS) --output=$@ $^
+
+# Link kernel for UEFI boot
+$(BUILD_DIR)/kernel_uefi.elf: $(uefi_objects)
+	@mkdir -p $(dir $@)
+	$(LD) $(LD_FLAGS_UEFI) --output=$@ $^
 
 # Create bootable ISO using GRUB
 $(ISO_DIR)/kernel.iso: $(ISO_BOOT_DIR)/kernel.bin
 	$(GRUB) $(GRUB_FLAGS) $@ $(ISO_DIR)
 
+# Create EFI app
+$(EFI_DIR)/BOOTX64.EFI: $(BUILD_DIR)/uefi/bootloader.so
+	@mkdir -p $(dir $@)
+	$(OBJCOPY) $(OBJCOPY_FLAGS) $< $@
+
+# Build UEFI bootloader (C-based, no asm entry point needed)
+$(BUILD_DIR)/uefi/bootloader.so: uefi/bootloader.c
+	@mkdir -p $(dir $@)
+	$(EFI_CC) $(EFI_CFLAGS) $< -c -o $(BUILD_DIR)/uefi/bootloader.o
+	$(EFI_LD) $(EFI_LDFLAGS) $(BUILD_DIR)/uefi/bootloader.o -o $@ $(EFI_LIBS)
+
+# Create IMG disk file for UEFI start (use ELF, not flat binary)
+$(TMP_DIR)/disk.img: $(BUILD_DIR)/kernel_uefi.elf $(EFI_DIR)/BOOTX64.EFI
+	uefi/create_disk_image.sh
+
 # ==============================
 # Phony targets
 # ==============================
-.PHONY: build_kernel build_iso qemu qemu-gdb ci test clean install
+.PHONY: build_kernel build_iso build_uefi qemu qemu-uefi qemu-gdb ci test clean install
 
 # Build kernel binary only
 build_kernel: $(ISO_BOOT_DIR)/kernel.bin
@@ -77,9 +144,17 @@ build_kernel: $(ISO_BOOT_DIR)/kernel.bin
 # Build ISO
 build_iso: $(ISO_DIR)/kernel.iso
 
+# Build UEFI disk image
+build_uefi: $(TMP_DIR)/disk.img
+	cp $(OVMF_VARS) $(TMP_DIR)/OVMF_VARS.tmp
+
 # Run QEMU in BIOS mode
 qemu: $(ISO_DIR)/kernel.iso
 	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
+
+# Run QEMU in UEFI mode
+qemu-uefi: build_uefi
+	$(QEMU) $(QEMU_UEFI_FLAGS) -drive format=raw,file=$(TMP_DIR)/disk.img
 
 # Run QEMU in Headless mode with debug and tests (no GUI, logs to report.log)
 test: clean
@@ -117,11 +192,12 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -f $(ISO_DIR)/kernel.*
 	rm -f $(ISO_DIR)/**/kernel.*
+	rm -rf $(EFI_DIR)
+	rm -rf $(TMP_DIR)
 	rm -f serial.log
 
 # ==============================
 # Install dependencies (Linux/Debian)
 # ==============================
 install:
-	sudo apt install -y grub-pc-bin grub-common xorriso mtools qemu-system-x86
-
+	sudo apt install -y grub-pc-bin grub-common xorriso mtools qemu-system-x86 ovmf gnu-efi dosfstools

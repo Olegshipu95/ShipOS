@@ -31,6 +31,7 @@
 void print_num(uint32_t num) {
     while (1) {
         printf("Hello from thread %d\r\n", num);
+        serial_printf("Hello from thread %d\r\n", num);
         // yield();
     }
 }
