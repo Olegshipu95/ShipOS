@@ -16,7 +16,7 @@ GRUB_FLAGS := -o
 
 QEMU := qemu-system-x86_64
 QEMU_FLAGS := -m 128M -cdrom
-QEMU_HEADLESS_FLAGS := -nographic -serial file:serial.log
+QEMU_HEADLESS_FLAGS := -nographic -serial null -serial file:report.log -device isa-debug-exit,iobase=0xf4,iosize=0x04
 
 OBJCOPY := objcopy
 OBJCOPY_FLAGS := -j .text -j .sdata -j .data -j .rodata -j .dynamic -j .dynsym \
@@ -102,7 +102,7 @@ $(BUILD_DIR)/%.o: %.asm
 # Compile C files
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $< -o $@
 
 # Link all object files into kernel binary (BIOS boot)
 $(ISO_BOOT_DIR)/kernel.bin: $(bios_objects)
@@ -136,7 +136,7 @@ $(TMP_DIR)/disk.img: $(BUILD_DIR)/kernel_uefi.elf $(EFI_DIR)/BOOTX64.EFI
 # ==============================
 # Phony targets
 # ==============================
-.PHONY: build_kernel build_iso build_uefi qemu qemu-uefi qemu-headless clean install
+.PHONY: build_kernel build_iso build_uefi qemu qemu-uefi qemu-gdb ci test clean install
 
 # Build kernel binary only
 build_kernel: $(ISO_BOOT_DIR)/kernel.bin
@@ -156,10 +156,14 @@ qemu: $(ISO_DIR)/kernel.iso
 qemu-uefi: build_uefi
 	$(QEMU) $(QEMU_UEFI_FLAGS) -drive format=raw,file=$(TMP_DIR)/disk.img
 
-# Run QEMU in Headless mode (no GUI, logs to serial.log, BIOS)
-qemu-headless: $(ISO_DIR)/kernel.iso
-	@echo "Running in headless mode. Logs will be saved to serial.log"
-	@echo "Press Ctrl+C to stop QEMU"
+# Run QEMU in Headless mode with debug and tests (no GUI, logs to report.log)
+test: clean
+	@$(MAKE) EXTRA_CFLAGS="-DDEBUG -DTEST" $(ISO_DIR)/kernel.iso
+	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
+
+# Run QEMU in Headless mode with debug and tests (no GUI, logs to report.log)
+ci: clean
+	@$(MAKE) EXTRA_CFLAGS="-DDEBUG -DTEST" $(ISO_DIR)/kernel.iso
 	$(QEMU) $(QEMU_HEADLESS_FLAGS) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso
 
 # ==============================
@@ -176,9 +180,10 @@ QEMUGDB := $(shell if $(QEMU) -help | grep -q '^-gdb'; then echo "-gdb tcp::$(GD
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
 # Run QEMU paused and wait for GDB
-qemu-gdb: $(ISO_DIR)/kernel.iso .gdbinit
+qemu-gdb: clean .gdbinit
+	@$(MAKE) EXTRA_CFLAGS="-DDEBUG" $(ISO_DIR)/kernel.iso
 	@echo "*** Now run 'gdb' in another window." 1>&2
-	$(QEMU) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso -S $(QEMUGDB)
+	$(QEMU) $(QEMU_HEADLESS_FLAGS) $(QEMU_FLAGS) $(ISO_DIR)/kernel.iso -S $(QEMUGDB)
 
 # ==============================
 # Cleanup

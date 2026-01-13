@@ -57,12 +57,15 @@ __attribute__((interrupt)) void timer_interrupt(struct interrupt_frame* frame) {
     send_values_to_sched();
     outb(PIC1_COMMAND, PIC_EOI);
 
-    struct thread *next_thread = get_next_thread();
-    struct thread *prev_thread = current_cpu.current_thread;
-    current_cpu.current_thread = next_thread;
+    // Only do context switching if scheduler is active (current_thread is set)
+    if (current_cpu.current_thread != 0) {
+        struct thread *next_thread = get_next_thread();
+        struct thread *prev_thread = current_cpu.current_thread;
+        current_cpu.current_thread = next_thread;
 
-    sti();  // enable interrupts before context switch
-    switch_context(&(prev_thread->context), next_thread->context);
+        sti();  // enable interrupts before context switch
+        switch_context(&(prev_thread->context), next_thread->context);
+    }
 }
 
 /**
