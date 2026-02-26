@@ -19,7 +19,7 @@ for script in ./scripts/tests/*.sh; do
 done
 
 let total=$passed+$failed
-echo "📝 Tests passed: $passed / $total"
+echo "📝 Test sets passed: $passed / $total"
 
 if [ $failed -gt 0 ]; then
     exit 1

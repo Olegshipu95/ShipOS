@@ -214,64 +214,220 @@ void serial_printf(uint16_t port, const char *format, ...) {
     va_list varargs;
     va_start(varargs, format);
 
-    char digits_buf[MAX_DIGIT_BUFFER_SIZE];
-    memset(digits_buf, 0, MAX_DIGIT_BUFFER_SIZE);
+    char buf[256];  // Output buffer for formatted values
 
     while (*format) {
-        switch (*format) {
-            case '%':
+        if (*format != '%') {
+            serial_putchar(port, *format++);
+            continue;
+        }
+        
+        format++;  // Skip '%'
+        
+        // Check for %%
+        if (*format == '%') {
+            serial_putchar(port, '%');
+            format++;
+            continue;
+        }
+        
+        // Parse format specification
+        struct fmt_spec spec = {0, -1, -1, FMT_LEN_DEFAULT};
+        
+        // Parse flags: -, +, space, #, 0
+        int parsing_flags = 1;
+        while (parsing_flags && *format) {
+            switch (*format) {
+                case '-': spec.flags |= FMT_FLAG_LEFT; format++; break;
+                case '+': spec.flags |= FMT_FLAG_PLUS; format++; break;
+                case ' ': spec.flags |= FMT_FLAG_SPACE; format++; break;
+                case '#': spec.flags |= FMT_FLAG_HASH; format++; break;
+                case '0': spec.flags |= FMT_FLAG_ZERO; format++; break;
+                default: parsing_flags = 0; break;
+            }
+        }
+        
+        // Parse width
+        if (*format == '*') {
+            spec.width = va_arg(varargs, int);
+            if (spec.width < 0) {
+                spec.flags |= FMT_FLAG_LEFT;
+                spec.width = -spec.width;
+            }
+            format++;
+        } else {
+            spec.width = 0;
+            while (*format >= '0' && *format <= '9') {
+                spec.width = spec.width * 10 + (*format - '0');
                 format++;
-                switch (*format) {
-                    case 'd':
-                        if (itoa(va_arg(varargs, int), digits_buf, 10) == 0) {
-                            serial_write(port, digits_buf);
-                        } else {
-                            serial_putchar(port, '#');
-                        }
-                        break;
-                    case 'o':
-                        if (itoa(va_arg(varargs, int), digits_buf, 8) == 0) {
-                            serial_write(port, digits_buf);
-                        } else {
-                            serial_putchar(port, '#');
-                        }
-                        break;
-                    case 'x':
-                        if (itoa(va_arg(varargs, int), digits_buf, 16) == 0) {
-                            serial_write(port, digits_buf);
-                        } else {
-                            serial_putchar(port, '#');
-                        }
-                        break;
-                    case 'b':
-                        if (itoa(va_arg(varargs, int), digits_buf, 2) == 0) {
-                            serial_write(port, digits_buf);
-                        } else {
-                            serial_putchar(port, '#');
-                        }
-                        break;
-                    case 'p':
-                        if (ptoa(va_arg(varargs, uint64_t), digits_buf) == 0) {
-                            serial_write(port, digits_buf);
-                        } else {
-                            serial_putchar(port, '#');
-                        }
-                        break;
-                    case 's':
-                        serial_write(port, va_arg(varargs, char*));
-                        break;
-                    case '%':
-                        serial_putchar(port, '%');
-                        break;
-                    default:
-                        serial_putchar(port, '#');
+            }
+            if (spec.width == 0) spec.width = -1;  // Not specified
+        }
+        
+        // Parse precision
+        if (*format == '.') {
+            format++;
+            if (*format == '*') {
+                spec.precision = va_arg(varargs, int);
+                if (spec.precision < 0) spec.precision = -1;
+                format++;
+            } else {
+                spec.precision = 0;
+                while (*format >= '0' && *format <= '9') {
+                    spec.precision = spec.precision * 10 + (*format - '0');
+                    format++;
+                }
+            }
+        }
+        
+        // Parse length modifier
+        if (*format == 'h') {
+            format++;
+            if (*format == 'h') {
+                spec.length = FMT_LEN_HH;
+                format++;
+            } else {
+                spec.length = FMT_LEN_H;
+            }
+        } else if (*format == 'l') {
+            format++;
+            if (*format == 'l') {
+                spec.length = FMT_LEN_LL;
+                format++;
+            } else {
+                spec.length = FMT_LEN_L;
+            }
+        } else if (*format == 'z') {
+            spec.length = FMT_LEN_Z;
+            format++;
+        }
+        
+        // Parse conversion specifier
+        switch (*format) {
+            case 'd':
+            case 'i': {
+                int64_t val;
+                switch (spec.length) {
+                    case FMT_LEN_HH: val = (signed char)va_arg(varargs, int); break;
+                    case FMT_LEN_H:  val = (short)va_arg(varargs, int); break;
+                    case FMT_LEN_L:  val = va_arg(varargs, long); break;
+                    case FMT_LEN_LL: val = va_arg(varargs, long long); break;
+                    case FMT_LEN_Z:  val = va_arg(varargs, size_t); break;
+                    default:         val = va_arg(varargs, int); break;
+                }
+                format_signed(val, buf, 10, &spec);
+                serial_write(port, buf);
+                break;
+            }
+            
+            case 'u': {
+                uint64_t val;
+                switch (spec.length) {
+                    case FMT_LEN_HH: val = (unsigned char)va_arg(varargs, unsigned int); break;
+                    case FMT_LEN_H:  val = (unsigned short)va_arg(varargs, unsigned int); break;
+                    case FMT_LEN_L:  val = va_arg(varargs, unsigned long); break;
+                    case FMT_LEN_LL: val = va_arg(varargs, unsigned long long); break;
+                    case FMT_LEN_Z:  val = va_arg(varargs, size_t); break;
+                    default:         val = va_arg(varargs, unsigned int); break;
+                }
+                format_unsigned(val, buf, 10, &spec);
+                serial_write(port, buf);
+                break;
+            }
+            
+            case 'x':
+            case 'X': {
+                if (*format == 'X') spec.flags |= FMT_FLAG_UPPER;
+                uint64_t val;
+                switch (spec.length) {
+                    case FMT_LEN_HH: val = (unsigned char)va_arg(varargs, unsigned int); break;
+                    case FMT_LEN_H:  val = (unsigned short)va_arg(varargs, unsigned int); break;
+                    case FMT_LEN_L:  val = va_arg(varargs, unsigned long); break;
+                    case FMT_LEN_LL: val = va_arg(varargs, unsigned long long); break;
+                    case FMT_LEN_Z:  val = va_arg(varargs, size_t); break;
+                    default:         val = va_arg(varargs, unsigned int); break;
+                }
+                format_unsigned(val, buf, 16, &spec);
+                serial_write(port, buf);
+                break;
+            }
+            
+            case 'o': {
+                uint64_t val;
+                switch (spec.length) {
+                    case FMT_LEN_HH: val = (unsigned char)va_arg(varargs, unsigned int); break;
+                    case FMT_LEN_H:  val = (unsigned short)va_arg(varargs, unsigned int); break;
+                    case FMT_LEN_L:  val = va_arg(varargs, unsigned long); break;
+                    case FMT_LEN_LL: val = va_arg(varargs, unsigned long long); break;
+                    case FMT_LEN_Z:  val = va_arg(varargs, size_t); break;
+                    default:         val = va_arg(varargs, unsigned int); break;
+                }
+                format_unsigned(val, buf, 8, &spec);
+                serial_write(port, buf);
+                break;
+            }
+            
+            case 'b': {
+                uint64_t val;
+                switch (spec.length) {
+                    case FMT_LEN_HH: val = (unsigned char)va_arg(varargs, unsigned int); break;
+                    case FMT_LEN_H:  val = (unsigned short)va_arg(varargs, unsigned int); break;
+                    case FMT_LEN_L:  val = va_arg(varargs, unsigned long); break;
+                    case FMT_LEN_LL: val = va_arg(varargs, unsigned long long); break;
+                    case FMT_LEN_Z:  val = va_arg(varargs, size_t); break;
+                    default:         val = va_arg(varargs, unsigned int); break;
+                }
+                format_unsigned(val, buf, 2, &spec);
+                serial_write(port, buf);
+                break;
+            }
+            
+            case 'p': {
+                uint64_t val = (uint64_t)(uintptr_t)va_arg(varargs, void *);
+                spec.flags |= FMT_FLAG_HASH;
+                if (spec.precision < 0) spec.precision = 1;
+                format_unsigned(val, buf, 16, &spec);
+                serial_write(port, buf);
+                break;
+            }
+            
+            case 's': {
+                char *str = va_arg(varargs, char *);
+                format_string(str, buf, sizeof(buf), &spec);
+                serial_write(port, buf);
+                break;
+            }
+            
+            case 'c': {
+                char c = (char)va_arg(varargs, int);
+                if (spec.width > 1 && !(spec.flags & FMT_FLAG_LEFT)) {
+                    for (int i = 0; i < spec.width - 1; i++) {
+                        serial_putchar(port, ' ');
+                    }
+                }
+                serial_putchar(port, c);
+                if (spec.width > 1 && (spec.flags & FMT_FLAG_LEFT)) {
+                    for (int i = 0; i < spec.width - 1; i++) {
+                        serial_putchar(port, ' ');
+                    }
                 }
                 break;
+            }
+            
+            case 'n': {
+                // Not supported for safety
+                break;
+            }
+            
             default:
-                serial_putchar(port, *format);
+                serial_putchar(port, '%');
+                if (*format) serial_putchar(port, *format);
+                break;
         }
-        format++;
+        
+        if (*format) format++;
     }
+    
     va_end(varargs);
     release_spinlock(&serial_printf_spinlocks[index]);
 }

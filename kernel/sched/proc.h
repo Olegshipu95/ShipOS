@@ -15,6 +15,7 @@
 #include "../../kernel/kalloc/kalloc.h"
 #include "threads.h"
 #include "sched_states.h"
+#include "percpu.h"
 
 typedef size_t pid_t;
 
@@ -24,19 +25,16 @@ struct proc {
     struct thread_node *threads;
 };
 
-struct cpu {
-    int ncli;                        // Depth of pushcli nesting.
-    int intena;                      // Were interrupts enabled before pushcli?
-    struct thread *current_thread;   // The thread running on this cpu or null
-};
-
 struct proc_node {
     struct proc *data;
     struct proc_node *next;
     struct proc_node *prev;
 };
 
-extern struct cpu current_cpu;
+// current_cpu provides access to the current CPU's per-CPU data
+// Uses struct percpu from percpu.h
+#define current_cpu (*mycpu())
+
 extern struct proc_node *proc_list;
 
 void push_proc_list(struct proc_node **list, struct proc *proc);

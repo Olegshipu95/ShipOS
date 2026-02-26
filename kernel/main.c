@@ -18,18 +18,146 @@
 #include "sched/proc.h"
 #include "sched/threads.h"
 #include "sched/scheduler.h"
+#include "sched/percpu.h"
+#include "sched/smp_sched.h"
+#include "desc/rsdp.h"
+#include "desc/rsdt.h"
+#include "desc/madt.h"
+#include "apic/ap_startup.h"
 
+/**
+ * @brief Initialize ACPI subsystem and map APIC memory regions
+ * 
+ * Initializes RSDP, RSDT, and MADT tables, then maps Local APIC
+ * and all I/O APICs into the kernel page tables for MMIO access.
+ * 
+ * @param kernel_table Kernel page table to map APIC regions into
+ */
+static void init_acpi_and_map_apic(pagetable_t kernel_table)
+{
+    init_rsdp();
+    if (get_rsdp() == NULL)
+    {
+        panic("Unable to initialize: ACPI unavailable");
+    }
+    
+    init_rsdt(get_rsdp());
+    init_madt();
+    log_cpu_info();
+    
+    // Map Local APIC memory region
+    uint32_t lapic_addr = get_lapic_address();
+    if (lapic_addr != 0)
+    {
+        LOG_SERIAL("MEMORY", "Mapping Local APIC at 0x%x", lapic_addr);
+        map_apic_region(kernel_table, lapic_addr, PGSIZE);
+    }
+    
+    // Map all I/O APIC regions found in MADT
+    struct MADT_t *madt = get_madt();
+    if (madt != NULL)
+    {
+        uint8_t *entry_ptr = (uint8_t *)madt + sizeof(struct MADT_t);
+        uint8_t *end_ptr = (uint8_t *)madt + madt->header.Length;
+        
+        while (entry_ptr < end_ptr)
+        {
+            struct MADTEntryHeader *header = (struct MADTEntryHeader *)entry_ptr;
+            
+            if (header->Type == MADT_ENTRY_IOAPIC)
+            {
+                struct MADTEntryIOAPIC *ioapic = (struct MADTEntryIOAPIC *)entry_ptr;
+                LOG_SERIAL("MEMORY", "Mapping I/O APIC at 0x%x", ioapic->IOAPICAddr);
+                map_apic_region(kernel_table, ioapic->IOAPICAddr, PGSIZE);
+            }
+            
+            entry_ptr += header->Length;
+        }
+    }
+}
+
+// ============================================================================
+// Test/Demo Thread Functions
+// ============================================================================
+
+/**
+ * @brief Demo thread function for SMP scheduler testing
+ * 
+ * Each thread prints its ID and which CPU it's running on.
+ * Uses yield() to allow other threads to run.
+ */
+static void demo_thread_func(void *arg)
+{
+    uint32_t thread_id = (uint32_t)(uint64_t)arg;
+    
+    for (int i = 0; i < 5; i++) {
+        struct percpu *cpu = mycpu();
+        LOG_SERIAL("THREAD", "Thread %d running on CPU %d (tick %d)", 
+                   thread_id, cpu->cpu_index, i);
+        
+        // Busy wait to simulate work
+        for (volatile int j = 0; j < 5000000; j++);
+        
+        // Yield to let other threads run
+        sched_yield();
+    }
+    
+    LOG_SERIAL("THREAD", "Thread %d finished", thread_id);
+    
+    // Thread done - exit properly
+    sched_exit();
+    
+    // Should never reach here
+    while (1) {
+        asm volatile("hlt");
+    }
+}
+
+/**
+ * @brief Create demo threads for SMP scheduler testing
+ * 
+ * Creates 2 threads per CPU to demonstrate concurrent execution.
+ */
+static void create_demo_threads(void)
+{
+    LOG_SERIAL("DEMO", "Creating 2 threads per CPU (%d CPUs)", ncpu);
+    
+    uint32_t thread_id = 0;
+    
+    for (uint32_t cpu = 0; cpu < ncpu; cpu++) {
+        for (int t = 0; t < 2; t++) {
+            struct thread *thread = create_thread(demo_thread_func, 0, 0);
+            if (thread == 0) {
+                LOG_SERIAL("DEMO", "Failed to create thread %d", thread_id);
+                continue;
+            }
+            
+            // Pass thread_id as the argument (stored in context->rdi)
+            thread->context->rdi = thread_id;
+            
+            // Add to specific CPU
+            sched_add_thread(thread, cpu);
+            
+            LOG_SERIAL("DEMO", "Created thread %d for CPU %d", thread_id, cpu);
+            thread_id++;
+        }
+    }
+    
+    LOG_SERIAL("DEMO", "Created %d demo threads total", thread_id);
+}
 
 /**
  * @brief Example function to repeatedly print a number from a thread.
- * 
- * This is a simple demo of how threads can output information. 
+ *
+ * This is a simple demo of how threads can output information.
  * Currently, it loops infinitely printing "Hello from thread N".
- * 
+ *
  * @param num Thread identifier number
  */
-void print_num(uint32_t num) {
-    while (1) {
+void print_num(uint32_t num)
+{
+    while (1)
+    {
         printf("Hello from thread %d\r\n", num);
         // yield();
     }
@@ -37,54 +165,57 @@ void print_num(uint32_t num) {
 
 /**
  * @brief Entry point for a created thread.
- * 
- * Extracts the integer argument from the provided arguments array 
+ *
+ * Extracts the integer argument from the provided arguments array
  * and calls print_num with that value.
  * Made for testing functionality
- * 
+ *
  * @param argc Number of arguments
  * @param args Array of thread arguments
  */
-void thread_function(int argc, struct argument *args) {
-    uint32_t num = *((uint32_t*) args[0].value);
+void thread_function(int argc, struct argument *args)
+{
+    uint32_t num = *((uint32_t *) args[0].value);
     print_num(num);
 }
 
-
 /**
- * @brief Kernel entry point.
- * 
- * Performs basic initialization:
- * 1. Initializes and sets up serial port
- * 2. Sets up TTY terminals.
- * 3. Prints debug information about CR3 register and kernel memory layout.
- * 4. Initializes the physical memory allocator and page tables.
- * 5. Initializes the first process and its main thread.
- * 6. Sets up the Interrupt Descriptor Table (IDT).
- * 7. Starts the scheduler (currently commented out for testing).
- * 
- * @return int Always returns 0 (never reached).
+ * @brief Kernel entry point
+ *
+ * Initialization sequence:
+ * 1. Initialize CPU state
+ * 2. Initialize serial ports for logging
+ * 3. Initialize TTY terminals for console output
+ * 4. Initialize physical memory allocator (kalloc)
+ * 5. Set up kernel page tables with identity mapping
+ * 6. Initialize ACPI subsystem and map APIC regions
+ * 7. Complete physical memory initialization
+ * 8. Initialize process and thread subsystems
+ * 9. Set up Interrupt Descriptor Table with APIC
+ * 10. Start the scheduler and enter idle loop
+ *
+ * @return int Never returns (enters infinite scheduler loop)
  */
-int kernel_main(){
-    // Initialize CPU state before anything else
-    current_cpu.ncli = 0;
-    current_cpu.intena = 0;
-    current_cpu.current_thread = 0;
-    
-    // Initialize serial ports
+int kernel_main()
+{
+    // Initialize serial ports first for early debugging
     int serial_ports_count = init_serial_ports();
-    if (serial_ports_count == -1) {
+    if (serial_ports_count == -1)
+    {
         LOG("No serial ports detected");
-    } else {
+    }
+    else
+    {
         LOG("Found %d serial port(s)", serial_ports_count);
-        LOG("Using port 0x%p as default", get_default_serial_port());
+        LOG("Using port %#x as default", get_default_serial_port());
         LOG_SERIAL("SERIAL", "Serial ports initialized successfully");
     }
 
     LOG("Kernel started");
 
     init_tty();
-    for (uint8_t i=0; i < TERMINALS_NUMBER; i++) {
+    for (uint8_t i = 0; i < TERMINALS_NUMBER; i++)
+    {
         set_tty(i);
     }
     set_tty(0);
@@ -93,19 +224,57 @@ int kernel_main(){
     LOG(" CR3: %x", rcr3());
     LOG("Kernel end at address: %d", KEND);
     LOG("Kernel size: %d", KEND - KSTART);
+    LOG_SERIAL("MEMORY", "Calling kinit(%p, %p)", KEND, INIT_PHYSTOP);
     kinit(KEND, INIT_PHYSTOP);
+    LOG_SERIAL("MEMORY", "kinit complete");
 
+    LOG_SERIAL("MEMORY", "Calling kvminit(%p, %p)", INIT_PHYSTOP, PHYSTOP);
     pagetable_t kernel_table = kvminit(INIT_PHYSTOP, PHYSTOP);
+    LOG_SERIAL("MEMORY", "kvminit complete, kernel_table=%p", kernel_table);
     LOG("kernel table: %p", kernel_table);
+
+    // Initialize ACPI and map APIC regions
+    init_acpi_and_map_apic(kernel_table);
+
+    // Copy ACPI tables to safe memory before freeing upper memory region
+    rsdt_copy_to_safe_memory();
+    madt_copy_to_safe_memory();
+
+    // Free upper memory region (INIT_PHYSTOP to PHYSTOP)
     kinit(INIT_PHYSTOP, PHYSTOP);
     LOG("Successfully allocated physical memory up to %p", PHYSTOP);
     LOG_SERIAL("MEMORY", "Physical memory initialized");
 
+    // Initialize per-CPU data structures for BSP
+    uint32_t cpu_count = get_cpu_count();
+    percpu_init_bsp(cpu_count);
+    
+    // Allocate per-CPU stacks
+    percpu_alloc_stacks();
+    LOG_SERIAL("PERCPU", "Per-CPU data structures initialized for %d CPUs", cpu_count);
+
+    // Initialize SMP scheduler
+    sched_init();
+    // Initialize scheduler for bootstrap processor
+    sched_init_cpu();
+
     int pages = count_pages();
+
     struct proc_node *init_proc_node = procinit();
     struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
+
     setup_idt();
     LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
+
+    // Start Application Processors
+    uint32_t ap_count = start_all_aps(kernel_table);
+    LOG_SERIAL("KERNEL", "Started %d Application Processors", ap_count);
+
+    // Log per-CPU data after all CPUs are initialized
+    percpu_log_cpu_info();
+
+    // Wait for all APs to initialize their schedulers
+    for (volatile int i = 0; i < 10000000; i++);
 
 #ifdef TEST
     run_tests();
@@ -113,9 +282,25 @@ int kernel_main(){
 #endif
 
     LOG("Entering idle loop...");
+    
+    // Create demo threads: 2 per CPU
+    create_demo_threads();
+    
+    // Log initial scheduler state
+    sched_log_state();
+    
+    // Mark BSP scheduler as ready and start scheduling
+    mycpu()->scheduler_ready = true;
+    LOG_SERIAL("KERNEL", "Starting SMP scheduler on BSP");
+    
+    // Run the scheduler (never returns)
+    sched_run();
 
-    scheduler();
-
-    while(1) {};
+    // Should never reach here
+    while (1)
+    {
+        sti();
+        asm volatile("hlt");
+    };
     return 0;
 }

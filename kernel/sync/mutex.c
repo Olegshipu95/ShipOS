@@ -23,8 +23,8 @@ void acquire_mutex(struct mutex *lk) {
     }
 
     check_mutex:
-    int bool = holding_spinlock(lk->spinlock);
-    if (bool == 0) {
+    int locked = holding_spinlock(lk->spinlock);
+    if (locked == 0) {
         acquire_spinlock(lk->spinlock);
         return;
     } else {

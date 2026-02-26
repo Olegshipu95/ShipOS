@@ -4,8 +4,7 @@
 //
 
 #include "spinlock.h"
-// Eflags register
-#define FL_INT           0x00000200      // Interrupt Enable
+#include "../sched/percpu.h"
 
 void init_spinlock(struct spinlock *lock, char *name) {
     lock->is_locked = 0;
@@ -55,23 +54,4 @@ int holding_spinlock(struct spinlock *lock) {
     r = lock->is_locked;
     popcli();
     return r;
-}
-
-void pushcli(void) {
-    int eflags;
-
-    eflags = readeflags();
-    cli();
-    if (current_cpu.ncli == 0)
-        current_cpu.intena = eflags & FL_INT;
-    current_cpu.ncli += 1;
-}
-
-void popcli(void) {
-    if (readeflags() & FL_INT)
-        panic("popcli - interruptible");
-    if (--current_cpu.ncli < 0)
-        panic("popcli");
-    if (current_cpu.ncli == 0 && current_cpu.intena)
-        sti();
 }
