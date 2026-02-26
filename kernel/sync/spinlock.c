@@ -1,77 +1,43 @@
-//
-// Created by ShipOS developers on 28.10.23.
-// Copyright (c) 2023 SHIPOS. All rights reserved.
-//
-
 #include "spinlock.h"
-// Eflags register
-#define FL_INT           0x00000200      // Interrupt Enable
+#include "../sched/percpu.h"
+#include "../lib/include/panic.h"
 
-void init_spinlock(struct spinlock *lock, char *name) {
+void init_spinlock(struct spinlock *lock, const char *name) {
     lock->is_locked = 0;
     lock->name = name;
+    lock->cpu = (void*)0;
 }
 
-//bool function
 void acquire_spinlock(struct spinlock *lk) {
-    pushcli(); // disable interrupts to avoid deadlock.
-//    if (holding_spinlock(lk)) {
-//        popcli();
-//        return 1;
-//    }
+    pushcli(); 
 
-    // The xchg is atomic.
-    while (xchg(&lk->is_locked, 1) != 0);
+    // Deadlock check: only panic if THIS CPU already holds the lock
+    if (holding_spinlock(lk)) {
+        panic("acquire_spinlock: deadlock");
+    }
 
-    // Tell the C compiler and the processor to not move loads or stores
-    // past this point, to ensure that the critical section's memory
-    // references happen after the lock is acquire_spinlockd.
+    // Atomic swap. 32-bit swap for 32-bit is_locked.
+    while (xchg(&lk->is_locked, 1) != 0) {
+        asm volatile("pause");
+    }
+
     __sync_synchronize();
-    return;
+    lk->cpu = mycpu();
 }
 
 void release_spinlock(struct spinlock *lk) {
     if (!holding_spinlock(lk))
-        panic("release_spinlock");
+        panic("release_spinlock: not holding");
 
-    // Tell the C compiler and the processor to not move loads or stores
-    // past this point, to ensure that all the stores in the critical
-    // section are visible to other cores before the lock is release_spinlockd.
-    // Both the C compiler and the hardware may re-order loads and
-    // stores; __sync_synchronize() tells them both not to.
+    lk->cpu = (void*)0;
     __sync_synchronize();
 
-    // release_spinlock the lock, equivalent to lk->locked = 0.
-    // This code can't use a C assignment, since it might
-    // not be atomic. A real OS would use C atomics here.
+    // Atomic release
     asm volatile("movl $0, %0" : "+m" (lk->is_locked) : );
 
     popcli();
 }
 
 int holding_spinlock(struct spinlock *lock) {
-    int r;
-    pushcli();
-    r = lock->is_locked;
-    popcli();
-    return r;
-}
-
-void pushcli(void) {
-    int eflags;
-
-    eflags = readeflags();
-    cli();
-    if (current_cpu.ncli == 0)
-        current_cpu.intena = eflags & FL_INT;
-    current_cpu.ncli += 1;
-}
-
-void popcli(void) {
-    if (readeflags() & FL_INT)
-        panic("popcli - interruptible");
-    if (--current_cpu.ncli < 0)
-        panic("popcli");
-    if (current_cpu.ncli == 0 && current_cpu.intena)
-        sti();
+    return lock->is_locked && (lock->cpu == mycpu());
 }

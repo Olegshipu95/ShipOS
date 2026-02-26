@@ -1,45 +1,42 @@
+//
+// Created by ShipOS developers.
+// Copyright (c) 2024-2026 SHIPOS. All rights reserved.
+//
+
 #include "condvar.h"
-#include "../sched/scheduler.h"
+#include "../sched/smp_sched.h"
+#include "../sched/percpu.h"
 
-extern struct cpu current_cpu;
-
-void init_condvar(struct condvar *cv, char *name) {
-    cv->wait_list = 0;
-    init_spinlock(&cv->lock, name);
+void init_condvar(struct condvar *cv, const char *name) {
+    cv->name = name;
 }
 
 void cv_wait(struct condvar *cv, struct mutex *m) {
-    // Берем лок CV, чтобы безопасно добавить себя в список
-    acquire_spinlock(&cv->lock);
-    
-    push_thread_list(&cv->wait_list, current_cpu.current_thread);
-    change_thread_state(current_cpu.current_thread, WAIT);
-    
-    // Отпускаем переданный мьютекс
-    release_mutex(m);
-    
-    // Засыпаем (отпустив лок CV)
-    release_spinlock(&cv->lock);
-    yield();
+    // We must hold the mutex's internal spinlock to ensure that 
+    // the release of the mutex and the sleep are atomic.
+    acquire_spinlock(&m->lock);
 
-    // Когда проснулись, обязаны снова захватить мьютекс
+    // Release the mutex
+    m->locked = 0;
+    m->owner = (void *)0;
+
+    // Wake up any threads that might be waiting for this mutex
+    wakeup(m);
+
+    // Sleep on the condition variable address.
+    // The sleep() function in smp_sched.c will release m->lock 
+    // and switch context.
+    sleep(cv, &m->lock);
+
+    // After waking up, we must re-acquire the mutex
     acquire_mutex(m);
 }
 
 void cv_signal(struct condvar *cv) {
-    acquire_spinlock(&cv->lock);
-    if (cv->wait_list != 0) {
-        struct thread *t = pop_thread_list(&cv->wait_list);
-        change_thread_state(t, RUNNABLE);
-    }
-    release_spinlock(&cv->lock);
+    // Wake up threads sleeping on the condvar channel
+    wakeup(cv);
 }
 
 void cv_broadcast(struct condvar *cv) {
-    acquire_spinlock(&cv->lock);
-    while (cv->wait_list != 0) {
-        struct thread *t = pop_thread_list(&cv->wait_list);
-        change_thread_state(t, RUNNABLE);
-    }
-    release_spinlock(&cv->lock);
+    wakeup(cv);
 }

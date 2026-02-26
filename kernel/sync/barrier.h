@@ -1,18 +1,31 @@
+//
+// Created by ShipOS developers.
+// Copyright (c) 2024-2026 SHIPOS. All rights reserved.
+//
+
 #ifndef UNTITLED_OS_BARRIER_H
 #define UNTITLED_OS_BARRIER_H
 
 #include "spinlock.h"
-#include "../sched/threads.h"
 
+/**
+ * @brief Synchronization barrier
+ * Blocks all calling threads until a specified number of threads
+ * have reached the barrier.
+ */
 struct barrier {
-    int threshold;      // Сколько потоков нужно
-    int count;          // Сколько уже пришло
-    int generation;     // Чтобы различать разные поколения использования барьера
+    uint32_t threshold;  // Number of threads required to trip the barrier
+    uint32_t count;      // Number of threads currently waiting
+    uint32_t generation; // Generation counter to allow barrier reuse
     struct spinlock lock;
-    struct thread_node *wait_list;
 };
 
-void init_barrier(struct barrier *b, int count, char *name);
+void init_barrier(struct barrier *b, uint32_t count, const char *name);
+
+/**
+ * @brief Wait at the barrier
+ * Blocks the current thread until all 'threshold' threads have called this function.
+ */
 void barrier_wait(struct barrier *b);
 
-#endif
+#endif // UNTITLED_OS_BARRIER_H

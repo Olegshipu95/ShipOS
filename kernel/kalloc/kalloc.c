@@ -4,7 +4,7 @@
 //#include "../lib/include/stdint.h"
 #include <inttypes.h>
 #include <stddef.h>
-#include "../tty/tty.h"
+#include "../lib/include/logging.h"
 
 struct run {
     struct run *next;
@@ -17,6 +17,7 @@ struct {
 
 
 void kinit(uint64_t start, uint64_t stop) {
+    // TODO Race Cond.
     //  init_spinlock(&kmem.lock, "kmem");
     char *p;
     p = (char *) PGROUNDUP(start);
@@ -25,10 +26,11 @@ void kinit(uint64_t start, uint64_t stop) {
 }
 
 void kfree(void *pa) {
+    // TODO Race Cond.
     struct run *r;
 
     if (((uint64_t) pa % PGSIZE) != 0 || (char *) pa < end || (uint64_t) pa >= PHYSTOP) {
-        printf("Panic while trying to free memory\nPA: %p END: %p PHYSTOP: %p", pa, end, PHYSTOP);
+        LOG("Panic while trying to free memory\nPA: %p END: %p PHYSTOP: %p", pa, end, PHYSTOP);
         panic("kfree");
     }
 
@@ -45,6 +47,7 @@ void kfree(void *pa) {
 }
 
 void *kalloc() {
+    // TODO Race Cond.
     struct run *r;
 
 //    acquire_spinlock(&kmem.lock);
@@ -67,5 +70,6 @@ uint64_t count_pages() {
         r = r->next;
     }
 
+    LOG("%d pages available in allocator", res);
     return res;
 }

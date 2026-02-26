@@ -69,4 +69,99 @@ pagetable_t kvminit(uint64_t, uint64_t);
 
 struct page_entry_raw *walk(pagetable_t tbl, uint64_t va, bool alloc);
 
+/**
+ * @brief Map a single page from virtual address to physical address
+ * 
+ * @param tbl Page table to use (typically from rcr3())
+ * @param va Virtual address to map (will be page-aligned)
+ * @param pa Physical address to map to (will be page-aligned)
+ * @param flags Page flags (PTE_W for writable, PTE_U for user-accessible)
+ * @return 0 on success, -1 on failure
+ */
+int map_page(pagetable_t tbl, uint64_t va, uint64_t pa, int flags);
+
+/**
+ * @brief Map a range of physical memory into virtual address space
+ * 
+ * @param tbl Page table to use
+ * @param va Virtual address start (will be page-aligned)
+ * @param pa Physical address start (will be page-aligned)
+ * @param size Size in bytes to map
+ * @param flags Page flags
+ * @return 0 on success, -1 on failure
+ */
+int map_pages(pagetable_t tbl, uint64_t va, uint64_t pa, uint64_t size, int flags);
+
+/**
+ * @brief Map physical memory for MMIO/device access (identity mapping)
+ * 
+ * Maps physical address to the same virtual address.
+ * Useful for accessing ACPI tables, device memory, etc.
+ * 
+ * @param pa Physical address to map
+ * @param size Size in bytes to map
+ * @return Virtual address (same as pa) on success, 0 on failure
+ */
+void *map_mmio(uint64_t pa, uint64_t size);
+
+/**
+ * @brief Unmap a single page
+ * 
+ * @param tbl Page table to use
+ * @param va Virtual address to unmap
+ */
+void unmap_page(pagetable_t tbl, uint64_t va);
+
+/**
+ * @brief Unmap a range of pages
+ * 
+ * @param tbl Page table to use
+ * @param va Virtual address start
+ * @param size Size in bytes to unmap
+ */
+void unmap_pages(pagetable_t tbl, uint64_t va, uint64_t size);
+
+/**
+ * @brief Translate virtual address to physical address
+ * 
+ * @param tbl Page table to use
+ * @param va Virtual address to translate
+ * @return Physical address, or 0 if not mapped
+ */
+uint64_t va_to_pa(pagetable_t tbl, uint64_t va);
+
+/**
+ * @brief Invalidate TLB entry for a virtual address
+ * 
+ * @param va Virtual address to invalidate
+ */
+void invlpg(uint64_t va);
+
+/**
+ * @brief Map APIC memory regions into kernel page table
+ * 
+ * @param tbl Page table to map into
+ * @param apic_base Physical base address of APIC region
+ * @param size Size of region to map in bytes
+ */
+void map_apic_region(pagetable_t tbl, uint64_t apic_base, uint32_t size);
+
+/**
+ * @brief Map low memory region for AP trampoline code
+ * 
+ * @param tbl Page table to map into
+ * @param start Start physical address
+ * @param size Size of region to map in bytes
+ */
+void map_low_memory(pagetable_t tbl, uint64_t start, uint64_t size);
+
+// Page table entry flags
+#define PTE_P   0x001   // Present
+#define PTE_W   0x002   // Writable
+#define PTE_U   0x004   // User-accessible
+#define PTE_PWT 0x008   // Page-level write-through
+#define PTE_PCD 0x010   // Page-level cache disable
+#define PTE_A   0x020   // Accessed
+#define PTE_D   0x040   // Dirty
+
 #endif

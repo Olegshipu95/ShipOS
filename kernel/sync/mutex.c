@@ -1,47 +1,51 @@
 //
 // Created by ShipOS developers on 03.01.24.
-// Copyright (c) 2024 SHIPOS. All rights reserved.
+// Copyright (c) 2024-2026 SHIPOS. All rights reserved.
+//
+// Simple SMP-safe mutex implementation for ShipOS kernel.
 //
 
 #include "mutex.h"
+#include "../sched/smp_sched.h"
+#include "../sched/percpu.h"
 #include "../lib/include/panic.h"
-#include "../sched/scheduler.h"
 
-extern struct cpu current_cpu;
-
-int init_mutex(struct mutex *lk, char *name) {
-    lk->locked = 0;
-    lk->wait_list = 0;
-    lk->name = name;
-
-    init_spinlock(&lk->lock, "mutex_inner_lock");
+void init_mutex(struct mutex *m, const char *name) {
+    init_spinlock(&m->lock, name);
+    m->locked = 0;
+    m->owner = (void *)0;
+    m->name = name;
 }
 
-void acquire_mutex(struct mutex *lk) {
-    acquire_spinlock(&lk->lock);   // захватываем спинлок для защиты полей locked и wait_list
-
-    while (lk->locked) {  // между пробуждением и захватом мьютекс могли перехватить
-        push_thread_list(&lk->wait_list, current_cpu.current_thread);
-        change_thread_state(current_cpu.current_thread, WAIT);
-        
-        release_spinlock(&lk->lock);  // если не отпустить спинлок, прерывания останутся выключенными (дедлок)
-        
-        yield();  // уходим в сон, отдавая процессор другим задачам
-        
-        acquire_spinlock(&lk->lock);  // спинлок для безопасной проверки lk->locked
+void acquire_mutex(struct mutex *m) {
+    acquire_spinlock(&m->lock);
+    
+    // Sleep until the mutex is unlocked.
+    // The while loop protects against spurious wakeups.
+    while (m->locked) {
+        sleep(m, &m->lock);
     }
-
-    lk->locked = 1;  // теперь мьютекс наш
-    release_spinlock(&lk->lock);  // отпускаем защиту структуры
+    
+    m->locked = 1;
+    m->owner = curthread(); // curthread() is a macro from percpu.h
+    
+    release_spinlock(&m->lock);
 }
 
-void release_mutex(struct mutex *lk) {
-    acquire_spinlock(&lk->lock);
-
-    lk->locked = 0;
-
-    if (lk->wait_list) {
-        struct thread *t = pop_thread_list(&lk->wait_list);
-        change_thread_state(t, RUNNABLE);
+void release_mutex(struct mutex *m) {
+    acquire_spinlock(&m->lock);
+    
+    // Only the thread that acquired the mutex can release it
+    if (!m->locked || m->owner != curthread()) {
+        panic("release_mutex: not holding or not owner");
     }
+    
+    m->locked = 0;
+    m->owner = (void *)0;
+    
+    // Wake up all threads sleeping on this mutex.
+    // Only one will successfully acquire it because of the while loop in acquire_mutex.
+    wakeup(m);
+    
+    release_spinlock(&m->lock);
 }

@@ -1,28 +1,29 @@
+//
+// Created by ShipOS developers.
+// Copyright (c) 2024-2026 SHIPOS. All rights reserved.
+//
+// SMP-safe counting semaphore implementation for ShipOS kernel.
+//
+
 #include "semaphore.h"
-#include "../sched/scheduler.h"
+#include "../sched/smp_sched.h"
 
-extern struct cpu current_cpu;
-
-void sem_init(struct semaphore *s, int value, char *name) {
-    s->value = value;
-    s->wait_list = 0;
+void sem_init(struct semaphore *s, int value, const char *name) {
     init_spinlock(&s->lock, name);
+    s->value = value;
+    s->name = name;
 }
 
 void sem_wait(struct semaphore *s) {
     acquire_spinlock(&s->lock);
 
+    // Sleep until the counter is greater than 0
     while (s->value <= 0) {
-        push_thread_list(&s->wait_list, current_cpu.current_thread);
-        change_thread_state(current_cpu.current_thread, WAIT);
-        release_spinlock(&s->lock);
-        
-        yield();
-        
-        acquire_spinlock(&s->lock);
+        sleep(s, &s->lock);
     }
 
     s->value--;
+    
     release_spinlock(&s->lock);
 }
 
@@ -31,10 +32,8 @@ void sem_post(struct semaphore *s) {
     
     s->value++;
     
-    if (s->wait_list != 0) {
-        struct thread *t = pop_thread_list(&s->wait_list);
-        change_thread_state(t, RUNNABLE);
-    }
+    // Wake up threads waiting on this semaphore
+    wakeup(s);
     
     release_spinlock(&s->lock);
 }

@@ -2,14 +2,17 @@
 #define UNTITLED_OS_SEQLOCK_H
 
 #include "spinlock.h"
-#include "../lib/include/atomic.h"
 
+/**
+ * @brief Sequence lock structure
+ * Readers do not block writers. Writers are serialized via a spinlock.
+ */
 typedef struct seqlock {
-    uint32_t sequence;
-    struct spinlock lock; // Блокировка только для write
+    volatile uint32_t sequence;
+    struct spinlock lock;
 } seqlock_t;
 
-void init_seqlock(seqlock_t *sl, char *name);
+void init_seqlock(seqlock_t *sl, const char *name);
 void write_seqlock(seqlock_t *sl);
 void write_sequnlock(seqlock_t *sl);
 uint32_t read_seqbegin(seqlock_t *sl);

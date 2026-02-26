@@ -8,7 +8,7 @@
 
 #ifndef UNTITLED_OS_INTERRUPT_HANDLERS_H
 #define UNTITLED_OS_INTERRUPT_HANDLERS_H
-//#include "../lib/include/stdint.h"
+// #include "../lib/include/stdint.h"
 #include <inttypes.h>
 #include "../lib/include/x86_64.h"
 
@@ -90,4 +90,4 @@ void interrupt_handler_29();
 void interrupt_handler_30();
 void interrupt_handler_31();
 
-#endif //UNTITLED_OS_INTERRUPT_HANDLERS_H
+#endif // UNTITLED_OS_INTERRUPT_HANDLERS_H

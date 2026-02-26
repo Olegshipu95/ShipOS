@@ -1,39 +1,39 @@
+//
+// Created by ShipOS developers.
+// Copyright (c) 2024-2026 SHIPOS. All rights reserved.
+//
+
 #include "barrier.h"
-#include "../sched/scheduler.h"
+#include "../sched/smp_sched.h"
 
-extern struct cpu current_cpu;
-
-void init_barrier(struct barrier *b, int count, char *name) {
+void init_barrier(struct barrier *b, uint32_t count, const char *name) {
     b->threshold = count;
     b->count = 0;
     b->generation = 0;
-    b->wait_list = 0;
     init_spinlock(&b->lock, name);
 }
 
 void barrier_wait(struct barrier *b) {
     acquire_spinlock(&b->lock);
 
-    int gen = b->generation;
+    // Save the current generation before we sleep
+    uint32_t gen = b->generation;
     b->count++;
 
     if (b->count >= b->threshold) {
-        // Мы последние, гооол!
+        // We are the last thread to arrive - trip the barrier!
         b->count = 0;
-        b->generation++; // Начинаем новое поколение
+        b->generation++; // Increment generation for future reuses
         
-        // Будим всех
-        while (b->wait_list != 0) {
-            struct thread *t = pop_thread_list(&b->wait_list);
-            change_thread_state(t, RUNNABLE);
-        }
-        release_spinlock(&b->lock);
+        // Wake up all threads sleeping on the 'generation' channel
+        wakeup(&b->generation);
     } else {
-        // Мы не последние, надо спать
-        push_thread_list(&b->wait_list, current_cpu.current_thread);
-        change_thread_state(current_cpu.current_thread, WAIT);
-        
-        release_spinlock(&b->lock);
-        yield();
+        // Not all threads have arrived, we must wait
+        // Loop to protect against spurious wakeups
+        while (gen == b->generation) {
+            sleep(&b->generation, &b->lock);
+        }
     }
+    
+    release_spinlock(&b->lock);
 }
