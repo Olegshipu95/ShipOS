@@ -31,7 +31,6 @@ struct spinlock;
 
 // Global lock for operations that affect multiple CPUs (thread creation, migration)
 extern struct spinlock sched_lock;
-
 // Flag indicating if scheduler is fully initialized
 extern bool sched_initialized;
 
@@ -140,6 +139,7 @@ uint32_t sched_find_least_loaded(void);
  * @brief Log scheduler state for all CPUs
  */
 void sched_log_state(void);
+
 void sched_join(struct thread *t);
 void sleep(void *chan, struct spinlock *lk);
 void wakeup(void *chan);

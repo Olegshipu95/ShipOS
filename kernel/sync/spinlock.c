@@ -9,8 +9,8 @@ void init_spinlock(struct spinlock *lock, const char *name) {
 }
 
 void acquire_spinlock(struct spinlock *lk) {
-    pushcli(); 
-
+    pushcli();
+    
     // Deadlock check: only panic if THIS CPU already holds the lock
     if (holding_spinlock(lk)) {
         panic("acquire_spinlock: deadlock");
@@ -28,7 +28,7 @@ void acquire_spinlock(struct spinlock *lk) {
 void release_spinlock(struct spinlock *lk) {
     if (!holding_spinlock(lk))
         panic("release_spinlock: not holding");
-
+        
     lk->cpu = (void*)0;
     __sync_synchronize();
 

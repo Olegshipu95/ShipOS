@@ -31,6 +31,7 @@ void init_thread(struct thread *thread, void (*start_function)(void *), int argc
     memset(sp, 0, sizeof(struct context) - sizeof(uint64_t));
     
     thread->context = (struct context *) sp;
+    
     thread->context->rdi = (uint64_t)argc;
     thread->context->rsi = (uint64_t)args;
 }
@@ -49,6 +50,7 @@ void push_thread_list(struct thread_node **list, struct thread *thread) {
     memset(new_node, 0, PGSIZE);
     
     new_node->data = thread;
+    
     if ((*list) != 0) {
         new_node->next = (*list);
         new_node->prev = (*list)->prev;

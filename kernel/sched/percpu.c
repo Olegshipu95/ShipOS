@@ -23,7 +23,9 @@ struct percpu percpus[MAX_CPUS];
 uint32_t ncpu = 0;
 
 // Mapping from APIC ID to CPU index
-static int apic_to_cpu[256];  // APIC IDs are 8-bit
+static int apic_to_cpu[256];
+
+// APIC IDs are 8-bit
 
 // Flag indicating if SMP is initialized
 bool smp_initialized = false;
@@ -58,6 +60,7 @@ bool smp_initialized = false;
 
 // Early boot per-CPU structure for BSP before full initialization
 static struct percpu early_bsp_percpu = {0};
+
 static bool percpu_fully_initialized = false;
 
 struct percpu *mycpu(void) {
@@ -68,6 +71,7 @@ struct percpu *mycpu(void) {
     
     // Get APIC ID and look up CPU
     uint32_t apic_id = get_apic_id();
+    
     int idx = apic_to_cpu[apic_id];
     
     if (idx < 0 || idx >= (int)ncpu) {
@@ -144,23 +148,23 @@ void percpu_setup_gdt(struct percpu *cpu) {
     set_gdt_entry(&gdt[1], 0, 0xFFFFF,
                   GDT_PRESENT | GDT_DPL0 | GDT_CODE | 0x02,  // +readable
                   GDT_LONG_MODE | GDT_GRANULARITY);
-    
+                  
     // Entry 2: Kernel Data Segment (0x10)
     // Data segment: present, DPL 0, writable
     set_gdt_entry(&gdt[2], 0, 0xFFFFF,
                   GDT_PRESENT | GDT_DPL0 | GDT_DATA | 0x02,  // +writable
                   GDT_GRANULARITY);
-    
+                  
     // Entry 3: User Code Segment (0x18) - for future use
     set_gdt_entry(&gdt[3], 0, 0xFFFFF,
                   GDT_PRESENT | GDT_DPL3 | GDT_CODE | 0x02,
                   GDT_LONG_MODE | GDT_GRANULARITY);
-    
+                  
     // Entry 4: User Data Segment (0x20) - for future use
     set_gdt_entry(&gdt[4], 0, 0xFFFFF,
                   GDT_PRESENT | GDT_DPL3 | GDT_DATA | 0x02,
                   GDT_GRANULARITY);
-    
+                  
     // Entry 5-6: TSS (0x28) - takes 16 bytes (2 entries)
     struct gdt_tss_entry *tss_entry = (struct gdt_tss_entry *)&gdt[5];
     set_tss_entry(tss_entry, (uint64_t)&cpu->tss, sizeof(struct tss64) - 1);
@@ -208,7 +212,7 @@ static void setup_tss(struct percpu *cpu) {
     // RSP0: Stack pointer for privilege level 0 transitions
     // This is used when switching from user mode to kernel mode
     if (cpu->kstack) {
-        cpu->tss.rsp0 = (uint64_t)(cpu->kstack + 4096);  // Stack grows down
+        cpu->tss.rsp0 = (uint64_t)(cpu->kstack + 4096); // Stack grows down
     }
     
     // IST1: Interrupt Stack for critical handlers (double fault, NMI, etc.)
@@ -231,12 +235,14 @@ void percpu_init_bsp(uint32_t total_cpus) {
     }
     
     ncpu = total_cpus;
+    
     if (ncpu > MAX_CPUS) {
         ncpu = MAX_CPUS;
     }
     
     // Initialize BSP (CPU 0)
     struct percpu *bsp = &percpus[0];
+    
     memset(bsp, 0, sizeof(struct percpu));
     
     bsp->self = bsp;
@@ -244,6 +250,7 @@ void percpu_init_bsp(uint32_t total_cpus) {
     bsp->cpu_index = 0;
     bsp->is_bsp = true;
     bsp->started = true;
+    
     bsp->ncli = 0;
     bsp->intena = 0;
     bsp->current_thread = (void *)0;
@@ -289,7 +296,7 @@ void percpu_alloc_stacks(void) {
 
 void percpu_init_ap(uint32_t cpu_index) {
     if (cpu_index >= ncpu || cpu_index == 0) {
-        return;  // Invalid or BSP
+        return; // Invalid or BSP
     }
     
     struct percpu *cpu = &percpus[cpu_index];
@@ -298,6 +305,7 @@ void percpu_init_ap(uint32_t cpu_index) {
     cpu->self = cpu;
     cpu->apic_id = get_apic_id();
     cpu->cpu_index = cpu_index;
+    
     cpu->is_bsp = false;
     cpu->ncli = 0;
     cpu->intena = 0;
@@ -324,15 +332,19 @@ void percpu_log_cpu_info(void) {
     
     for (uint32_t i = 0; i < ncpu; i++) {
         struct percpu *cpu = &percpus[i];
+        
         LOG_SERIAL("PERCPU", "CPU %d: APIC ID=%d, %s, started=%d",
                    cpu->cpu_index,
                    cpu->apic_id,
                    cpu->is_bsp ? "BSP" : "AP",
                    cpu->started);
+                   
         LOG_SERIAL("PERCPU", "  int_stack=%p, kstack=%p",
                    cpu->int_stack, cpu->kstack);
+                   
         LOG_SERIAL("PERCPU", "  TSS RSP0=%p, IST1=%p",
                    (void *)cpu->tss.rsp0, (void *)cpu->tss.ist1);
+                   
         LOG_SERIAL("PERCPU", "  GDT at %p",
                    cpu->gdt);
     }
@@ -341,8 +353,10 @@ void percpu_log_cpu_info(void) {
 
 void percpu_log_timer_ticks(void) {
     LOG_SERIAL("PERCPU", "=== Timer Interrupt Counts ===");
+    
     for (uint32_t i = 0; i < ncpu; i++) {
         struct percpu *cpu = &percpus[i];
+        
         LOG_SERIAL("PERCPU", "CPU %d (APIC %d): %llu ticks",
                    cpu->cpu_index,
                    cpu->apic_id,
@@ -370,6 +384,7 @@ void pushcli(void) {
     cli();  // Disable interrupts
     
     struct percpu *cpu = mycpu();
+    
     if (cpu->ncli == 0) {
         cpu->intena = eflags & FL_IF;
     }
@@ -383,12 +398,13 @@ void popcli(void) {
     }
     
     struct percpu *cpu = mycpu();
+    
     if (--cpu->ncli < 0) {
         // Panic: unbalanced popcli
         panic("unbalanced popcli");
     }
     
     if (cpu->ncli == 0 && cpu->intena) {
-        sti();  // Re-enable interrupts
+        sti(); // Re-enable interrupts
     }
 }

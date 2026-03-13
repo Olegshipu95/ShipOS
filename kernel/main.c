@@ -1,7 +1,4 @@
 //
-// Created by ShipOS developers on 28.10.23.
-// Copyright (c) 2023 SHIPOS. All rights reserved.
-//
 // Main kernel entry point and thread utilities
 //
 
@@ -27,11 +24,9 @@
 
 /**
  * @brief Initialize ACPI subsystem and map APIC memory regions
- * 
- * Initializes RSDP, RSDT, and MADT tables, then maps Local APIC
+ * * Initializes RSDP, RSDT, and MADT tables, then maps Local APIC
  * and all I/O APICs into the kernel page tables for MMIO access.
- * 
- * @param kernel_table Kernel page table to map APIC regions into
+ * * @param kernel_table Kernel page table to map APIC regions into
  */
 static void init_acpi_and_map_apic(pagetable_t kernel_table)
 {
@@ -63,7 +58,6 @@ static void init_acpi_and_map_apic(pagetable_t kernel_table)
         while (entry_ptr < end_ptr)
         {
             struct MADTEntryHeader *header = (struct MADTEntryHeader *)entry_ptr;
-            
             if (header->Type == MADT_ENTRY_IOAPIC)
             {
                 struct MADTEntryIOAPIC *ioapic = (struct MADTEntryIOAPIC *)entry_ptr;
@@ -82,31 +76,25 @@ static void init_acpi_and_map_apic(pagetable_t kernel_table)
 
 /**
  * @brief Demo thread function for SMP scheduler testing
- * 
- * Each thread prints its ID and which CPU it's running on.
+ * * Each thread prints its ID and which CPU it's running on.
  * Uses yield() to allow other threads to run.
  */
 static void demo_thread_func(void *arg)
 {
     uint32_t thread_id = (uint32_t)(uint64_t)arg;
-    
     for (int i = 0; i < 5; i++) {
         struct percpu *cpu = mycpu();
         LOG_SERIAL("THREAD", "Thread %d running on CPU %d (tick %d)", 
                    thread_id, cpu->cpu_index, i);
-        
         // Busy wait to simulate work
         for (volatile int j = 0; j < 5000000; j++);
-        
         // Yield to let other threads run
         sched_yield();
     }
     
     LOG_SERIAL("THREAD", "Thread %d finished", thread_id);
-    
     // Thread done - exit properly
     sched_exit();
-    
     // Should never reach here
     while (1) {
         asm volatile("hlt");
@@ -115,15 +103,13 @@ static void demo_thread_func(void *arg)
 
 /**
  * @brief Create demo threads for SMP scheduler testing
- * 
- * Creates 2 threads per CPU to demonstrate concurrent execution.
+ * * Creates 2 threads per CPU to demonstrate concurrent execution.
  */
 static void create_demo_threads(void)
 {
     LOG_SERIAL("DEMO", "Creating 2 threads per CPU (%d CPUs)", ncpu);
     
     uint32_t thread_id = 0;
-    
     for (uint32_t cpu = 0; cpu < ncpu; cpu++) {
         for (int t = 0; t < 2; t++) {
             struct thread *thread = create_thread(demo_thread_func, 0, 0);
@@ -134,10 +120,8 @@ static void create_demo_threads(void)
             
             // Pass thread_id as the argument (stored in context->rdi)
             thread->context->rdi = thread_id;
-            
             // Add to specific CPU
             sched_add_thread(thread, cpu);
-            
             LOG_SERIAL("DEMO", "Created thread %d for CPU %d", thread_id, cpu);
             thread_id++;
         }
@@ -242,37 +226,29 @@ int kernel_main()
     LOG_SERIAL("MEMORY", "Calling kinit(%p, %p)", KEND, INIT_PHYSTOP);
     kinit(KEND, INIT_PHYSTOP);
     LOG_SERIAL("MEMORY", "kinit complete");
-
     LOG_SERIAL("MEMORY", "Calling kvminit(%p, %p)", INIT_PHYSTOP, PHYSTOP);
     pagetable_t kernel_table = kvminit(INIT_PHYSTOP, PHYSTOP);
     LOG_SERIAL("MEMORY", "kvminit complete, kernel_table=%p", kernel_table);
     LOG("kernel table: %p", kernel_table);
-
     // Initialize ACPI and map APIC regions
     init_acpi_and_map_apic(kernel_table);
-
     // Copy ACPI tables to safe memory before freeing upper memory region
     rsdt_copy_to_safe_memory();
     madt_copy_to_safe_memory();
-
     // Free upper memory region (INIT_PHYSTOP to PHYSTOP)
     kinit(INIT_PHYSTOP, PHYSTOP);
     LOG("Successfully allocated physical memory up to %p", PHYSTOP);
     LOG_SERIAL("MEMORY", "Physical memory initialized");
-
     // Initialize per-CPU data structures for BSP
     uint32_t cpu_count = get_cpu_count();
     percpu_init_bsp(cpu_count);
-    
     // Allocate per-CPU stacks
     percpu_alloc_stacks();
     LOG_SERIAL("PERCPU", "Per-CPU data structures initialized for %d CPUs", cpu_count);
-
     // Initialize SMP scheduler
     sched_init();
     // Initialize scheduler for bootstrap processor
     sched_init_cpu();
-
     int pages = count_pages();
 
     struct proc_node *init_proc_node = procinit();
@@ -280,17 +256,13 @@ int kernel_main()
 
     setup_idt();
     LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
-
     // Start Application Processors
     uint32_t ap_count = start_all_aps(kernel_table);
     LOG_SERIAL("KERNEL", "Started %d Application Processors", ap_count);
-
     // Log per-CPU data after all CPUs are initialized
     percpu_log_cpu_info();
-
     // Wait for all APs to initialize their schedulers
     for (volatile int i = 0; i < 10000000; i++);
-
 #ifdef TEST
     struct thread *tr = create_thread(test_runner_thread, 0, 0);
     sched_add_thread(tr, 0);
@@ -300,7 +272,6 @@ int kernel_main()
     
     // Create demo threads: 2 per CPU
     create_demo_threads();
-    
     // Log initial scheduler state
     sched_log_state();
     
@@ -310,7 +281,6 @@ int kernel_main()
     
     // Run the scheduler (never returns)
     sched_run();
-
     // Should never reach here
     while (1)
     {

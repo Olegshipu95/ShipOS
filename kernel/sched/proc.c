@@ -24,7 +24,6 @@ pid_t generate_pid() {
 
 struct proc *allocproc(void) {
     struct proc *proc = (struct proc *)kalloc();
-
     if (proc == 0) {
         panic("Failed to alloc proc\n");
     }
@@ -44,7 +43,7 @@ struct proc *allocproc(void) {
 struct proc_node *procinit(void) {
     init_spinlock(&pid_lock, "pid_lock");
     init_spinlock(&proc_lock, "proc_lock");
-
+    
     struct proc *init_proc = allocproc();
     LOG("Init proc allocated");
 
@@ -59,7 +58,6 @@ struct proc_node *procinit(void) {
     arg2.value = (char *)&arg_value2;
     
     LOG("arg initialized");
-    
     // Cast thread_function to the expected signature (void (*)(void *))
     struct thread *new_thread1 = create_thread((void (*)(void *))thread_function, 1, &arg1);
     struct thread *new_thread2 = create_thread((void (*)(void *))thread_function, 1, &arg2);

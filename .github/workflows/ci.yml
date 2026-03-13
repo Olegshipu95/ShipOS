@@ -1,0 +1,96 @@
+name: 🚀 ShipOS CI
+
+on:
+  push:
+    branches: [ main, dev*, feat/** ]
+  pull_request:
+    branches: [ main, dev* ]
+
+jobs:
+  build-and-test:
+    name: 🔧 Build & Test ShipOS
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+
+    - name: 📦 Install dependencies
+      run: |
+        echo "🔍 Updating system packages..."
+        sudo apt-get update
+        echo "📦 Installing required tools..."
+        sudo apt-get install -y \
+          grub-pc-bin \
+          grub-common \
+          xorriso \
+          mtools \
+          qemu-system-x86 \
+          nasm \
+          gcc \
+          make
+        echo "✨ Dependencies installed!"
+
+    - name: 🏗️ Build Kernel & ISO
+      run: |
+        echo "🛠️ Building kernel ISO..."
+        make build_iso
+        echo "🎉 Build completed"
+
+    - name: 🔎 Verify kernel binary exists
+      run: |
+        echo "📁 Checking kernel.bin..."
+        if [ ! -f isofiles/boot/kernel.bin ]; then
+          echo "❌ Error: kernel.bin not found!"
+          exit 1
+        fi
+        echo "✅ Kernel binary found!"
+        echo "📏 Size: $(stat -c%s isofiles/boot/kernel.bin) bytes"
+
+    - name: 🔎 Verify ISO exists
+      run: |
+        echo "📁 Checking kernel.iso..."
+        if [ ! -f isofiles/kernel.iso ]; then
+          echo "❌ Error: kernel.iso not found!"
+          exit 1
+        fi
+        echo "✅ ISO found!"
+        echo "📏 Size: $(stat -c%s isofiles/kernel.iso) bytes"
+
+    - name: 🧪 Boot test with QEMU
+      run: |
+        echo "🖥️ Starting QEMU boot test"
+        bash ./scripts/prepare.sh || true
+        echo "📜 === Boot log ==="
+        cat report.log
+        echo "📜 === End of boot log ==="
+        cp report.log kernel_boot.log
+        echo "📝 Boot log saved"
+
+    - name: 🧐 Validate boot success
+      run: bash ./scripts/checks/boot.sh
+
+    - name: 🚨 Check for panic or errors
+      run: bash ./scripts/checks/panic.sh
+        
+    
+    - name: 🧪 Tests
+      run: bash ./scripts/check_tests.sh
+
+    - name: 📤 Upload boot log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: 📝 kernel-boot-log
+        path: kernel_boot.log
+        retention-days: 30
+
+    - name: 📤 Upload kernel binary & ISO
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: 🧩 Kernel build artifacts
+        path: |
+          isofiles/boot/kernel.bin
+          isofiles/kernel.iso
+        retention-days: 30
