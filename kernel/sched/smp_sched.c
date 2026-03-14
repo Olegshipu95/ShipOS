@@ -18,7 +18,7 @@
 // Global State
 // ============================================================================
 
-struct spinlock sched_lock;
+// struct spinlock sched_lock; // Handled by scheduler.c
 bool sched_initialized = false;
 
 // ============================================================================

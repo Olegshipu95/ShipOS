@@ -224,7 +224,7 @@ int kernel_main()
     LOG("Kernel end at address: %d", KEND);
     LOG("Kernel size: %d", KEND - KSTART);
     LOG_SERIAL("MEMORY", "Calling kinit(%p, %p)", KEND, INIT_PHYSTOP);
-    kinit(KEND, INIT_PHYSTOP);
+    kinit((uint64_t)KEND, INIT_PHYSTOP);
     LOG_SERIAL("MEMORY", "kinit complete");
     LOG_SERIAL("MEMORY", "Calling kvminit(%p, %p)", INIT_PHYSTOP, PHYSTOP);
     pagetable_t kernel_table = kvminit(INIT_PHYSTOP, PHYSTOP);
@@ -249,10 +249,10 @@ int kernel_main()
     sched_init();
     // Initialize scheduler for bootstrap processor
     sched_init_cpu();
-    int pages = count_pages();
+    // int pages = count_pages(); // Unused
 
     struct proc_node *init_proc_node = procinit();
-    struct thread *init_thread = peek_thread_list(init_proc_node->data->threads);
+    // struct thread *init_thread = peek_thread_list(init_proc_node->data->threads); // Unused
 
     setup_idt();
     LOG_SERIAL("KERNEL", "Boot sequence completed successfully");
