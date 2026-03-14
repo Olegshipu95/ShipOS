@@ -1,9 +1,9 @@
 //
 // Created by ShipOS developers on 03.01.24.
-// Copyright (c) 2024 SHIPOS. All rights reserved.
+// Copyright (c) 2024-2026 SHIPOS. All rights reserved.
 //
 // Mutex interface for ShipOS kernel
-// Provides basic mutual exclusion with support for thread blocking.
+// Provides basic mutual exclusion with support for thread blocking via sleep/wakeup.
 //
 
 #ifndef UNTITLED_OS_MUTEX_H
@@ -11,42 +11,39 @@
 
 #include "spinlock.h"
 #include "../sched/threads.h"
-#include "../kalloc/kalloc.h"
-#include "../sched/scheduler.h"
 
 /**
  * @brief Mutex structure
- * 
- * Combines a low-level spinlock with a waiting thread list.
- * Threads attempting to acquire a locked mutex will be blocked
- * and added to the thread_list.
+ * Uses a low-level spinlock to protect its state.
+ * Threads attempting to acquire a locked mutex will be put to sleep
+ * by the scheduler until it is released.
  */
 struct mutex {
-    struct spinlock *spinlock;   ///< underlying spinlock protecting the mutex
-    struct thread_node *thread_list; ///< linked list of threads waiting for this mutex
+    struct spinlock lock;   // Protects the mutex state
+    uint32_t locked;        // 1 if locked, 0 if unlocked
+    struct thread *owner;   // The thread that currently holds the mutex
+    const char *name;             // Name for debugging
 };
 
 /**
  * @brief Initialize a mutex
- * @param lk Pointer to the mutex
- * @param name Name for internal spinlock (for debugging)
- * @return 0 on success (currently unused)
+ * @param m Pointer to the mutex
+ * @param name Name of the mutex
  */
-int init_mutex(struct mutex *lk, char *name);
+void init_mutex(struct mutex *m, const char *name);
 
 /**
  * @brief Acquire the mutex
  * Blocks the current thread if mutex is already held.
- * @param lk Pointer to the mutex
+ * @param m Pointer to the mutex
  */
-void acquire_mutex(struct mutex *lk);
+void acquire_mutex(struct mutex *m);
 
 /**
  * @brief Release the mutex
- * Wakes up a waiting thread if any; otherwise, releases the spinlock.
- * @param lk Pointer to the mutex
+ * Wakes up waiting threads if any.
+ * @param m Pointer to the mutex
  */
-void release_mutex(struct mutex *lk);
+void release_mutex(struct mutex *m);
 
 #endif //UNTITLED_OS_MUTEX_H
-

@@ -18,7 +18,7 @@
 // Global State
 // ============================================================================
 
-struct spinlock sched_lock;
+// struct spinlock sched_lock; // Handled by scheduler.c
 bool sched_initialized = false;
 
 // ============================================================================
@@ -27,8 +27,7 @@ bool sched_initialized = false;
 
 /**
  * @brief Yield from idle thread to check for work
- * 
- * Similar to sched_yield but specifically for idle thread.
+ * * Similar to sched_yield but specifically for idle thread.
  * Returns to scheduler context which will check for real work.
  */
 static void idle_yield(void)
@@ -52,7 +51,7 @@ static void idle_thread_func(void *arg)
     (void) arg; // Unused
     while (1)
     {
-        sti();               // Enable interrupts
+        sti(); // Enable interrupts
         asm volatile("hlt"); // Wait for interrupt
         
         // After waking from hlt (e.g., timer interrupt), yield to 
@@ -101,7 +100,6 @@ static bool runqueue_remove_unlocked(struct percpu *cpu, struct thread *thread)
 
     struct thread_node *start = cpu->run_queue;
     struct thread_node *current = start;
-
     do
     {
         if (current->data == thread)
@@ -127,7 +125,6 @@ static bool runqueue_remove_unlocked(struct percpu *cpu, struct thread *thread)
         }
         current = current->next;
     } while (current != start);
-
     return false;
 }
 
@@ -143,7 +140,6 @@ static struct thread *runqueue_get_next(struct percpu *cpu)
 
     struct thread_node *start = cpu->run_queue;
     struct thread_node *current = start;
-
     do
     {
         struct thread *t = current->data;
@@ -173,12 +169,12 @@ void sched_init(void)
 void sched_init_cpu(void)
 {
     struct percpu *cpu = mycpu();
-
+    
     // Initialize run queue
     cpu->run_queue = 0;
     cpu->num_threads = 0;
     cpu->scheduler_ready = false;
-
+    
     // Allocate scheduler context
     uint64_t sched_stack = (uint64_t) kalloc();
     if (sched_stack == 0)
@@ -192,7 +188,7 @@ void sched_init_cpu(void)
     sched_stack -= sizeof(struct context);
     cpu->scheduler_ctx = (struct context *) sched_stack;
     memset(cpu->scheduler_ctx, 0, sizeof(struct context));
-
+    
     // Create idle thread for this CPU
     cpu->idle_thread = create_idle_thread();
     if (cpu->idle_thread == 0)
@@ -241,7 +237,6 @@ void sched_add_thread(struct thread *thread, int cpu_index)
 
     LOG_SERIAL("SCHED", "Added thread %p to CPU %d (now has %d threads)",
                thread, target_cpu->cpu_index, target_cpu->num_threads);
-
     release_spinlock(&sched_lock);
 }
 
@@ -270,10 +265,9 @@ void sched_remove_thread(struct thread *thread)
 struct thread *sched_get_next(void)
 {
     struct percpu *cpu = mycpu();
-
+    
     // Try to get a runnable thread from our queue
     struct thread *next = runqueue_get_next(cpu);
-
     if (next != 0)
     {
         return next;
@@ -291,7 +285,7 @@ void sched_yield(void)
 {
     struct percpu *cpu = mycpu();
     struct thread *current = cpu->current_thread;
-
+    
     if (current == 0 || current == cpu->idle_thread)
     {
         return; // Nothing to yield from
@@ -299,15 +293,14 @@ void sched_yield(void)
 
     // Mark as runnable (will be picked up again)
     current->state = RUNNABLE;
-
+    
     // Switch to scheduler context
     switch_context(&current->context, cpu->scheduler_ctx);
 }
 
 /**
  * @brief Exit the current thread
- * 
- * Removes the current thread from the run queue and switches
+ * * Removes the current thread from the run queue and switches
  * to the scheduler. The thread will never run again.
  */
 void sched_exit(void)
@@ -326,7 +319,7 @@ void sched_exit(void)
     // Remove from run queue
     runqueue_remove_unlocked(cpu, current);
     cpu->current_thread = 0;
-
+    
     LOG_SERIAL("SCHED", "Thread %p exited on CPU %d", current, cpu->cpu_index);
 
     // Switch to scheduler - never returns
@@ -339,21 +332,18 @@ void sched_exit(void)
 void sched_run(void)
 {
     struct percpu *cpu = mycpu();
-
+    
     cpu->scheduler_ready = true;
     LOG_SERIAL("SCHED", "CPU %d entering scheduler loop", cpu->cpu_index);
-
+    
     while (1)
     {
         sti(); // Enable interrupts while looking for work
 
         struct thread *next = sched_get_next();
-
+        
         if (next != 0)
         {
-            // LOG_SERIAL("SCHED", "CPU %d switching to thread %p, context=%p, rip=%p", 
-            //            cpu->cpu_index, next, next->context, 
-            //            next->context ? next->context->rip : 0);
             cpu->current_thread = next;
             next->state = ON_CPU;
             switch_context(&cpu->scheduler_ctx, next->context);
@@ -373,7 +363,7 @@ void sched_tick(void)
     // TODO: Implement proper trap-frame based preemption if needed.
     
     struct percpu *cpu = mycpu();
-
+    
     if (!cpu->scheduler_ready)
     {
         return;
@@ -414,7 +404,7 @@ void sched_balance(void)
     {
         if (!percpus[i].started)
             continue;
-
+            
         uint32_t load = percpus[i].num_threads;
         if (load > max_load)
         {
@@ -449,6 +439,7 @@ void sched_balance(void)
         do
         {
             struct thread *t = current->data;
+            
             if (t != src->current_thread &&
                 t != src->idle_thread &&
                 t->state == RUNNABLE)
@@ -474,16 +465,82 @@ void sched_balance(void)
 void sched_log_state(void)
 {
     LOG_SERIAL("SCHED", "=== Scheduler State ===");
-
+    
     for (uint32_t i = 0; i < ncpu; i++)
     {
         struct percpu *cpu = &percpus[i];
+        
         if (!cpu->started)
             continue;
-
+            
         LOG_SERIAL("SCHED", "CPU %d: %d threads, current=%p, ready=%d",
                    i, cpu->num_threads, cpu->current_thread, cpu->scheduler_ready);
     }
 
     LOG_SERIAL("SCHED", "=======================");
+}
+
+// ============================================================================
+// Synchronization wait/wakeup (SMP aware)
+// ============================================================================
+
+void sleep(void *chan, struct spinlock *lk) {
+    struct percpu *cpu = mycpu();
+    struct thread *t = cpu->current_thread;
+
+    if (t == 0 || t == cpu->idle_thread) {
+        panic("sleep: no current thread or trying to sleep in idle");
+    }
+
+    if (lk == 0) {
+        panic("sleep: lock is null");
+    }
+
+    // 1. Set thread state to WAIT and record the channel.
+    // This must be done BEFORE releasing the lock to avoid lost wakeups.
+    t->chan = chan;
+    t->state = WAIT;
+    
+    // 2. Release the synchronization lock. 
+    // Now other CPUs can acquire it and eventually call wakeup().
+    release_spinlock(lk);
+    
+    // 3. Switch to the scheduler context.
+    // The scheduler will find another RUNNABLE thread or run idle.
+    switch_context(&t->context, cpu->scheduler_ctx);
+    
+    // 4. Thread has been woken up and rescheduled.
+    // Clear the wait channel.
+    t->chan = 0;
+    
+    // 5. Re-acquire the original lock before returning to the caller.
+    acquire_spinlock(lk);
+}
+
+void wakeup(void *chan) {
+    // We use sched_lock to safely iterate over all CPU run queues.
+    acquire_spinlock(&sched_lock);
+    
+    for (uint32_t i = 0; i < ncpu; i++) {
+        struct percpu *cpu_ptr = &percpus[i];
+        
+        if (cpu_ptr->run_queue == 0) {
+            continue;
+        }
+
+        struct thread_node *start = cpu_ptr->run_queue;
+        struct thread_node *curr = start;
+        
+        // Iterate through the circular linked list of threads
+        do {
+            struct thread *t = curr->data;
+            
+            if (t->state == WAIT && t->chan == chan) {
+                t->state = RUNNABLE; // Wake up the thread
+            }
+            curr = curr->next;
+        } while (curr != start);
+    }
+
+    release_spinlock(&sched_lock);
 }

@@ -1,6 +1,6 @@
 //
 // Created by ShipOS developers on 20.12.23.
-// Copyright (c) 2023 SHIPOS. All rights reserved.
+// Copyright (c) 2023-2026 SHIPOS. All rights reserved.
 //
 
 #ifndef UNTITLED_OS_THREADS_H
@@ -27,6 +27,7 @@ struct thread {
     size_t argc;
     struct argument *args;
     enum sched_states state;
+    void *chan; // Wait channel: memory address the thread is waiting on
 };
 
 struct thread_node {

@@ -10,6 +10,14 @@
 #include "../../paging/paging.h"
 #include "../../kalloc/kalloc.h"
 #include "../../memlayout.h"
+#include "../../sync/mutex.h"
+#include "../../sync/semaphore.h"
+#include "../../sync/spinlock.h"
+#include "../../sync/condvar.h"
+#include "../../sched/smp_sched.h"
+#include "../../sync/completion.h"
+#include "../../sync/seqlock.h"
+#include "../../sync/barrier.h"
 
 int test_addition() {
     int a = 1;
@@ -17,6 +25,16 @@ int test_addition() {
 
     return a + b == 3;
 }
+
+// Data structure to test atomicity
+struct shared_data {
+    uint64_t x;
+    uint64_t y;
+};
+
+struct seqlock test_sl;
+struct shared_data global_data;
+volatile int stop_test = 0;
 
 /**
  * @brief Test that page entry encoding/decoding is consistent
@@ -500,6 +518,355 @@ int test_map_pages_range() {
     return success;
 }
 
+/**
+ * @brief Test basic spinlock acquire/release
+ */
+int test_spinlock_basic() {
+    struct spinlock lk;
+    init_spinlock(&lk, "test_spin");
+
+    if (holding_spinlock(&lk)) return 0;
+
+    acquire_spinlock(&lk);
+    if (!holding_spinlock(&lk)) return 0;
+
+    release_spinlock(&lk);
+    if (holding_spinlock(&lk)) return 0;
+
+    return 1;
+}
+
+/**
+ * @brief Test basic mutex logic
+ */
+int test_mutex_basic() {
+    struct mutex m;
+    init_mutex(&m, "test_mutex");
+
+    if (m.locked != 0) return 0;
+
+    acquire_mutex(&m);
+    if (m.locked != 1 || m.owner != curthread()) return 0;
+
+    release_mutex(&m);
+    if (m.locked != 0 || m.owner != 0) return 0;
+
+    return 1;
+}
+
+/**
+ * @brief Test basic semaphore counting
+ */
+int test_semaphore_basic() {
+    struct semaphore s;
+    sem_init(&s, 2, "test_sem");
+
+    if (s.value != 2) return 0;
+
+    sem_wait(&s);
+    if (s.value != 1) return 0;
+
+    sem_wait(&s);
+    if (s.value != 0) return 0;
+
+    sem_post(&s);
+    if (s.value != 1) return 0;
+
+    return 1;
+}
+
+/**
+ * @brief Test condvar initialization
+ */
+int test_condvar_basic() {
+    struct condvar cv;
+    init_condvar(&cv, "test_cv");
+    return cv.name != 0;
+}
+
+#define BUFFER_SIZE 5
+#define ITEMS_TO_PRODUCE 20
+
+struct shared_buffer {
+    int buffer[BUFFER_SIZE];
+    int count;
+    int head;
+    int tail;
+    struct mutex lock;
+    struct condvar not_empty;
+    struct condvar not_full;
+    int items_consumed;
+};
+
+struct shared_buffer shared;
+
+// Thread function for Producer
+void producer_thread(void *arg) {
+    for (int i = 0; i < ITEMS_TO_PRODUCE; i++) {
+        acquire_mutex(&shared.lock);
+        
+        while (shared.count == BUFFER_SIZE) {
+            cv_wait(&shared.not_full, &shared.lock);
+        }
+
+        shared.buffer[shared.head] = i;
+        shared.head = (shared.head + 1) % BUFFER_SIZE;
+        shared.count++;
+
+        cv_signal(&shared.not_empty);
+        release_mutex(&shared.lock);
+    }
+    sched_exit();
+}
+
+// Thread function for Consumer
+void consumer_thread(void *arg) {
+    while (1) {
+        acquire_mutex(&shared.lock);
+        
+        while (shared.count == 0) {
+            if (shared.items_consumed == ITEMS_TO_PRODUCE) {
+                release_mutex(&shared.lock);
+                sched_exit();
+            }
+            cv_wait(&shared.not_empty, &shared.lock);
+        }
+
+        int item = shared.buffer[shared.tail];
+        shared.tail = (shared.tail + 1) % BUFFER_SIZE;
+        shared.count--;
+        shared.items_consumed++;
+
+        cv_signal(&shared.not_full);
+        release_mutex(&shared.lock);
+        
+        if (shared.items_consumed == ITEMS_TO_PRODUCE) break;
+    }
+    sched_exit();
+}
+
+/**
+ * @brief Stress test for Mutex and Condvars using Producer-Consumer pattern
+ */
+int test_producer_consumer() {
+    // Initialize shared state
+    memset(&shared, 0, sizeof(shared));
+    init_mutex(&shared.lock, "prod_cons_lock");
+    init_condvar(&shared.not_empty, "not_empty");
+    init_condvar(&shared.not_full, "not_full");
+
+    // Create threads
+    struct thread *t_prod = create_thread(producer_thread, 0, 0);
+    struct thread *t_cons = create_thread(consumer_thread, 0, 0);
+
+    // Add them to different CPUs to trigger SMP races
+    sched_add_thread(t_prod, 0); 
+    sched_add_thread(t_cons, 1);
+
+    LOG("Waiting for Producer-Consumer to finish...");
+    
+    for (volatile int i = 0; i < 5000000; i++) {
+        if (shared.items_consumed == ITEMS_TO_PRODUCE) break;
+    }
+
+    return shared.items_consumed == ITEMS_TO_PRODUCE;
+}
+
+/**
+ * @brief Test basic completion initialization and non-blocking wait
+ */
+int test_completion_basic() {
+    struct completion c;
+    init_completion(&c, "test_comp");
+
+    if (c.done != 0) return 0; // Failed: initialized incorrectly
+
+    complete(&c);
+    
+    if (c.done != 1) return 0; // Failed: not marked as done
+
+    // Should return immediately without blocking because c.done == 1
+    wait_for_completion(&c);
+
+    return 1;
+}
+
+// Global state for SMP completion test
+struct completion smp_comp;
+volatile int worker_done_flag = 0;
+
+/**
+ * @brief Background worker thread that completes the task
+ */
+void completion_worker_thread(void *arg) {
+    (void)arg; // Unused
+    
+    // Simulate some work
+    for (volatile int i = 0; i < 5000000; i++);
+    
+    worker_done_flag = 1;
+    
+    // Signal that the work is done
+    complete(&smp_comp);
+    
+    sched_exit();
+}
+
+/**
+ * @brief Test completion synchronization across multiple CPUs
+ */
+int test_completion_smp() {
+    init_completion(&smp_comp, "test_comp_smp");
+    worker_done_flag = 0;
+
+    struct thread *t = create_thread(completion_worker_thread, 0, 0);
+    
+    // Schedule the worker on CPU 1 to ensure true concurrency
+    sched_add_thread(t, 1);
+
+    // This should put the current thread to sleep until worker calls complete()
+    wait_for_completion(&smp_comp);
+
+    // If we wake up, the worker must have finished its loop and set the flag
+    return worker_done_flag == 1 && smp_comp.done == 1;
+}
+
+/**
+ * @brief Writer thread: constants updates X and Y to be equal
+ */
+void seqlock_writer_thread(void *arg) {
+    uint64_t val = 0;
+    while (!stop_test) {
+        write_seqlock(&test_sl);
+        
+        global_data.x = val;
+        global_data.y = val;
+        val++;
+        
+        write_sequnlock(&test_sl);
+        
+        // Increased delay to give reader a fair chance to finish
+        for (volatile int i = 0; i < 1000; i++); 
+    }
+    sched_exit();
+}
+
+/**
+ * @brief Reader thread: checks if X always equals Y
+ */
+void seqlock_reader_thread(void *arg) {
+    uint32_t start_seq;
+    uint64_t local_x, local_y;
+    int inconsistency_detected = 0;
+
+    for (int i = 0; i < 100000; i++) {
+        do {
+            start_seq = read_seqbegin(&test_sl);
+            
+            local_x = global_data.x;
+            // Smaller delay here to reduce collision frequency
+            for (volatile int j = 0; j < 10; j++); 
+            local_y = global_data.y;
+            
+            // If we collided with a writer, let's not spin too tight
+            if (read_seqretry(&test_sl, start_seq)) {
+                sched_yield(); // Give writer a window to finish
+                continue;
+            } else {
+                break;
+            }
+        } while (1);
+
+        if (local_x != local_y) {
+            inconsistency_detected = 1;
+            break;
+        }
+    }
+
+    if (inconsistency_detected) {
+        LOG_SERIAL("TEST", "Seqlock failure: X(%" PRIu64 ") != Y(%" PRIu64 ")", local_x, local_y);
+        stop_test = -1; 
+    }
+    sched_exit();
+}
+
+/**
+ * @brief SMP Stress test for Sequence Locks
+ */
+int test_seqlock_smp() {
+    init_seqlock(&test_sl, "test_seqlock");
+    global_data.x = 0;
+    global_data.y = 0;
+    stop_test = 0;
+
+    struct thread *tw = create_thread(seqlock_writer_thread, 0, 0);
+    struct thread *tr = create_thread(seqlock_reader_thread, 0, 0);
+
+    sched_add_thread(tw, 1);
+    sched_add_thread(tr, 2);
+
+    // Main test loop with a proper timeout and yield
+    for (volatile int i = 0; i < 5000000; i++) {
+        if (stop_test != 0) break;
+        sched_yield();
+    }
+    
+    int result = (stop_test != -1);
+    stop_test = 1; 
+    return result;
+}
+
+struct barrier test_bar;
+volatile int barrier_sync_count = 0;
+
+/**
+ * @brief Worker thread for barrier test
+ */
+void barrier_worker_thread(void *arg) {
+    // Simulate different lengths of work on different CPUs
+    for (volatile int i = 0; i < 5000000; i++);
+    
+    // Wait for other threads at the barrier
+    barrier_wait(&test_bar);
+    
+    // After barrier, increment the shared counter atomically
+    __sync_fetch_and_add(&barrier_sync_count, 1);
+    
+    sched_exit();
+}
+
+/**
+ * @brief Test barrier synchronization across multiple CPUs
+ */
+int test_barrier_smp() {
+    // Initialize barrier for 3 threads (2 workers + 1 main thread)
+    init_barrier(&test_bar, 3, "test_barrier");
+    barrier_sync_count = 0;
+
+    struct thread *t1 = create_thread(barrier_worker_thread, 0, 0);
+    struct thread *t2 = create_thread(barrier_worker_thread, 0, 0);
+
+    // Scatter across CPUs
+    sched_add_thread(t1, 1);
+    sched_add_thread(t2, 2);
+
+    // The main thread also waits at the barrier
+    barrier_wait(&test_bar);
+
+    // Main thread increments the counter too
+    __sync_fetch_and_add(&barrier_sync_count, 1);
+
+    // Give the other CPUs a tiny bit of time to execute their increments
+    // directly after waking up from the barrier
+    for (volatile int i = 0; i < 100000; i++) {
+        sched_yield();
+    }
+
+    // If the barrier worked, all 3 threads waited for each other and 
+    // executed the code after the barrier
+    return barrier_sync_count == 3;
+}
+
 void run_tests() {
     LOG("Test mode enabled, running tests");
 
@@ -530,6 +897,19 @@ void run_tests() {
     TEST_REPORT("VM: va_to_pa translation", CHECK(test_va_to_pa));
     TEST_REPORT("VM: unmap_page works", CHECK(test_unmap_page));
     TEST_REPORT("VM: map_pages range", CHECK(test_map_pages_range));
+
+    // Individual Sync Primitives
+    TEST_REPORT("SYNC: Spinlock basic", CHECK(test_spinlock_basic));
+    TEST_REPORT("SYNC: Mutex basic", CHECK(test_mutex_basic));
+    TEST_REPORT("SYNC: Semaphore basic", CHECK(test_semaphore_basic));
+    TEST_REPORT("SYNC: Condvar basic", CHECK(test_condvar_basic));
+    TEST_REPORT("SYNC: Completion basic", CHECK(test_completion_basic));
+    TEST_REPORT("SYNC: Completion SMP", CHECK(test_completion_smp));
+    TEST_REPORT("SYNC: Seqlock SMP stress", CHECK(test_seqlock_smp));
+    TEST_REPORT("SYNC: Barrier SMP", CHECK(test_barrier_smp));
+
+    // SMP Stress Test
+    TEST_REPORT("SYNC: Producer-Consumer SMP", CHECK(test_producer_consumer));
 
     LOG("All VM tests completed");
 }

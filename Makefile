@@ -124,4 +124,3 @@ clean:
 # ==============================
 install:
 	sudo apt install -y grub-pc-bin grub-common xorriso mtools qemu-system-x86
-
