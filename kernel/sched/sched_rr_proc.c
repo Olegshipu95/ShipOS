@@ -2,6 +2,7 @@
 // Created by ShipOS developers on 28.10.23.
 // Copyright (c) 2023 SHIPOS. All rights reserved.
 //
+#ifdef SCHED_RR_PROC
 
 #include "scheduler.h"
 #include "proc.h"
@@ -60,3 +61,5 @@ void yield() {
     //printf("yield\n");
     switch_context(&(current_cpu.current_thread->context), kcontext_ptr);
 }
+
+#endif
